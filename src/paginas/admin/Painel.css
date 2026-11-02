@@ -219,6 +219,43 @@
   font-size: 14px;
 }
 
+.painel__link-publico {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px dashed var(--cor-borda);
+  border-radius: 10px;
+  background: #fbfaf8;
+}
+
+.painel__link-publico-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.painel__link-publico-rotulo {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cor-texto-fraco);
+}
+
+.painel__link-publico-url {
+  font-family: var(--fonte-mono);
+  font-size: 13px;
+  color: var(--cor-destaque);
+  overflow-wrap: anywhere;
+}
+
+.painel__link-publico-url:hover {
+  text-decoration: underline;
+}
+
 .painel__cabecalho {
   display: flex;
   align-items: center;
