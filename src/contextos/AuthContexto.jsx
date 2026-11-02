@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { lerToken, removerToken, salvarToken } from '../servicos/api.js'
 import { auth } from '../servicos/auth.js'
+import { cadastro as servicoCadastro } from '../servicos/cadastro.js'
 
 const Contexto = createContext(null)
 
@@ -38,13 +39,21 @@ export function AuthProvider({ children }) {
     return dados.usuario
   }
 
+  // Cadastro público: cria a loja pendente e já deixa o dono logado.
+  async function registrar(dados) {
+    const resposta = await servicoCadastro.criar(dados)
+    salvarToken(resposta.token)
+    setUsuario(resposta.usuario)
+    return resposta
+  }
+
   function sair() {
     removerToken()
     setUsuario(null)
   }
 
   return (
-    <Contexto.Provider value={{ usuario, carregando, entrar, sair }}>
+    <Contexto.Provider value={{ usuario, carregando, entrar, registrar, sair }}>
       {children}
     </Contexto.Provider>
   )

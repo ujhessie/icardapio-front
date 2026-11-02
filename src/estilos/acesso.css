@@ -1,16 +1,16 @@
-.login {
+.acesso {
   min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--esp-5);
-  padding: var(--esp-5);
+  padding: var(--esp-6) var(--esp-5);
 }
 
-.login__cartao {
+.acesso__cartao {
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
   background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
@@ -20,7 +20,7 @@
   gap: var(--esp-4);
 }
 
-.login__marca {
+.acesso__marca {
   font-family: var(--fonte-mono);
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -28,19 +28,25 @@
   color: var(--cor-destaque);
 }
 
-.login__titulo {
+.acesso__titulo {
   font-size: 22px;
   font-weight: 650;
   letter-spacing: -0.01em;
 }
 
-.login__descricao {
+.acesso__descricao {
   color: var(--cor-texto-fraco);
   font-size: 14px;
   margin-top: calc(var(--esp-2) * -1);
 }
 
-.login__erro {
+.acesso__campos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.acesso__erro {
   background: #fdf1f0;
   border: 1px solid #f0c9c5;
   color: var(--cor-erro);
@@ -49,6 +55,7 @@
   font-size: 14px;
 }
 
-.login__rodape {
+.acesso__rodape {
   font-size: 13px;
+  color: var(--cor-texto-fraco);
 }

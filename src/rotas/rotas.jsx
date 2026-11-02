@@ -1,18 +1,20 @@
 import { Route, Routes } from 'react-router-dom'
 import Login from '../paginas/admin/Login.jsx'
 import Painel from '../paginas/admin/Painel.jsx'
+import Cadastro from '../paginas/publico/Cadastro.jsx'
 import StatusSistema from '../paginas/StatusSistema.jsx'
 import RotaProtegida from './RotaProtegida.jsx'
 
 /**
  * Tabela de rotas do front.
- * Público: / e /admin/login
+ * Público: /, /cadastro e /admin/login
  * Painel:  /admin (exige login)
  */
 export default function Rotas() {
   return (
     <Routes>
       <Route path="/" element={<StatusSistema />} />
+      <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/admin/login" element={<Login />} />
       <Route
         path="/admin"
