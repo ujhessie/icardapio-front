@@ -1,0 +1,8 @@
+import { requisitar } from './api.js'
+
+export const publico = {
+  cardapio: (slug) => requisitar(`/publico/${slug}`),
+  criarPedido: (slug, corpo) =>
+    requisitar(`/publico/${slug}/pedidos`, { method: 'POST', corpo }),
+  pedido: (slug, id) => requisitar(`/publico/${slug}/pedidos/${id}`),
+}
