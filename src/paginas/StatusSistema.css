@@ -1,0 +1,147 @@
+.status {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--esp-7) var(--esp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-6);
+}
+
+.status__topo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.status__marca {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-destaque);
+}
+
+.status__titulo {
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.status__descricao {
+  color: var(--cor-texto-fraco);
+  max-width: 48ch;
+}
+
+.status__cartao {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--esp-2) var(--esp-4);
+}
+
+.status__lista {
+  margin: 0;
+}
+
+.status__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-3) 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.status__linha:last-child {
+  border-bottom: 0;
+}
+
+.status__linha dt {
+  color: var(--cor-texto-fraco);
+  font-size: 14px;
+}
+
+.status__linha dd {
+  margin: 0;
+}
+
+.status__valor {
+  font-family: var(--fonte-mono);
+  font-size: 14px;
+  color: var(--cor-neutro);
+}
+
+.status__valor--ok {
+  color: var(--cor-ok);
+}
+
+.status__valor--erro {
+  color: var(--cor-erro);
+}
+
+.status__aviso {
+  padding: var(--esp-4) 0;
+  color: var(--cor-texto-fraco);
+  font-size: 14px;
+}
+
+.status__erro {
+  padding: var(--esp-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  align-items: flex-start;
+  color: var(--cor-erro);
+}
+
+.status__dica {
+  color: var(--cor-texto-fraco);
+  font-size: 14px;
+}
+
+.status__dica code {
+  font-family: var(--fonte-mono);
+  font-size: 13px;
+}
+
+.status__rodape {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.status__botao {
+  background: var(--cor-destaque);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: var(--esp-2) var(--esp-4);
+  font-size: 14px;
+  font-weight: 550;
+  transition: filter 0.15s ease;
+}
+
+.status__botao:hover {
+  filter: brightness(0.92);
+}
+
+.status__botao--discreto {
+  background: transparent;
+  color: var(--cor-texto-fraco);
+  border: 1px solid var(--cor-borda);
+}
+
+.status__botao--discreto:hover {
+  color: var(--cor-texto);
+  border-color: var(--cor-texto-fraco);
+  filter: none;
+}
+
+@media (max-width: 480px) {
+  .status {
+    padding: var(--esp-6) var(--esp-4);
+  }
+
+  .status__titulo {
+    font-size: 23px;
+  }
+}
