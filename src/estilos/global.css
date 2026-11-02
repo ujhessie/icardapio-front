@@ -159,6 +159,10 @@ textarea {
   filter: none;
 }
 
+.botao--perigo {
+  background: var(--cor-erro);
+}
+
 .tela-carregando {
   padding: var(--esp-7);
   text-align: center;
