@@ -46,7 +46,7 @@ export default function StatusSistema() {
             <p className="status__dica">
               Confira se a API está rodando em <code>localhost:4000</code>.
             </p>
-            <button className="status__botao" type="button" onClick={verificar}>
+            <button className="botao" type="button" onClick={verificar}>
               Verificar de novo
             </button>
           </div>
@@ -67,7 +67,7 @@ export default function StatusSistema() {
       </section>
 
       <footer className="status__rodape">
-        <button className="status__botao status__botao--discreto" type="button" onClick={verificar}>
+        <button className="botao botao--secundario" type="button" onClick={verificar}>
           Atualizar
         </button>
       </footer>

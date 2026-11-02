@@ -1,0 +1,54 @@
+.login {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-5);
+  padding: var(--esp-5);
+}
+
+.login__cartao {
+  width: 100%;
+  max-width: 380px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--esp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.login__marca {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-destaque);
+}
+
+.login__titulo {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.login__descricao {
+  color: var(--cor-texto-fraco);
+  font-size: 14px;
+  margin-top: calc(var(--esp-2) * -1);
+}
+
+.login__erro {
+  background: #fdf1f0;
+  border: 1px solid #f0c9c5;
+  color: var(--cor-erro);
+  border-radius: 8px;
+  padding: var(--esp-2) var(--esp-3);
+  font-size: 14px;
+}
+
+.login__rodape {
+  font-size: 13px;
+}

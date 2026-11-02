@@ -52,3 +52,74 @@ select,
 textarea {
   font: inherit;
 }
+
+/* ---------- Formulário ---------- */
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+}
+
+.campo > span {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 1px;
+}
+
+/* ---------- Botão ---------- */
+
+.botao {
+  background: var(--cor-destaque);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: var(--esp-2) var(--esp-4);
+  font-size: 14px;
+  font-weight: 550;
+  transition: filter 0.15s ease;
+}
+
+.botao:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.botao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.botao--secundario {
+  background: transparent;
+  color: var(--cor-texto-fraco);
+  border: 1px solid var(--cor-borda);
+}
+
+.botao--secundario:hover:not(:disabled) {
+  color: var(--cor-texto);
+  border-color: var(--cor-texto-fraco);
+  filter: none;
+}
+
+.tela-carregando {
+  padding: var(--esp-7);
+  text-align: center;
+  color: var(--cor-texto-fraco);
+}

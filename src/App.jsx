@@ -1,10 +1,13 @@
 import { BrowserRouter } from 'react-router-dom'
+import { AuthProvider } from './contextos/AuthContexto.jsx'
 import Rotas from './rotas/rotas.jsx'
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Rotas />
+      <AuthProvider>
+        <Rotas />
+      </AuthProvider>
     </BrowserRouter>
   )
 }
