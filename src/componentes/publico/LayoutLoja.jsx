@@ -16,7 +16,7 @@ export default function LayoutLoja() {
 }
 
 function ConteudoLoja() {
-  const { dados, carregando, erro } = useLoja()
+  const { dados, carregando, erro, status } = useLoja()
 
   if (carregando) {
     return <p className="loja__carregando">Abrindo o cardápio…</p>
@@ -34,6 +34,9 @@ function ConteudoLoja() {
 
   const { loja } = dados
 
+  // "Aberto agora · fecha às 23h" vira selo curto + detalhe: cabe no celular.
+  const [tituloStatus, detalheStatus] = status.texto.split(' · ')
+
   return (
     <div className="loja" style={{ '--loja-cor': loja.corPrimaria || '#e85d04' }}>
       <header className="loja__topo">
@@ -49,21 +52,31 @@ function ConteudoLoja() {
 
             <span className="loja__marca-texto">
               <span className="loja__nome">{loja.nome}</span>
-              <span
-                className={`loja__status ${
-                  loja.aberta ? 'loja__status--aberta' : 'loja__status--fechada'
-                }`}
-              >
-                {loja.aberta ? 'Aberto agora' : 'Fechado no momento'}
+
+              <span className="loja__estado">
+                <span
+                  className={`loja__status ${
+                    status.aberto ? 'loja__status--aberta' : 'loja__status--fechada'
+                  }`}
+                >
+                  {tituloStatus}
+                </span>
+                {detalheStatus && <span className="loja__status-detalhe">{detalheStatus}</span>}
               </span>
             </span>
           </Link>
 
-          {loja.telefone && (
-            <a className="loja__telefone" href={`tel:${loja.telefone.replace(/\D/g, '')}`}>
-              {loja.telefone}
-            </a>
-          )}
+          <div className="loja__topo-acoes">
+            <Link className="loja__atalho" to={`/${loja.slug}/pedidos`}>
+              Meus pedidos
+            </Link>
+
+            {loja.telefone && (
+              <a className="loja__telefone" href={`tel:${loja.telefone.replace(/\D/g, '')}`}>
+                {loja.telefone}
+              </a>
+            )}
+          </div>
         </div>
       </header>
 

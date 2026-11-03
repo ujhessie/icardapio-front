@@ -18,8 +18,14 @@ export default function CabecalhoPainel() {
           <NavLink to="/admin" end className={classeDoLink}>
             Painel
           </NavLink>
+          <NavLink to="/admin/pedidos" className={classeDoLink}>
+            Pedidos
+          </NavLink>
           <NavLink to="/admin/cardapio" className={classeDoLink}>
             Cardápio
+          </NavLink>
+          <NavLink to="/admin/horarios" className={classeDoLink}>
+            Horários
           </NavLink>
           <NavLink to="/admin/delivery" className={classeDoLink}>
             Delivery

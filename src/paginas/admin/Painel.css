@@ -188,6 +188,14 @@
   font-size: 14px;
 }
 
+.painel__aviso--erro {
+  color: var(--cor-erro);
+  border: 1px solid color-mix(in srgb, var(--cor-erro) 30%, var(--cor-borda));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--cor-erro) 7%, #fff);
+  padding: var(--esp-2) var(--esp-3);
+}
+
 .painel__dados {
   margin: 0;
   display: flex;
@@ -261,6 +269,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--esp-4);
+  flex-wrap: wrap;
 }
 
 .painel__numeros {
@@ -465,5 +474,611 @@
 
   .cardapio__edicao {
     flex-wrap: wrap;
+  }
+}
+
+/* ---------- Pedidos (protótipo) ---------- */
+
+.painel__conteudo--quadro {
+  max-width: 1280px;
+}
+
+/* ---------- Filtros do quadro ---------- */
+
+.pedidos__filtros {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+
+.pedidos__grupo {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+}
+
+.pedidos__filtro {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--cor-texto-fraco);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pedidos__filtro:hover {
+  color: var(--cor-texto);
+}
+
+.pedidos__filtro--ativo {
+  background: var(--cor-destaque);
+  color: #fff;
+}
+
+.pedidos__filtro--ativo:hover {
+  color: #fff;
+}
+
+/* Período é um filtro de apoio: fica leve, para não disputar com a visão. */
+.pedidos__grupo--periodo .pedidos__filtro--ativo {
+  background: color-mix(in srgb, var(--cor-destaque) 12%, transparent);
+  color: var(--cor-destaque);
+}
+
+.pedidos__aovivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: var(--esp-1);
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cor-texto-fraco);
+}
+
+.pedidos__aovivo::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cor-neutro);
+}
+
+.pedidos__aovivo--ligado::before {
+  background: var(--cor-ok);
+}
+
+.pedidos__cancelados {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--esp-3);
+}
+
+/* As seis colunas cabem lado a lado a partir de ~1200px. Abaixo disso o quadro
+   rola na horizontal, que é como o lojista usa o kanban no celular. */
+.pedidos__quadro {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(180px, 1fr));
+  gap: var(--esp-3);
+  overflow-x: auto;
+  padding-bottom: var(--esp-2);
+  scroll-snap-type: x proximity;
+}
+
+.pedidos__coluna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.pedidos__coluna-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  padding: 0 2px 2px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.pedidos__coluna-titulo {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cor-texto-fraco);
+}
+
+.pedidos__coluna-contagem {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.pedidos__vazio {
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--esp-4) var(--esp-2);
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+  text-align: center;
+}
+
+.pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+.pedido--novo {
+  border-color: color-mix(in srgb, var(--cor-destaque) 45%, var(--cor-borda));
+}
+
+.pedido__topo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.pedido__numero {
+  font-family: var(--fonte-mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pedido__hora {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-texto-fraco);
+}
+
+.pedido__tipo {
+  margin-left: auto;
+}
+
+.pedido__cliente {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.pedido__telefone,
+.pedido__endereco,
+.pedido__idade,
+.pedido__pagamento {
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+  line-height: 1.4;
+}
+
+.pedido__referencia {
+  display: block;
+  color: var(--cor-neutro);
+}
+
+.pedido__itens {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pedido__item {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.pedido__item-quantidade {
+  flex-shrink: 0;
+  font-family: var(--fonte-mono);
+  color: var(--cor-destaque);
+}
+
+.pedido__item-observacao {
+  display: block;
+  font-size: 11px;
+  color: var(--cor-alerta);
+}
+
+.pedido__rodape {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.pedido__pagamento-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pedido__troco {
+  font-size: 11px;
+  color: var(--cor-neutro);
+  white-space: nowrap;
+}
+
+.pedido__total {
+  font-family: var(--fonte-mono);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.pedido__avancar {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.pedido__acoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+}
+
+.pedido__link-acao {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.pedido__link-acao:hover:not(:disabled) {
+  color: var(--cor-texto);
+  text-decoration: underline;
+}
+
+.pedido__link-acao:disabled {
+  opacity: 0.45;
+}
+
+.pedido__link-acao--perigo {
+  color: var(--cor-erro);
+}
+
+.pedido__link-acao--perigo:hover:not(:disabled) {
+  color: var(--cor-erro);
+}
+
+.pedido__confirmar-texto {
+  font-size: 12px;
+  color: var(--cor-erro);
+}
+
+.pedido__confirmar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--esp-2) var(--esp-1);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--cor-erro) 8%, transparent);
+  font-size: 12px;
+  color: var(--cor-erro);
+}
+
+.pedido__confirmar > span {
+  flex-basis: 100%;
+  text-align: center;
+}
+
+.pedido__confirmar .botao {
+  flex: 1;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* ---------- Horários ---------- */
+
+.horarios__salvar {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+
+.horarios__pendente {
+  font-size: 12px;
+  color: var(--cor-alerta);
+}
+
+.horarios__salvo {
+  font-size: 12px;
+  color: var(--cor-ok);
+}
+
+.horarios__estado {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+}
+
+.horarios__estado-texto {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-width: 0;
+}
+
+.horarios__farol {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--cor-erro);
+  flex-shrink: 0;
+}
+
+.horarios__farol--aberta {
+  background: var(--cor-ok);
+}
+
+.horarios__interruptor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.horarios__interruptor-rotulo {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cor-texto-fraco);
+}
+
+.interruptor {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cor-borda);
+  transition: background 0.15s ease;
+}
+
+.interruptor--ligado {
+  background: var(--cor-ok);
+}
+
+.interruptor__bolinha {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #fff;
+  transition: transform 0.18s ease;
+}
+
+.interruptor--ligado .interruptor__bolinha {
+  transform: translateX(22px);
+}
+
+.horarios__dias {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.horarios__dia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3) 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.horarios__dia:last-child {
+  border-bottom: 0;
+}
+
+.horarios__dia-nome {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.horarios__dia-nome strong {
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.horarios__dia--fechado .horarios__dia-nome strong {
+  color: var(--cor-texto-fraco);
+}
+
+.horarios__dia-nome span {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.horarios__horas {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.horarios__horas input {
+  width: 96px;
+  padding: 6px 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-superficie);
+  font-family: var(--fonte-mono);
+  font-size: 13px;
+}
+
+.horarios__horas input:disabled {
+  opacity: 0.45;
+}
+
+.horarios__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.horarios__check input {
+  accent-color: var(--cor-ok);
+}
+
+/* Horário de uma data especial aberta: fica junto dos botões da linha. */
+.horarios__especial-horas {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.horarios__especial-horas input {
+  width: 92px;
+  padding: 4px 6px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-superficie);
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+}
+
+.botao--pequeno {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* Remover repetido em lista: vermelho de texto, não bloco vermelho na tela toda.
+   O seletor duplo é necessário porque .botao vem do global.css depois deste arquivo. */
+.botao.botao--texto-perigo {
+  background: transparent;
+  color: var(--cor-erro);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.botao.botao--texto-perigo:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cor-erro) 10%, transparent);
+  filter: none;
+}
+
+.previa-loja {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: #faf7f2;
+}
+
+.previa-loja__monograma {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--cor-destaque);
+  color: #fff;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.previa-loja__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.previa-loja__nome {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.previa-loja__status {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--cor-erro);
+}
+
+.previa-loja__status--aberta {
+  color: var(--cor-ok);
+}
+
+.previa-loja__hoje {
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+}
+
+.previa-loja__telefone {
+  margin-left: auto;
+  padding: 5px 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .horarios__dia {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .horarios__horas {
+    grid-column: 1 / -1;
+  }
+
+  .horarios__dia .botao--pequeno {
+    justify-self: end;
+  }
+
+  .previa-loja__telefone {
+    display: none;
   }
 }

@@ -140,6 +140,42 @@
   color: var(--loja-erro);
 }
 
+/* Selo curto + detalhe do horário: "ABERTO AGORA · fecha às 23h". */
+.loja__estado {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.loja__status-detalhe {
+  font-size: 11px;
+  color: var(--loja-fraco);
+}
+
+.loja__topo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.loja__atalho {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--loja-fraco);
+  border: 1px solid var(--loja-borda);
+  border-radius: 999px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+.loja__atalho:hover {
+  color: var(--loja-texto);
+  border-color: var(--loja-cor);
+  text-decoration: none;
+}
+
 .loja__telefone {
   font-family: var(--fonte-mono);
   font-size: 13px;
@@ -619,6 +655,17 @@
   text-decoration: none;
 }
 
+.loja__voltar-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loja__voltar-linha .loja__voltar {
+  margin-bottom: 0;
+}
+
 .loja__checkout-form {
   display: flex;
   flex-direction: column;
@@ -716,6 +763,27 @@
   font-size: 12px;
   color: var(--loja-fraco);
   line-height: 1.5;
+}
+
+/* Selo discreto de "isso está vivo": o cliente vê que não precisa atualizar. */
+.loja__aovivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--loja-fraco);
+}
+
+.loja__aovivo::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--loja-borda);
+}
+
+.loja__aovivo--ligado::before {
+  background: var(--loja-ok);
 }
 
 .loja__erro {
@@ -896,6 +964,123 @@
   font-size: 14px;
 }
 
+/* ---------- Meus pedidos ---------- */
+
+.loja__meus {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loja__meus-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loja__cartao {
+  background: var(--loja-superficie);
+  border: 1px solid var(--loja-borda);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loja__cartao-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loja__cartao-numero {
+  font-family: var(--loja-serif);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.loja__cartao-status {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.loja__cartao-status--andamento {
+  color: var(--loja-cor);
+}
+
+.loja__cartao-status--entregue {
+  color: var(--loja-ok);
+}
+
+.loja__cartao-status--cancelado {
+  color: var(--loja-erro);
+}
+
+.loja__cartao-info {
+  font-size: 13px;
+  color: var(--loja-fraco);
+  line-height: 1.5;
+}
+
+.loja__cartao-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.loja__cartao-acoes .loja__botao {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.loja__botao--secundario {
+  background: transparent;
+  color: var(--loja-texto);
+  border: 1px solid var(--loja-borda);
+}
+
+.loja__botao--secundario:hover:not(:disabled) {
+  border-color: var(--loja-cor);
+  filter: none;
+}
+
+.loja__botao--pequeno {
+  padding: 9px 14px;
+  font-size: 14px;
+}
+
+/* Resultado do "repetir": o que entrou no carrinho e o que saiu do cardápio. */
+.loja__repetir {
+  border: 1px solid color-mix(in srgb, var(--loja-cor) 30%, var(--loja-borda));
+  background: color-mix(in srgb, var(--loja-cor) 6%, #fff);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.loja__repetir-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 /* ---------- Rodapé ---------- */
 
 .loja__rodape {
@@ -937,7 +1122,6 @@
   .loja__conteudo {
     padding: 16px 16px 40px;
   }
-
   .loja__categorias {
     margin: 0 -16px 4px;
   }
@@ -951,7 +1135,8 @@
   }
 
   .loja__checkout,
-  .loja__pedido {
+  .loja__pedido,
+  .loja__meus {
     padding: 16px 16px 48px;
   }
 

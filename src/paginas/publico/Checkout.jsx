@@ -4,6 +4,7 @@ import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { publico } from '../../servicos/publico.js'
 import { formatarDinheiro, paraCentavos } from '../../utils/dinheiro.js'
+import { guardarMeuPedido } from '../../utils/meusPedidos.js'
 
 const FORMULARIO_VAZIO = {
   nome: '',
@@ -28,7 +29,7 @@ const PAGAMENTOS = [
 export default function Checkout() {
   const { slug } = useParams()
   const navegar = useNavigate()
-  const { dados } = useLoja()
+  const { dados, status } = useLoja()
   const { itens, subtotal, limpar, quantidadeTotal } = useCarrinho()
 
   const [formulario, setFormulario] = useState(FORMULARIO_VAZIO)
@@ -68,8 +69,8 @@ export default function Checkout() {
     evento.preventDefault()
     setErro('')
 
-    if (!loja.aberta) {
-      setErro('A loja está fechada agora e não está aceitando pedidos.')
+    if (!status.aberto) {
+      setErro(`A loja não está aceitando pedidos agora. ${status.texto}`)
       return
     }
 
@@ -120,6 +121,7 @@ export default function Checkout() {
     try {
       const resposta = await publico.criarPedido(slug, corpo)
       setEnviado(true)
+      guardarMeuPedido(slug, resposta.pedido._id)
       limpar()
       navegar(`/${slug}/pedido/${resposta.pedido._id}`, { replace: true })
     } catch (e) {
@@ -136,9 +138,9 @@ export default function Checkout() {
           ← Voltar ao cardápio
         </Link>
 
-        {!loja.aberta && (
+        {!status.aberto && (
           <p className="loja__aviso">
-            A loja está fechada agora. Você pode montar o pedido, mas ele só será aceito quando a
+            {status.texto}. Você pode montar o pedido, mas ele só será aceito quando a
             loja abrir.
           </p>
         )}
@@ -392,7 +394,7 @@ export default function Checkout() {
           className="loja__botao loja__botao--largo"
           type="submit"
           form="formulario-checkout"
-          disabled={enviando || !loja.aberta}
+          disabled={enviando || !status.aberto}
         >
           {enviando ? 'Enviando…' : 'Enviar pedido'}
         </button>

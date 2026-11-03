@@ -61,6 +61,38 @@ export function CarrinhoProvider({ slug, children }) {
     })
   }
 
+  // "Repetir pedido": entra com quantidade e observação de uma vez, sem passar
+  // pelo +1. O preço é o de agora, não o da compra antiga.
+  function adicionarVarios(novos) {
+    setItens((atuais) => {
+      const resultado = atuais.map((item) => ({ ...item }))
+
+      for (const novo of novos) {
+        const observacao = novo.observacao || ''
+        const existente = resultado.find(
+          (item) => item.produtoId === novo.produto._id && item.observacao === observacao,
+        )
+
+        if (existente) {
+          existente.quantidade = Math.min(99, existente.quantidade + novo.quantidade)
+          continue
+        }
+
+        resultado.push({
+          linhaId: `${novo.produto._id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          produtoId: novo.produto._id,
+          nome: novo.produto.nome,
+          preco: novo.produto.preco,
+          imagem: novo.produto.imagem || '',
+          quantidade: Math.min(99, novo.quantidade),
+          observacao,
+        })
+      }
+
+      return resultado
+    })
+  }
+
   function alterarQuantidade(linhaId, quantidade) {
     setItens((atuais) =>
       atuais
@@ -102,6 +134,7 @@ export function CarrinhoProvider({ slug, children }) {
       value={{
         itens,
         adicionar,
+        adicionarVarios,
         alterarQuantidade,
         alterarObservacao,
         remover,

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { publico } from '../../servicos/publico.js'
+import { abrirCanalDoPedido } from '../../servicos/socket.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
+import { guardarMeuPedido } from '../../utils/meusPedidos.js'
 
 const PASSOS = [
   { status: 'novo', rotulo: 'Pedido recebido', texto: 'A loja recebeu seu pedido.' },
@@ -24,6 +26,7 @@ export default function AcompanharPedido() {
   const [pedido, setPedido] = useState(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
+  const [aoVivo, setAoVivo] = useState(false)
 
   const carregar = useCallback(async () => {
     try {
@@ -39,11 +42,42 @@ export default function AcompanharPedido() {
 
   useEffect(() => {
     carregar()
-
-    // Ainda sem Socket.io (fase 4): atualiza sozinho a cada 20 segundos.
-    const timer = setInterval(carregar, 20000)
-    return () => clearInterval(timer)
   }, [carregar])
+
+  // Quem abriu o link no WhatsApp também passa a ver o pedido em "Meus pedidos"
+  // neste aparelho — senão o histórico teria um buraco.
+  useEffect(() => {
+    guardarMeuPedido(slug, pedidoId)
+  }, [slug, pedidoId])
+
+  // Tempo real: a loja muda o status e esta tela muda no mesmo instante,
+  // sem o cliente precisar atualizar nada.
+  useEffect(() => {
+    const socket = abrirCanalDoPedido(pedidoId)
+
+    socket.on('connect', () => setAoVivo(true))
+    socket.on('disconnect', () => setAoVivo(false))
+
+    socket.on('pedido:status', ({ pedido: atualizado }) => {
+      setPedido(atualizado)
+      setErro('')
+      setCarregando(false)
+    })
+
+    socket.on('pedido:removido', () => {
+      setPedido(null)
+      setErro('Este pedido não está mais disponível. Fale com a loja.')
+    })
+
+    return () => socket.disconnect()
+  }, [pedidoId])
+
+  // Rede de segurança: se o canal cair (celular dormindo, internet ruim), a
+  // tela ainda se atualiza sozinha. Com o canal ligado o intervalo é folgado.
+  useEffect(() => {
+    const timer = setInterval(carregar, aoVivo ? 120000 : 20000)
+    return () => clearInterval(timer)
+  }, [carregar, aoVivo])
 
   if (carregando) {
     return <p className="loja__carregando">Carregando pedido…</p>
@@ -75,9 +109,15 @@ export default function AcompanharPedido() {
 
   return (
     <main className="loja__pedido">
-      <Link className="loja__voltar" to={`/${slug}`}>
-        ← Voltar ao cardápio
-      </Link>
+      <div className="loja__voltar-linha">
+        <Link className="loja__voltar" to={`/${slug}`}>
+          ← Voltar ao cardápio
+        </Link>
+
+        <Link className="loja__voltar" to={`/${slug}/pedidos`}>
+          Meus pedidos
+        </Link>
+      </div>
 
       <header className="loja__pedido-cabecalho">
         <p className="loja__pedido-etiqueta">Pedido</p>
@@ -117,7 +157,12 @@ export default function AcompanharPedido() {
         </ol>
       )}
 
-      <p className="loja__nota">Esta tela se atualiza sozinha a cada 20 segundos.</p>
+      {/* Pedido entregue ou cancelado não muda mais: o aviso vira ruído. */}
+      {!cancelado && pedido.status !== 'entregue' && (
+        <p className={`loja__aovivo ${aoVivo ? 'loja__aovivo--ligado' : ''}`}>
+          {aoVivo ? 'Atualizando em tempo real' : 'Reconectando…'}
+        </p>
+      )}
 
       <section className="loja__bloco">
         <h2 className="loja__bloco-titulo">Itens</h2>

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 
 export default function CardapioLoja() {
-  const { dados } = useLoja()
+  const { dados, status } = useLoja()
   const { slug } = useParams()
   const navegar = useNavigate()
+  const [parametros, setParametros] = useSearchParams()
 
   const {
     itens,
@@ -19,9 +20,21 @@ export default function CardapioLoja() {
     subtotal,
   } = useCarrinho()
 
-  const [carrinhoAberto, setCarrinhoAberto] = useState(false)
+  const [carrinhoAberto, setCarrinhoAberto] = useState(
+    () => parametros.get('carrinho') === '1',
+  )
 
-  const { loja, categorias } = dados
+  const { categorias } = dados
+
+  // "Repetir pedido" manda o cliente para cá com ?carrinho=1: abre o carrinho
+  // uma vez e limpa a URL, para o F5 não reabrir em cima do cliente.
+  useEffect(() => {
+    if (parametros.get('carrinho') !== '1') return
+
+    const limpos = new URLSearchParams(parametros)
+    limpos.delete('carrinho')
+    setParametros(limpos, { replace: true })
+  }, [])
 
   useEffect(() => {
     document.body.style.overflow = carrinhoAberto ? 'hidden' : ''
@@ -48,9 +61,9 @@ export default function CardapioLoja() {
   return (
     <>
       <main className="loja__conteudo">
-        {!loja.aberta && (
+        {!status.aberto && (
           <p className="loja__aviso">
-            A loja está fechada agora. Você pode ver o cardápio, mas não é possível enviar pedido.
+            {status.texto}. Você pode ver o cardápio, mas não é possível enviar pedido.
           </p>
         )}
 
@@ -106,7 +119,7 @@ export default function CardapioLoja() {
                             className="loja__adicionar"
                             type="button"
                             onClick={() => adicionar(produto)}
-                            disabled={!loja.aberta}
+                            disabled={!status.aberto}
                             aria-label={`Adicionar ${produto.nome} ao carrinho`}
                           >
                             Adicionar
@@ -222,7 +235,7 @@ export default function CardapioLoja() {
                 className="loja__botao loja__botao--largo"
                 type="button"
                 onClick={irParaCheckout}
-                disabled={!loja.aberta || itens.length === 0}
+                disabled={!status.aberto || itens.length === 0}
               >
                 Continuar
               </button>
