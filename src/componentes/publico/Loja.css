@@ -192,12 +192,186 @@
   color: var(--loja-texto);
 }
 
+/* ---------- Capa do cardápio ---------- */
+
+/*
+ * A capa usa a cor da loja como fundo sólido, com um escurecimento sutil só na
+ * base para o texto branco não brigar com cores claras. Sem imagem de fundo:
+ * foto de capa fica para quando o Cloudinary entrar.
+ */
+.loja__capa {
+  position: relative;
+  background: var(--loja-cor);
+  color: #fff;
+}
+
+.loja__capa::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.22));
+  pointer-events: none;
+}
+
+.loja__capa-conteudo {
+  position: relative;
+  z-index: 1;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 26px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.loja__capa-topo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.loja__capa-mark {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--loja-cor);
+  font-family: var(--loja-serif);
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.loja__capa-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.loja__capa-texto {
+  min-width: 0;
+}
+
+.loja__capa-nome {
+  font-family: var(--loja-serif);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.loja__capa-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+.loja__capa-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+
+.loja__capa-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+/* Fechada: bolinha vazada. A cor sozinha não pode ser a única pista. */
+.loja__capa-status--fechada {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.loja__capa-status--fechada::before {
+  background: transparent;
+  border: 1.5px solid #fff;
+}
+
+.loja__capa-status-detalhe {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.loja__capa-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.loja__capa-atalho {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 550;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.loja__capa-atalho:hover {
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #fff;
+}
+
+.loja__capa-atalho--discreto {
+  font-family: var(--fonte-mono);
+  font-weight: 400;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.loja__capa-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.loja__capa-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 7px 13px;
+}
+
+.loja__capa-chip-rotulo {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.loja__capa-chip-valor {
+  font-size: 14px;
+  font-weight: 550;
+}
+
 /* ---------- Cardápio ---------- */
 
 .loja__conteudo {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 24px 24px 48px;
+  padding: 20px 24px 48px;
 }
 
 .loja__aviso {
@@ -230,9 +404,9 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--loja-fundo);
+  background: var(--loja-superficie);
   border-bottom: 1px solid var(--loja-borda);
-  margin: 0 -24px 8px;
+  margin: -20px -24px 8px;
 }
 
 .loja__categorias-lista {
@@ -258,6 +432,7 @@
   padding: 6px 14px;
   font-size: 13px;
   white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
 .loja__categoria-link:hover {
@@ -266,10 +441,18 @@
   border-color: var(--loja-cor);
 }
 
+/* Categoria que está na tela agora. */
+.loja__categoria-link--ativa,
+.loja__categoria-link--ativa:hover {
+  background: var(--loja-cor);
+  border-color: var(--loja-cor);
+  color: #fff;
+}
+
 .loja__secao {
-  max-width: 780px;
-  margin-top: 32px;
-  scroll-margin-top: 72px;
+  margin-top: 34px;
+  /* Âncora não pode esconder o título atrás da barra fixa. */
+  scroll-margin-top: 84px;
 }
 
 .loja__secao-titulo {
@@ -282,40 +465,56 @@
   border-bottom: 1px solid var(--loja-borda);
 }
 
+/* Duas colunas no desktop; uma no celular (ver @media). */
 .loja__produtos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
 .loja__produto {
   display: flex;
-  gap: 14px;
+  gap: 10px;
+  align-items: stretch;
   background: var(--loja-superficie);
   border: 1px solid var(--loja-borda);
   border-radius: 14px;
-  padding: 14px;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  padding: 12px;
+  transition: border-color 0.15s ease;
 }
 
 .loja__produto:hover {
   border-color: color-mix(in srgb, var(--loja-cor) 45%, var(--loja-borda));
-  transform: translateY(-2px);
+}
+
+/* O "abrir" é um botão de verdade: teclado e leitor de tela funcionam igual. */
+.loja__produto-abrir {
+  display: flex;
+  gap: 13px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 10px;
 }
 
 .loja__produto-foto {
-  width: 92px;
-  height: 92px;
+  width: 88px;
+  height: 88px;
   border-radius: 10px;
   flex-shrink: 0;
+  align-self: flex-start;
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: #f4ede5;
   background: color-mix(in srgb, var(--loja-cor) 10%, #fff);
   color: var(--loja-cor);
   font-family: var(--loja-serif);
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 600;
 }
 
@@ -329,18 +528,18 @@
 .loja__produto-texto {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
 
-.loja__produto-texto h3 {
-  font-size: 16px;
+.loja__produto-nome {
+  font-size: 15.5px;
   font-weight: 600;
   line-height: 1.3;
 }
 
-.loja__produto-texto p {
+.loja__produto-desc {
   font-size: 13px;
   color: var(--loja-fraco);
   line-height: 1.45;
@@ -350,13 +549,18 @@
   overflow: hidden;
 }
 
-.loja__produto-rodape {
+.loja__produto-preco {
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: 6px;
+  font-family: var(--fonte-mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.loja__produto-acoes {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .loja__preco {
@@ -366,23 +570,32 @@
   white-space: nowrap;
 }
 
+/*
+ * Secundário de propósito: esse botão se repete em todo card, então sólido na
+ * cor da loja vira dez manchas laranja na tela e o preço perde peso. Contorno
+ * na cor da marca, preenche no hover — continua óbvio, sem gritar.
+ */
 .loja__adicionar {
-  background: var(--loja-cor);
-  color: #fff;
-  border: 0;
+  background: transparent;
+  color: var(--loja-cor);
+  border: 1px solid color-mix(in srgb, var(--loja-cor) 45%, var(--loja-borda));
   border-radius: 999px;
-  padding: 7px 15px;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
-  transition: filter 0.15s ease;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .loja__adicionar:hover:not(:disabled) {
-  filter: brightness(0.92);
+  background: var(--loja-cor);
+  border-color: var(--loja-cor);
+  color: #fff;
 }
 
 .loja__adicionar:disabled {
-  opacity: 0.45;
+  color: var(--loja-fraco);
+  border-color: var(--loja-borda);
   cursor: not-allowed;
 }
 
@@ -629,6 +842,152 @@
 
 .loja__botao--largo {
   width: 100%;
+}
+
+/* ---------- Modal do produto ---------- */
+
+@keyframes loja-aparecer {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.loja__modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(28, 22, 16, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: loja-aparecer 0.16s ease-out;
+}
+
+.loja__modal {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--loja-superficie);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(28, 22, 16, 0.32);
+}
+
+.loja__modal-fechar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--loja-borda);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--loja-texto);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.loja__modal-fechar:hover {
+  border-color: var(--loja-cor);
+}
+
+.loja__modal-foto {
+  height: 220px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--loja-cor) 12%, #fff);
+  color: var(--loja-cor);
+  font-family: var(--loja-serif);
+  font-size: 72px;
+  font-weight: 600;
+}
+
+.loja__modal-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.loja__modal-corpo {
+  padding: 18px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loja__modal-titulo {
+  font-family: var(--loja-serif);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.loja__modal-desc {
+  font-size: 14px;
+  color: var(--loja-fraco);
+  line-height: 1.55;
+}
+
+.loja__modal-compra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--loja-borda);
+  border-bottom: 1px solid var(--loja-borda);
+}
+
+.loja__modal-total {
+  font-family: var(--fonte-mono);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.loja__modal-campo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--loja-fraco);
+}
+
+.loja__modal-campo textarea {
+  border: 1px solid var(--loja-borda);
+  border-radius: 10px;
+  padding: 10px 12px 22px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--loja-texto);
+  resize: vertical;
+  min-height: 62px;
+}
+
+.loja__modal-campo textarea:focus {
+  border-color: var(--loja-cor);
+  outline: none;
+}
+
+.loja__modal-contador {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--loja-fraco);
 }
 
 /* ---------- Checkout ---------- */
@@ -1112,6 +1471,11 @@
   .loja__resumo {
     position: static;
   }
+
+  /* Duas colunas só quando sobra largura de verdade. */
+  .loja__produtos {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1119,15 +1483,41 @@
     padding: 12px 16px;
   }
 
+  .loja__capa-conteudo {
+    padding: 20px 16px 18px;
+    gap: 14px;
+  }
+
+  .loja__capa-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    font-size: 24px;
+  }
+
+  .loja__capa-nome {
+    font-size: 24px;
+  }
+
+  .loja__capa-atalho--discreto {
+    display: none;
+  }
+
   .loja__conteudo {
     padding: 16px 16px 40px;
   }
+
   .loja__categorias {
-    margin: 0 -16px 4px;
+    margin: -16px -16px 4px;
   }
 
   .loja__categorias-lista {
     padding: 8px 16px;
+  }
+
+  .loja__secao {
+    margin-top: 26px;
+    scroll-margin-top: 74px;
   }
 
   .loja__produtos {
@@ -1169,10 +1559,19 @@
 }
 
 @media (max-width: 480px) {
+  .loja__produto {
+    padding: 10px;
+    gap: 8px;
+  }
+
   .loja__produto-foto {
     width: 76px;
     height: 76px;
     font-size: 28px;
+  }
+
+  .loja__produto-nome {
+    font-size: 15px;
   }
 
   .loja__secao-titulo {
@@ -1181,6 +1580,27 @@
 
   .loja__barra-carrinho {
     bottom: 12px;
+  }
+
+  /* Celular: o modal vira folha que sobe do rodapé e ocupa a largura toda. */
+  .loja__modal-fundo {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .loja__modal {
+    max-width: none;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .loja__modal-foto {
+    height: 170px;
+    font-size: 56px;
+  }
+
+  .loja__modal-corpo {
+    padding: 16px 16px 20px;
   }
 
   .loja__pagamentos .loja__tipo {
@@ -1195,15 +1615,13 @@
   .loja__produto,
   .loja__adicionar,
   .loja__botao,
-  .loja__barra-carrinho {
+  .loja__barra-carrinho,
+  .loja__categoria-link {
     transition: none;
   }
 
-  .loja__carrinho {
+  .loja__carrinho,
+  .loja__modal-fundo {
     animation: none;
-  }
-
-  .loja__produto:hover {
-    transform: none;
   }
 }

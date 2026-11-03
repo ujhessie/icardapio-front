@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import CapaLoja from '../../componentes/publico/CapaLoja.jsx'
+import ModalProduto from '../../componentes/publico/ModalProduto.jsx'
 import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
@@ -13,6 +15,7 @@ export default function CardapioLoja() {
   const {
     itens,
     adicionar,
+    adicionarVarios,
     alterarQuantidade,
     alterarObservacao,
     remover,
@@ -23,8 +26,12 @@ export default function CardapioLoja() {
   const [carrinhoAberto, setCarrinhoAberto] = useState(
     () => parametros.get('carrinho') === '1',
   )
+  const [produtoAberto, setProdutoAberto] = useState(null)
+  const [categoriaAtiva, setCategoriaAtiva] = useState(null)
 
-  const { categorias } = dados
+  const listaRef = useRef(null)
+
+  const { loja, categorias, bairros } = dados
 
   // "Repetir pedido" manda o cliente para cá com ?carrinho=1: abre o carrinho
   // uma vez e limpa a URL, para o F5 não reabrir em cima do cliente.
@@ -53,6 +60,62 @@ export default function CardapioLoja() {
     return () => window.removeEventListener('keydown', aoTeclar)
   }, [])
 
+  // Qual categoria está na frente? A barra fixa destaca essa. Um listener de
+  // scroll com requestAnimationFrame resolve sem lib e sem IntersectionObserver
+  // brigando com seções curtas.
+  useEffect(() => {
+    const alvo = listaRef.current
+
+    if (!alvo) return undefined
+
+    let quadro = 0
+
+    function medir() {
+      quadro = 0
+
+      const secoes = alvo.querySelectorAll('[data-categoria]')
+      const limite = 130
+
+      let atual = secoes[0]?.dataset.categoria || null
+
+      for (const secao of secoes) {
+        if (secao.getBoundingClientRect().top - limite <= 0) {
+          atual = secao.dataset.categoria
+        }
+      }
+
+      setCategoriaAtiva((anterior) => (anterior === atual ? anterior : atual))
+    }
+
+    function aoRolar() {
+      if (quadro) return
+      quadro = requestAnimationFrame(medir)
+    }
+
+    medir()
+    window.addEventListener('scroll', aoRolar, { passive: true })
+    window.addEventListener('resize', aoRolar)
+
+    return () => {
+      window.removeEventListener('scroll', aoRolar)
+      window.removeEventListener('resize', aoRolar)
+      cancelAnimationFrame(quadro)
+    }
+  }, [categorias.length])
+
+  function irParaCategoria(evento, categoriaId) {
+    evento.preventDefault()
+    setCategoriaAtiva(categoriaId)
+    document
+      .getElementById(`categoria-${categoriaId}`)
+      ?.scrollIntoView({ block: 'start' })
+  }
+
+  function adicionarDoModal({ quantidade, observacao }) {
+    adicionarVarios([{ produto: produtoAberto, quantidade, observacao }])
+    setProdutoAberto(null)
+  }
+
   function irParaCheckout() {
     setCarrinhoAberto(false)
     navegar(`/${slug}/checkout`)
@@ -60,7 +123,9 @@ export default function CardapioLoja() {
 
   return (
     <>
-      <main className="loja__conteudo">
+      <CapaLoja loja={loja} status={status} bairros={bairros} />
+
+      <main className="loja__conteudo" ref={listaRef}>
         {!status.aberto && (
           <p className="loja__aviso">
             {status.texto}. Você pode ver o cardápio, mas não é possível enviar pedido.
@@ -75,15 +140,23 @@ export default function CardapioLoja() {
           <>
             <nav className="loja__categorias" aria-label="Categorias do cardápio">
               <div className="loja__categorias-lista">
-                {categorias.map((categoria) => (
-                  <a
-                    key={categoria._id}
-                    className="loja__categoria-link"
-                    href={`#categoria-${categoria._id}`}
-                  >
-                    {categoria.nome}
-                  </a>
-                ))}
+                {categorias.map((categoria) => {
+                  const ativa = categoriaAtiva === categoria._id
+
+                  return (
+                    <a
+                      key={categoria._id}
+                      className={`loja__categoria-link ${
+                        ativa ? 'loja__categoria-link--ativa' : ''
+                      }`}
+                      href={`#categoria-${categoria._id}`}
+                      aria-current={ativa ? 'true' : undefined}
+                      onClick={(evento) => irParaCategoria(evento, categoria._id)}
+                    >
+                      {categoria.nome}
+                    </a>
+                  )
+                })}
               </div>
             </nav>
 
@@ -91,6 +164,7 @@ export default function CardapioLoja() {
               <section
                 key={categoria._id}
                 id={`categoria-${categoria._id}`}
+                data-categoria={categoria._id}
                 className="loja__secao"
               >
                 <h2 className="loja__secao-titulo">{categoria.nome}</h2>
@@ -98,33 +172,42 @@ export default function CardapioLoja() {
                 <div className="loja__produtos">
                   {categoria.produtos.map((produto) => (
                     <article key={produto._id} className="loja__produto">
-                      <div className="loja__produto-foto" aria-hidden="true">
-                        {produto.imagem ? (
-                          <img src={produto.imagem} alt="" loading="lazy" />
-                        ) : (
-                          <span>{produto.nome.charAt(0)}</span>
-                        )}
-                      </div>
+                      <button
+                        className="loja__produto-abrir"
+                        type="button"
+                        onClick={() => setProdutoAberto(produto)}
+                      >
+                        <span className="loja__produto-foto" aria-hidden="true">
+                          {produto.imagem ? (
+                            <img src={produto.imagem} alt="" loading="lazy" />
+                          ) : (
+                            produto.nome.charAt(0).toUpperCase()
+                          )}
+                        </span>
 
-                      <div className="loja__produto-texto">
-                        <h3>{produto.nome}</h3>
-                        {produto.descricao && <p>{produto.descricao}</p>}
+                        <span className="loja__produto-texto">
+                          <span className="loja__produto-nome">{produto.nome}</span>
 
-                        <div className="loja__produto-rodape">
-                          <span className="loja__preco">
+                          {produto.descricao && (
+                            <span className="loja__produto-desc">{produto.descricao}</span>
+                          )}
+
+                          <span className="loja__produto-preco">
                             {formatarDinheiro(produto.preco)}
                           </span>
+                        </span>
+                      </button>
 
-                          <button
-                            className="loja__adicionar"
-                            type="button"
-                            onClick={() => adicionar(produto)}
-                            disabled={!status.aberto}
-                            aria-label={`Adicionar ${produto.nome} ao carrinho`}
-                          >
-                            Adicionar
-                          </button>
-                        </div>
+                      <div className="loja__produto-acoes">
+                        <button
+                          className="loja__adicionar"
+                          type="button"
+                          onClick={() => adicionar(produto)}
+                          disabled={!status.aberto}
+                          aria-label={`Adicionar ${produto.nome} ao carrinho`}
+                        >
+                          Adicionar
+                        </button>
                       </div>
                     </article>
                   ))}
@@ -134,6 +217,16 @@ export default function CardapioLoja() {
           </>
         )}
       </main>
+
+      {produtoAberto && (
+        <ModalProduto
+          produto={produtoAberto}
+          podePedir={status.aberto}
+          motivoFechado={`${status.texto}. Você pode montar o carrinho, mas o pedido só é aceito quando a loja abrir.`}
+          onFechar={() => setProdutoAberto(null)}
+          onAdicionar={adicionarDoModal}
+        />
+      )}
 
       {quantidadeTotal > 0 && (
         <button

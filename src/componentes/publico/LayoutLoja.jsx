@@ -1,4 +1,4 @@
-import { Link, Outlet, useParams } from 'react-router-dom'
+import { Link, Outlet, useLocation, useParams } from 'react-router-dom'
 import { CarrinhoProvider } from '../../contextos/CarrinhoContexto.jsx'
 import { LojaProvider, useLoja } from '../../contextos/LojaContexto.jsx'
 import './Loja.css'
@@ -17,6 +17,7 @@ export default function LayoutLoja() {
 
 function ConteudoLoja() {
   const { dados, carregando, erro, status } = useLoja()
+  const { pathname } = useLocation()
 
   if (carregando) {
     return <p className="loja__carregando">Abrindo o cardápio…</p>
@@ -34,51 +35,60 @@ function ConteudoLoja() {
 
   const { loja } = dados
 
+  // No cardápio o topo é a capa (com nome, status, telefone e "Meus pedidos").
+  // Nas telas internas — checkout, acompanhamento, meus pedidos — fica a barra
+  // compacta, que não rouba espaço.
+  const noCardapio = pathname.replace(/\/+$/, '') === `/${loja.slug}`
+
   // "Aberto agora · fecha às 23h" vira selo curto + detalhe: cabe no celular.
   const [tituloStatus, detalheStatus] = status.texto.split(' · ')
 
   return (
     <div className="loja" style={{ '--loja-cor': loja.corPrimaria || '#e85d04' }}>
-      <header className="loja__topo">
-        <div className="loja__topo-conteudo">
-          <Link to={`/${loja.slug}`} className="loja__marca">
-            {loja.logo ? (
-              <img className="loja__logo" src={loja.logo} alt="" />
-            ) : (
-              <span className="loja__monograma" aria-hidden="true">
-                {loja.nome.charAt(0)}
-              </span>
-            )}
-
-            <span className="loja__marca-texto">
-              <span className="loja__nome">{loja.nome}</span>
-
-              <span className="loja__estado">
-                <span
-                  className={`loja__status ${
-                    status.aberto ? 'loja__status--aberta' : 'loja__status--fechada'
-                  }`}
-                >
-                  {tituloStatus}
+      {!noCardapio && (
+        <header className="loja__topo">
+          <div className="loja__topo-conteudo">
+            <Link to={`/${loja.slug}`} className="loja__marca">
+              {loja.logo ? (
+                <img className="loja__logo" src={loja.logo} alt="" />
+              ) : (
+                <span className="loja__monograma" aria-hidden="true">
+                  {loja.nome.charAt(0)}
                 </span>
-                {detalheStatus && <span className="loja__status-detalhe">{detalheStatus}</span>}
-              </span>
-            </span>
-          </Link>
+              )}
 
-          <div className="loja__topo-acoes">
-            <Link className="loja__atalho" to={`/${loja.slug}/pedidos`}>
-              Meus pedidos
+              <span className="loja__marca-texto">
+                <span className="loja__nome">{loja.nome}</span>
+
+                <span className="loja__estado">
+                  <span
+                    className={`loja__status ${
+                      status.aberto ? 'loja__status--aberta' : 'loja__status--fechada'
+                    }`}
+                  >
+                    {tituloStatus}
+                  </span>
+                  {detalheStatus && (
+                    <span className="loja__status-detalhe">{detalheStatus}</span>
+                  )}
+                </span>
+              </span>
             </Link>
 
-            {loja.telefone && (
-              <a className="loja__telefone" href={`tel:${loja.telefone.replace(/\D/g, '')}`}>
-                {loja.telefone}
-              </a>
-            )}
+            <div className="loja__topo-acoes">
+              <Link className="loja__atalho" to={`/${loja.slug}/pedidos`}>
+                Meus pedidos
+              </Link>
+
+              {loja.telefone && (
+                <a className="loja__telefone" href={`tel:${loja.telefone.replace(/\D/g, '')}`}>
+                  {loja.telefone}
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       <Outlet />
 
