@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import CabecalhoPainel from '../../componentes/admin/CabecalhoPainel.jsx'
 import { lerToken } from '../../servicos/api.js'
 import { pedidos as servicoPedidos } from '../../servicos/pedidos.js'
-import { abrirCanalDaLoja } from '../../servicos/socket.js'
+import { abrirCanalDaLoja } from '../../servicos/tempoReal.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 import './Painel.css'
 
@@ -259,16 +259,14 @@ export default function Pedidos() {
 
     if (!token) return undefined
 
-    const socket = abrirCanalDaLoja(token)
+    const canal = abrirCanalDaLoja()
     const atualizar = () => carregarAtual.current()
 
-    socket.on('connect', () => setAoVivo(true))
-    socket.on('disconnect', () => setAoVivo(false))
-    socket.on('pedido:novo', atualizar)
-    socket.on('pedido:atualizado', atualizar)
-    socket.on('pedido:removido', atualizar)
+    canal.on('connect', () => setAoVivo(true))
+    canal.on('disconnect', () => setAoVivo(false))
+    canal.on('pedido:atualizado', atualizar)
 
-    return () => socket.disconnect()
+    return () => canal.disconnect()
   }, [])
 
   const numeros = {

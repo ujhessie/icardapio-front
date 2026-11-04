@@ -33,7 +33,10 @@ export async function requisitar(caminho, { corpo, ...opcoes } = {}) {
   const dados = await resposta.json().catch(() => null)
 
   if (!resposta.ok) {
-    throw new Error(dados?.erro || 'Não foi possível falar com o servidor')
+    const erro = new Error(dados?.erro || 'Não foi possível falar com o servidor')
+    // Quem chama pode reagir ao código (404 = pedido removido, por exemplo).
+    erro.status = resposta.status
+    throw erro
   }
 
   return dados

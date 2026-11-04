@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { publico } from '../../servicos/publico.js'
-import { abrirCanalDoPedido } from '../../servicos/socket.js'
+import { abrirCanalDoPedido } from '../../servicos/tempoReal.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 import { guardarMeuPedido } from '../../utils/meusPedidos.js'
 import { itensParaRepetir, mapaDeProdutos } from '../../utils/repetir.js'
@@ -56,34 +56,27 @@ export default function AcompanharPedido() {
     guardarMeuPedido(slug, pedidoId)
   }, [slug, pedidoId])
 
-  // Tempo real: a loja muda o status e esta tela muda no mesmo instante,
-  // sem o cliente precisar atualizar nada.
+  // A tela acompanha o pedido sozinha: o canal pergunta para a loja de tempos
+  // em tempos e avisa quando algo muda (ver servicos/tempoReal.js).
   useEffect(() => {
-    const socket = abrirCanalDoPedido(pedidoId)
+    const canal = abrirCanalDoPedido(slug, pedidoId)
 
-    socket.on('connect', () => setAoVivo(true))
-    socket.on('disconnect', () => setAoVivo(false))
+    canal.on('connect', () => setAoVivo(true))
+    canal.on('disconnect', () => setAoVivo(false))
 
-    socket.on('pedido:status', ({ pedido: atualizado }) => {
+    canal.on('pedido:status', ({ pedido: atualizado }) => {
       setPedido(atualizado)
       setErro('')
       setCarregando(false)
     })
 
-    socket.on('pedido:removido', () => {
+    canal.on('pedido:removido', () => {
       setPedido(null)
       setErro('Este pedido não está mais disponível. Fale com a loja.')
     })
 
-    return () => socket.disconnect()
-  }, [pedidoId])
-
-  // Rede de segurança: se o canal cair (celular dormindo, internet ruim), a
-  // tela ainda se atualiza sozinha. Com o canal ligado o intervalo é folgado.
-  useEffect(() => {
-    const timer = setInterval(carregar, aoVivo ? 120000 : 20000)
-    return () => clearInterval(timer)
-  }, [carregar, aoVivo])
+    return () => canal.disconnect()
+  }, [slug, pedidoId])
 
   const loja = dados.loja
 
