@@ -1,7 +1,7 @@
 # Dependências
 node_modules/
 
-# Variáveis de ambiente (NUNCA versionar)
+# Variáveis de ambiente (NUNCA versionar) — mas o .env.example fica versionado
 .env
 .env.local
 .env.*.local
@@ -23,5 +23,3 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
-.vercel
-.env*
