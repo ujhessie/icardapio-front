@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
+import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { publico } from '../../servicos/publico.js'
 import { abrirCanalDoPedido } from '../../servicos/socket.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 import { guardarMeuPedido } from '../../utils/meusPedidos.js'
+import { itensParaRepetir, mapaDeProdutos } from '../../utils/repetir.js'
 
 const PASSOS = [
   { status: 'novo', rotulo: 'Pedido recebido', texto: 'A loja recebeu seu pedido.' },
-  { status: 'aceito', rotulo: 'Aceito', texto: 'A loja confirmou o pedido.' },
+  { status: 'aceito', rotulo: 'Pedido aceito', texto: 'A loja confirmou o pedido.' },
   { status: 'preparando', rotulo: 'Em preparo', texto: 'Sua comida está sendo preparada.' },
   { status: 'pronto', rotulo: 'Pronto', texto: 'O pedido está pronto.' },
   { status: 'saiu_entrega', rotulo: 'Saiu para entrega', texto: 'O pedido saiu para entrega.' },
@@ -22,11 +25,14 @@ const ROTULOS_PAGAMENTO = {
 
 export default function AcompanharPedido() {
   const { slug, pedidoId } = useParams()
+  const { dados } = useLoja()
+  const { adicionarVarios, quantidadeTotal } = useCarrinho()
 
   const [pedido, setPedido] = useState(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [aoVivo, setAoVivo] = useState(false)
+  const [resultado, setResultado] = useState(null)
 
   const carregar = useCallback(async () => {
     try {
@@ -79,6 +85,34 @@ export default function AcompanharPedido() {
     return () => clearInterval(timer)
   }, [carregar, aoVivo])
 
+  const loja = dados.loja
+
+  const mapaDeProdutosAtuais = useMemo(() => mapaDeProdutos(dados), [dados])
+
+  const whatsapp = useMemo(() => {
+    const numero = (loja.telefone || '').replace(/\D/g, '')
+
+    if (!numero || !pedido) return null
+
+    const comPais = numero.length <= 11 ? `55${numero}` : numero
+    const texto = encodeURIComponent(`Olá! Sobre o pedido #${pedido.numero}, daqui é o cliente.`)
+
+    return `https://wa.me/${comPais}?text=${texto}`
+  }, [loja.telefone, pedido])
+
+  function repetir() {
+    if (!pedido) return
+
+    const { itens, faltando } = itensParaRepetir(mapaDeProdutosAtuais, pedido)
+
+    if (itens.length > 0) adicionarVarios(itens)
+
+    setResultado({
+      adicionados: itens.reduce((soma, item) => soma + item.quantidade, 0),
+      faltando,
+    })
+  }
+
   if (carregando) {
     return <p className="loja__carregando">Carregando pedido…</p>
   }
@@ -99,13 +133,21 @@ export default function AcompanharPedido() {
       : PASSOS
 
   const indiceAtual = passos.findIndex((passo) => passo.status === pedido.status)
+  const atual = passos[indiceAtual]
   const cancelado = pedido.status === 'cancelado'
+  const finalizado = cancelado || pedido.status === 'entregue'
+
   const criadoEm = new Date(pedido.criadoEm).toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
   })
+
+  const rotuloAtual = cancelado ? 'Pedido cancelado' : atual?.rotulo || pedido.status
+  const textoAtual = cancelado
+    ? 'A loja cancelou este pedido. Se você já pagou, fale com a loja.'
+    : atual?.texto || ''
 
   return (
     <main className="loja__pedido">
@@ -119,49 +161,64 @@ export default function AcompanharPedido() {
         </Link>
       </div>
 
-      <header className="loja__pedido-cabecalho">
-        <p className="loja__pedido-etiqueta">Pedido</p>
-        <h1 className="loja__pedido-numero">#{pedido.numero}</h1>
+      <header
+        className={`loja__status-hero ${
+          cancelado
+            ? 'loja__status-hero--cancelado'
+            : finalizado
+              ? 'loja__status-hero--final'
+              : ''
+        }`}
+      >
+        <div className="loja__status-hero-topo">
+          <span className="loja__pedido-etiqueta">Pedido #{pedido.numero}</span>
+
+          {!finalizado && (
+            <span className={`loja__aovivo ${aoVivo ? 'loja__aovivo--ligado' : ''}`}>
+              {aoVivo ? 'Ao vivo' : 'Reconectando…'}
+            </span>
+          )}
+        </div>
+
+        <h1 className="loja__status-titulo" aria-live="polite">
+          {rotuloAtual}
+        </h1>
+        <p className="loja__status-texto">{textoAtual}</p>
+
         <p className="loja__pedido-meta">
           Feito em {criadoEm} · {pedido.tipo === 'delivery' ? 'Entrega' : 'Retirada na loja'}
         </p>
       </header>
 
-      {cancelado ? (
-        <p className="loja__aviso loja__aviso--erro">
-          Este pedido foi cancelado. Fale com a loja se tiver alguma dúvida.
-        </p>
-      ) : (
-        <ol className="loja__passos">
-          {passos.map((passo, indice) => {
-            const feito = indiceAtual >= 0 && indice <= indiceAtual
-            const atual = indice === indiceAtual
+      {!cancelado && (
+        <section className="loja__bloco">
+          <h2 className="loja__bloco-titulo">Acompanhamento</h2>
 
-            return (
-              <li
-                key={passo.status}
-                className={`loja__passo-item ${feito ? 'loja__passo-item--feito' : ''} ${
-                  atual ? 'loja__passo-item--atual' : ''
-                }`}
-              >
-                <span className="loja__passo-marca" aria-hidden="true">
-                  {feito ? '✓' : indice + 1}
-                </span>
-                <span className="loja__passo-texto">
-                  <strong>{passo.rotulo}</strong>
-                  <span>{passo.texto}</span>
-                </span>
-              </li>
-            )
-          })}
-        </ol>
-      )}
+          <ol className="loja__passos">
+            {passos.map((passo, indice) => {
+              const feito = indiceAtual >= 0 && indice <= indiceAtual
+              const eAtual = indice === indiceAtual
 
-      {/* Pedido entregue ou cancelado não muda mais: o aviso vira ruído. */}
-      {!cancelado && pedido.status !== 'entregue' && (
-        <p className={`loja__aovivo ${aoVivo ? 'loja__aovivo--ligado' : ''}`}>
-          {aoVivo ? 'Atualizando em tempo real' : 'Reconectando…'}
-        </p>
+              return (
+                <li
+                  key={passo.status}
+                  className={`loja__passo-item ${feito ? 'loja__passo-item--feito' : ''} ${
+                    eAtual ? 'loja__passo-item--atual' : ''
+                  }`}
+                >
+                  <span className="loja__passo-marca" aria-hidden="true">
+                    {feito ? '✓' : indice + 1}
+                  </span>
+
+                  <span className="loja__passo-texto">
+                    <strong>{passo.rotulo}</strong>
+                    <span>{passo.texto}</span>
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+        </section>
       )}
 
       <section className="loja__bloco">
@@ -230,6 +287,88 @@ export default function AcompanharPedido() {
 
         {pedido.observacao && <p className="loja__nota">Observação: {pedido.observacao}</p>}
       </section>
+
+      <section className="loja__bloco loja__contato">
+        <div className="loja__contato-loja">
+          <span className="loja__contato-mark" aria-hidden="true">
+            {loja.logo ? (
+              <img src={loja.logo} alt="" />
+            ) : (
+              loja.nome.charAt(0).toUpperCase()
+            )}
+          </span>
+
+          <span className="loja__contato-texto">
+            <strong>{loja.nome}</strong>
+            {loja.telefone && <span className="loja__nota">{loja.telefone}</span>}
+          </span>
+        </div>
+
+        {whatsapp && (
+          <a
+            className="loja__botao loja__botao--secundario"
+            href={whatsapp}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Falar com a loja
+          </a>
+        )}
+      </section>
+
+      {finalizado && (
+        <section className="loja__bloco">
+          <h2 className="loja__bloco-titulo">Pedir de novo</h2>
+
+          <p className="loja__nota">
+            Os itens voltam para o carrinho com o preço de hoje. Se algo saiu do
+            cardápio, a gente avisa antes.
+          </p>
+
+          <div className="loja__repetir-acoes">
+            <button className="loja__botao" type="button" onClick={repetir}>
+              Repetir pedido
+            </button>
+          </div>
+
+          {resultado && (
+            <div className="loja__repetir">
+              <strong>
+                {resultado.adicionados > 0
+                  ? `${resultado.adicionados} ${
+                      resultado.adicionados === 1 ? 'item foi' : 'itens foram'
+                    } para o carrinho`
+                  : 'Nada entrou no carrinho'}
+              </strong>
+
+              {resultado.faltando.length > 0 && (
+                <span className="loja__nota">
+                  Fora do cardápio hoje: {resultado.faltando.join(', ')}.
+                </span>
+              )}
+
+              <div className="loja__repetir-acoes">
+                {quantidadeTotal > 0 && (
+                  <Link
+                    className="loja__botao loja__botao--pequeno"
+                    to={`/${slug}?carrinho=1`}
+                  >
+                    Abrir carrinho
+                  </Link>
+                )}
+
+                <button
+                  className="loja__botao loja__botao--secundario loja__botao--pequeno"
+                  type="button"
+                  onClick={() => setResultado(null)}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
     </main>
   )
 }

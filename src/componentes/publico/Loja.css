@@ -997,9 +997,39 @@
   margin: 0 auto;
   padding: 24px 24px 64px;
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.75fr);
   gap: 28px;
   align-items: start;
+}
+
+.loja__checkout-principal {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loja__checkout-topo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.loja__checkout-topo .loja__voltar {
+  margin-bottom: 6px;
+}
+
+.loja__checkout-titulo {
+  font-family: var(--loja-serif);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.loja__checkout-sub {
+  font-size: 13px;
+  color: var(--loja-fraco);
 }
 
 .loja__voltar {
@@ -1118,6 +1148,61 @@
   font-weight: 600;
 }
 
+/* Entrega x retirada: é a primeira decisão do checkout, então ganha peso. */
+.loja__tipos--grande {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.loja__tipo--grande {
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 400;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.loja__tipo--grande input {
+  margin-top: 3px;
+}
+
+.loja__tipo-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.loja__tipo-corpo strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.loja__tipo-corpo span {
+  font-size: 12px;
+  color: var(--loja-fraco);
+  line-height: 1.4;
+}
+
+.loja__tipo--ativo .loja__tipo-corpo span {
+  color: var(--loja-texto);
+}
+
+/* Erro fica no campo, não só no rodapé do formulário. */
+.loja__campo--erro input,
+.loja__campo--erro select {
+  border-color: var(--loja-erro);
+  background: #fdf1f0;
+}
+
+.loja__campo-erro {
+  font-size: 12px;
+  color: var(--loja-erro);
+}
+
 .loja__nota {
   font-size: 12px;
   color: var(--loja-fraco);
@@ -1210,6 +1295,33 @@
   font-family: var(--fonte-mono);
 }
 
+/* No desktop o envio fica no resumo; no celular, na barra fixa (ver @media). */
+.loja__checkout-barra {
+  display: none;
+}
+
+.loja__checkout-barra-total {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.loja__checkout-barra-total span {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--loja-fraco);
+}
+
+.loja__checkout-barra-total strong {
+  font-family: var(--fonte-mono);
+  font-size: 19px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* ---------- Acompanhamento ---------- */
 
 .loja__pedido {
@@ -1245,6 +1357,57 @@
 .loja__pedido-meta {
   font-size: 13px;
   color: var(--loja-fraco);
+}
+
+/* O status atual é a informação mais importante da tela: ocupa o topo. */
+.loja__status-hero {
+  border: 1px solid color-mix(in srgb, var(--loja-cor) 26%, var(--loja-borda));
+  background: color-mix(in srgb, var(--loja-cor) 7%, #fff);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loja__status-hero-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.loja__status-titulo {
+  font-family: var(--loja-serif);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.loja__status-texto {
+  font-size: 14px;
+  color: var(--loja-fraco);
+  line-height: 1.5;
+}
+
+.loja__status-hero .loja__pedido-meta {
+  margin-top: 6px;
+}
+
+.loja__status-hero--final {
+  border-color: color-mix(in srgb, var(--loja-ok) 32%, var(--loja-borda));
+  background: color-mix(in srgb, var(--loja-ok) 7%, #fff);
+}
+
+.loja__status-hero--cancelado {
+  border-color: #f0c9c5;
+  background: #fdf1f0;
+}
+
+.loja__status-hero--cancelado .loja__status-texto {
+  color: var(--loja-erro);
 }
 
 .loja__passos {
@@ -1321,6 +1484,59 @@
   flex-direction: column;
   gap: 2px;
   font-size: 14px;
+}
+
+.loja__contato {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.loja__contato-loja {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.loja__contato-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--loja-cor) 12%, #fff);
+  color: var(--loja-cor);
+  font-family: var(--loja-serif);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.loja__contato-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.loja__contato-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.loja__contato-texto strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.loja__contato .loja__botao {
+  text-decoration: none;
 }
 
 /* ---------- Meus pedidos ---------- */
@@ -1466,10 +1682,36 @@
 @media (max-width: 900px) {
   .loja__checkout {
     grid-template-columns: 1fr;
+    padding-bottom: 120px;
   }
 
   .loja__resumo {
     position: static;
+  }
+
+  /* O botão do resumo desce para a barra fixa: nunca fica fora da tela. */
+  .loja__resumo-enviar {
+    display: none;
+  }
+
+  .loja__checkout-barra {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--loja-superficie);
+    border-top: 1px solid var(--loja-borda);
+    box-shadow: 0 -8px 24px rgba(30, 22, 15, 0.08);
+  }
+
+  .loja__checkout-barra .loja__botao {
+    flex-shrink: 0;
   }
 
   /* Duas colunas só quando sobra largura de verdade. */
@@ -1528,6 +1770,30 @@
   .loja__pedido,
   .loja__meus {
     padding: 16px 16px 48px;
+  }
+
+  .loja__checkout {
+    padding-bottom: 112px;
+  }
+
+  .loja__checkout-titulo {
+    font-size: 26px;
+  }
+
+  .loja__status-hero {
+    padding: 16px;
+  }
+
+  .loja__status-titulo {
+    font-size: 27px;
+  }
+
+  .loja__tipos--grande {
+    gap: 8px;
+  }
+
+  .loja__tipo--grande {
+    padding: 12px;
   }
 
   .loja__campos {
@@ -1609,6 +1875,15 @@
     padding: 10px 8px;
     font-size: 13px;
   }
+
+  .loja__checkout-barra .loja__botao {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .loja__checkout-barra-total strong {
+    font-size: 17px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1616,7 +1891,8 @@
   .loja__adicionar,
   .loja__botao,
   .loja__barra-carrinho,
-  .loja__categoria-link {
+  .loja__categoria-link,
+  .loja__tipo--grande {
     transition: none;
   }
 

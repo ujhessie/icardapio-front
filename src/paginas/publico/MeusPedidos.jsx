@@ -5,6 +5,7 @@ import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { publico } from '../../servicos/publico.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 import { lerMeusPedidos } from '../../utils/meusPedidos.js'
+import { itensParaRepetir, mapaDeProdutos } from '../../utils/repetir.js'
 
 /*
  * Histórico do cliente, sem login.
@@ -76,30 +77,10 @@ export default function MeusPedidos() {
   }, [slug, ids])
 
   // Preço de hoje e o que saiu de linha: repetir não pode usar preço velho.
-  const produtosAtuais = useMemo(() => {
-    const mapa = new Map()
-
-    dados?.categorias.forEach((categoria) => {
-      categoria.produtos.forEach((produto) => mapa.set(String(produto._id), produto))
-    })
-
-    return mapa
-  }, [dados])
+  const produtosAtuais = useMemo(() => mapaDeProdutos(dados), [dados])
 
   function repetir(pedido) {
-    const itens = []
-    const faltando = []
-
-    for (const item of pedido.itens) {
-      const produto = produtosAtuais.get(String(item.produtoId))
-
-      if (!produto) {
-        faltando.push(item.nome)
-        continue
-      }
-
-      itens.push({ produto, quantidade: item.quantidade, observacao: item.observacao })
-    }
+    const { itens, faltando } = itensParaRepetir(produtosAtuais, pedido)
 
     if (itens.length > 0) adicionarVarios(itens)
 
