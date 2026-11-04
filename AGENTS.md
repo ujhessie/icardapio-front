@@ -63,35 +63,81 @@ Ambiente: Node 24, npm 11, Windows. Back em ESM (`"type": "module"`).
 
 ---
 
-## 3. Como rodar
+## 3. Como rodar (desenvolvimento é local)
 
-Cada projeto é independente e roda em um terminal.
+Os dois projetos são independentes e rodam em **dois terminais**. Não existe mais
+`npm run dev` único na raiz.
 
 ```bash
-# uma vez em cada pasta
+# uma vez em cada pasta (e de novo depois de clonar em outra máquina)
 npm install
 
-# terminal 1 — API (http://localhost:4000/api)
+# terminal 1 — API
 cd "D:\Projetos Dev\icardapio-api"
-npm run dev
+& npm.cmd run dev
 
-# terminal 2 — front (http://localhost:5173)
+# terminal 2 — front
 cd "D:\Projetos Dev\icardapio-front"
-npm run dev
+& npm.cmd run dev -- --host 0.0.0.0
 ```
 
 | O quê | Endereço |
 |---|---|
-| Front | http://localhost:5173 |
+| Front (seu PC) | http://localhost:5173 |
+| Front (celular no mesmo Wi-Fi) | http://192.168.100.61:5173 |
 | API | http://localhost:4000/api |
 | Saúde da API | http://localhost:4000/api/saude |
 
-Em desenvolvimento o front chama `/api` e o Vite repassa pra porta 4000 (proxy), então
-**não precisa de `VITE_URL_API` na sua máquina**. Em produção o front aponta direto pra API
-da Vercel, e quem libera isso é a variável `URL_FRONT` do lado da API (CORS).
+O `--host 0.0.0.0` é o que libera abrir no celular. Se a rede mudar, o IP muda —
+confira com `ipconfig`.
 
-Banco: credenciais em `icardapio-api/.env` (nunca versionado).
-Superadmin: `npm run criar-superadmin` dentro de `icardapio-api`.
+Superadmin: `& npm.cmd run criar-superadmin` dentro de `icardapio-api`.
+
+### O `.env` NÃO vem do git
+
+Ele guarda a senha do banco, então é ignorado de propósito. Em máquina nova:
+
+```powershell
+cd "D:\Projetos Dev\icardapio-api"
+copy .env.example .env     # preencha MONGODB_URI e JWT_SEGREDO
+```
+
+Sem isso a API **não sobe**: o `env.js` falha cedo com "Variável de ambiente faltando".
+No front não existe `.env` local necessário — o proxy do Vite resolve.
+
+### O banco de dev é o MESMO de produção
+
+Desde a fase 0 o projeto usa o mesmo cluster do Atlas no desenvolvimento e no ar
+(um banco só, sem dados divergentes). Consequência prática: **pedido criado em
+`localhost` aparece no painel de produção.** Não é vazamento nem bug.
+Ao testar, cancele ou arquive o pedido depois (regras 14 e 15 da seção 8).
+
+### CORS só importa em produção
+
+Em dev o front chama `/api` e o Vite repassa pra porta 4000 (`vite.config.js`): não há
+CORS no caminho e não se mexe em `VITE_URL_API` na máquina local.
+Em produção o front aponta direto pra API (`VITE_URL_API`) e a API libera a origem do
+site (`URL_FRONT`). Site publicado com erro de CORS = problema em `URL_FRONT`, não no código.
+
+### Tempo real é igual nos dois ambientes
+
+A API ainda sobe servidor com Socket.io localmente (`src/server.js`), mas o front
+**não usa mais** — usa polling (`src/servicos/tempoReal.js`) tanto no PC quanto na
+Vercel. O que se testa local é exatamente o que o cliente vê no ar, com os mesmos
+~3s de atraso. **Não trate isso como bug de desenvolvimento.**
+
+### Deploy
+
+Push no `main` de cada repositório → a Vercel publica sozinha (os dois projetos já estão
+ligados ao GitHub). Não é preciso abrir o painel.
+
+| Projeto na Vercel | Repositório | Variáveis |
+|---|---|---|
+| `icardapio-api` | `icardapio-api` | `MONGODB_URI`, `JWT_SEGREDO`, `JWT_EXPIRA_EM`, `URL_FRONT` |
+| `icardapio` | `icardapio-front` | `VITE_URL_API` |
+
+`VITE_URL_API` só passa a valer no próximo build (o Vite grava no bundle).
+`URL_FRONT` exige redeploy da API pra valer.
 
 > **Atenção no PowerShell desta máquina:** o `npm` é bloqueado por execution policy.
 > Use `cmd /c "npm run dev"`, `& npm.cmd run dev` ou abra o terminal no CMD.
