@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import CabecalhoPainel from '../../componentes/admin/CabecalhoPainel.jsx'
+import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { lerToken } from '../../servicos/api.js'
+import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { pedidos as servicoPedidos } from '../../servicos/pedidos.js'
 import { abrirCanalDaLoja } from '../../servicos/tempoReal.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
+import { TEMPOS_PADRAO } from '../../utils/tempos.js'
 import './Painel.css'
 
 /*
- * Quadro de pedidos, agora com dados reais.
+ * Quadro de pedidos.
  *
  * A fila anda da esquerda para a direita e o status só avança — quem garante
- * isso é a API. O Socket.io mantém a tela atualizada: pedido novo do cliente
- * aparece aqui sozinho, sem recarregar.
+ * isso é a API. O canal de novidades mantém a tela atualizada sem recarregar.
+ *
+ * No celular o quadro de 6 colunas não cabe: em vez de rolar de lado, a tela
+ * mostra as etapas como abas e só a coluna escolhida, um cartão por linha.
  */
 
 const COLUNAS = [
@@ -44,10 +48,6 @@ function horaDoPedido(criadoEm) {
   })
 }
 
-function idadeDoPedido(criadoEm) {
-  return Math.max(0, Math.round((Date.now() - new Date(criadoEm).getTime()) / 60000))
-}
-
 function dataDoPedido(criadoEm) {
   return new Date(criadoEm).toLocaleString('pt-BR', {
     day: '2-digit',
@@ -59,6 +59,7 @@ function dataDoPedido(criadoEm) {
 
 function CartaoPedido({
   pedido,
+  tempos,
   acao,
   confirmando,
   ocupado,
@@ -68,13 +69,17 @@ function CartaoPedido({
   onDesistir,
   onConfirmar,
 }) {
-  const idade = idadeDoPedido(pedido.criadoEm)
   const terminado = pedido.status === 'entregue'
   const cancelado = pedido.status === 'cancelado'
   const finalizado = terminado || cancelado
+  const telefoneLimpo = (pedido.cliente.telefone || '').replace(/\D/g, '')
 
   return (
-    <article className={`pedido ${pedido.status === 'novo' ? 'pedido--novo' : ''}`}>
+    <article
+      className={`pedido ${pedido.status === 'novo' ? 'pedido--novo' : ''} ${
+        finalizado ? 'pedido--final' : ''
+      }`}
+    >
       <header className="pedido__topo">
         <span className="pedido__numero">#{pedido.numero}</span>
         <span className="pedido__hora">{horaDoPedido(pedido.criadoEm)}</span>
@@ -84,7 +89,15 @@ function CartaoPedido({
       </header>
 
       <p className="pedido__cliente">{pedido.cliente.nome}</p>
-      <p className="pedido__telefone">{pedido.cliente.telefone}</p>
+
+      {/* O lojista abre o pedido no celular: telefone tem que discar. */}
+      {telefoneLimpo ? (
+        <a className="pedido__telefone" href={`tel:${telefoneLimpo}`}>
+          {pedido.cliente.telefone}
+        </a>
+      ) : (
+        <p className="pedido__telefone">sem telefone</p>
+      )}
 
       <ul className="pedido__itens">
         {pedido.itens.map((item, indice) => (
@@ -123,10 +136,10 @@ function CartaoPedido({
         <strong className="pedido__total">{formatarDinheiro(pedido.total)}</strong>
       </div>
 
-      {!cancelado && (
-        <p className="pedido__idade">
-          {idade < 1 ? 'chegou agora' : `há ${idade} min`}
-        </p>
+      {!finalizado && (
+        <div className="pedido__tempo">
+          <TempoDoPedido pedido={pedido} tempos={tempos} />
+        </div>
       )}
 
       {confirmando ? (
@@ -163,7 +176,7 @@ function CartaoPedido({
           )}
 
           <div className="pedido__acoes">
-            {terminado && (
+            {(terminado || cancelado) && (
               <button
                 className="pedido__link-acao"
                 type="button"
@@ -186,24 +199,14 @@ function CartaoPedido({
             )}
 
             {cancelado && (
-              <>
-                <button
-                  className="pedido__link-acao"
-                  type="button"
-                  disabled={ocupado}
-                  onClick={onArquivar}
-                >
-                  Arquivar
-                </button>
-                <button
-                  className="pedido__link-acao pedido__link-acao--perigo"
-                  type="button"
-                  disabled={ocupado}
-                  onClick={() => onPedirConfirmacao('remover')}
-                >
-                  Apagar
-                </button>
-              </>
+              <button
+                className="pedido__link-acao pedido__link-acao--perigo"
+                type="button"
+                disabled={ocupado}
+                onClick={() => onPedirConfirmacao('remover')}
+              >
+                Apagar
+              </button>
             )}
           </div>
         </>
@@ -222,6 +225,13 @@ export default function Pedidos() {
   const [visao, setVisao] = useState('quadro')
   const [ocupado, setOcupado] = useState(null)
   const [confirmar, setConfirmar] = useState(null)
+
+  // Prazo de cada etapa, por loja. Enquanto não chega, vale o padrão: um
+  // contador nunca pode ser o motivo de o quadro não abrir.
+  const [tempos, setTempos] = useState(TEMPOS_PADRAO)
+
+  // Aba só existe no celular. null = segue a fila (primeira etapa com pedido).
+  const [abaEscolhida, setAbaEscolhida] = useState(null)
 
   const arquivados = visao === 'arquivados'
 
@@ -242,7 +252,7 @@ export default function Pedidos() {
     }
   }, [periodo, arquivados])
 
-  // O handler do socket precisa sempre da versão nova de carregar().
+  // O handler do canal precisa sempre da versão nova de carregar().
   const carregarAtual = useRef(carregar)
 
   useEffect(() => {
@@ -253,6 +263,24 @@ export default function Pedidos() {
     setCarregando(true)
     carregar()
   }, [carregar])
+
+  useEffect(() => {
+    let ativo = true
+
+    servicoLojas
+      .minha()
+      .then(({ loja }) => {
+        if (ativo) setTempos({ ...TEMPOS_PADRAO, ...(loja.tempos || {}) })
+      })
+      .catch(() => {
+        // Sem os tempos da loja o contador usa o padrão. Não vale derrubar o
+        // quadro por causa de um enfeite.
+      })
+
+    return () => {
+      ativo = false
+    }
+  }, [])
 
   useEffect(() => {
     const token = lerToken()
@@ -273,12 +301,23 @@ export default function Pedidos() {
     fila: (resumo?.novos || 0) + (resumo?.emAndamento || 0),
     entregues: resumo?.entreguesHoje || 0,
     faturamento: resumo?.faturamentoHoje || 0,
-    ticket: resumo?.entreguesHoje
-      ? resumo.faturamentoHoje / resumo.entreguesHoje
-      : 0,
+    ticket: resumo?.entreguesHoje ? resumo.faturamentoHoje / resumo.entreguesHoje : 0,
   }
 
   const cancelados = pedidos.filter((pedido) => pedido.status === 'cancelado')
+
+  function totalDa(status) {
+    return pedidos.filter((pedido) => pedido.status === status).length
+  }
+
+  // No celular, abre na etapa que precisa de ação; se nada estiver parado,
+  // abre na primeira da fila.
+  const statusDaVez =
+    COLUNAS.find((coluna) => totalDa(coluna.status) > 0 && coluna.status !== 'entregue')
+      ?.status || 'novo'
+
+  const abaAtiva = abaEscolhida ?? statusDaVez
+  const colunaAtiva = COLUNAS.find((coluna) => coluna.status === abaAtiva) || COLUNAS[0]
 
   async function executar(id, acao) {
     setOcupado(id)
@@ -316,16 +355,30 @@ export default function Pedidos() {
     }
   }
 
+  function cartao(pedido, acao) {
+    return (
+      <CartaoPedido
+        key={pedido._id}
+        pedido={pedido}
+        tempos={tempos}
+        acao={acao}
+        ocupado={ocupado === pedido._id}
+        confirmando={confirmar?.id === pedido._id ? confirmar.acao : null}
+        onAvancar={() => avancar(pedido)}
+        onArquivar={() => executar(pedido._id, () => servicoPedidos.arquivar(pedido._id))}
+        onPedirConfirmacao={(novaAcao) => setConfirmar({ id: pedido._id, acao: novaAcao })}
+        onDesistir={() => setConfirmar(null)}
+        onConfirmar={() => confirmarAcao(pedido)}
+      />
+    )
+  }
+
   return (
     <div className="painel">
-      <CabecalhoPainel />
-
       <main className="painel__conteudo painel__conteudo--quadro">
         <div className="painel__cabecalho">
           <div>
-            <h1 className="painel__titulo">
-              {arquivados ? 'Pedidos arquivados' : 'Pedidos'}
-            </h1>
+            <h1 className="painel__titulo">{arquivados ? 'Pedidos arquivados' : 'Pedidos'}</h1>
             <p className="painel__ajuda">
               {arquivados
                 ? 'Saíram do quadro mas continuam valendo para relatórios e faturamento.'
@@ -338,7 +391,11 @@ export default function Pedidos() {
               {aoVivo ? 'ao vivo' : 'reconectando'}
             </span>
 
-            <div className="pedidos__grupo pedidos__grupo--periodo" role="group" aria-label="Período">
+            <div
+              className="pedidos__grupo pedidos__grupo--periodo"
+              role="group"
+              aria-label="Período"
+            >
               <button
                 type="button"
                 className={`pedidos__filtro ${periodo === 'hoje' ? 'pedidos__filtro--ativo' : ''}`}
@@ -377,7 +434,7 @@ export default function Pedidos() {
         {erro && <p className="painel__aviso painel__aviso--erro">{erro}</p>}
 
         <div className="painel__numeros">
-          <div className="painel__numero">
+          <div className={`painel__numero ${numeros.fila > 0 ? 'painel__numero--destaque' : ''}`}>
             <span className="painel__numero-valor">{numeros.fila}</span>
             <span className="painel__numero-rotulo">na fila agora</span>
           </div>
@@ -475,73 +532,101 @@ export default function Pedidos() {
 
         {!carregando && !arquivados && (
           <>
+            {/* Desktop: as seis colunas lado a lado. */}
             <div className="pedidos__quadro">
               {COLUNAS.map((coluna) => {
                 const cartoes = pedidos.filter((pedido) => pedido.status === coluna.status)
 
                 return (
-                  <section className="pedidos__coluna" key={coluna.status}>
+                  <section
+                    className={`pedidos__coluna ${
+                      coluna.status === 'novo' && cartoes.length > 0
+                        ? 'pedidos__coluna--chamando'
+                        : ''
+                    }`}
+                    key={coluna.status}
+                  >
                     <header className="pedidos__coluna-topo">
-                      <h2 className="pedidos__coluna-titulo">{coluna.titulo}</h2>
+                      <h2 className="pedidos__coluna-titulo">
+                        <span
+                          className={`pedidos__coluna-ponto pedidos__coluna-ponto--${coluna.status}`}
+                          aria-hidden="true"
+                        />
+                        {coluna.titulo}
+                      </h2>
                       <span className="pedidos__coluna-contagem">{cartoes.length}</span>
                     </header>
 
-                    {cartoes.length === 0 && <p className="pedidos__vazio">sem pedidos</p>}
+                    {cartoes.length === 0 && <p className="pedidos__vazio">vazio</p>}
 
-                    {cartoes.map((pedido) => (
-                      <CartaoPedido
-                        key={pedido._id}
-                        pedido={pedido}
-                        acao={coluna.acao}
-                        ocupado={ocupado === pedido._id}
-                        confirmando={
-                          confirmar?.id === pedido._id ? confirmar.acao : null
-                        }
-                        onAvancar={() => avancar(pedido)}
-                        onArquivar={() =>
-                          executar(pedido._id, () => servicoPedidos.arquivar(pedido._id))
-                        }
-                        onPedirConfirmacao={(acao) =>
-                          setConfirmar({ id: pedido._id, acao })
-                        }
-                        onDesistir={() => setConfirmar(null)}
-                        onConfirmar={() => confirmarAcao(pedido)}
-                      />
-                    ))}
+                    {cartoes.map((pedido) => cartao(pedido, coluna.acao))}
                   </section>
                 )
               })}
+            </div>
+
+            {/* Celular: uma etapa por vez, escolhida nas abas. */}
+            <div className="pedidos__movel">
+              <div className="pedidos__abas" role="tablist" aria-label="Etapas do pedido">
+                {COLUNAS.map((coluna) => {
+                  const total = totalDa(coluna.status)
+
+                  return (
+                    <button
+                      key={coluna.status}
+                      type="button"
+                      role="tab"
+                      aria-selected={abaAtiva === coluna.status}
+                      className={`pedidos__aba ${
+                        abaAtiva === coluna.status ? 'pedidos__aba--ativa' : ''
+                      } ${total > 0 ? 'pedidos__aba--cheia' : ''}`}
+                      onClick={() => setAbaEscolhida(coluna.status)}
+                    >
+                      <span
+                        className={`pedidos__coluna-ponto pedidos__coluna-ponto--${coluna.status}`}
+                        aria-hidden="true"
+                      />
+                      {coluna.titulo}
+                      <span className="pedidos__aba-contagem">{total}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <section className="pedidos__coluna pedidos__coluna--movel">
+                <header className="pedidos__coluna-topo">
+                  <h2 className="pedidos__coluna-titulo">
+                    <span
+                      className={`pedidos__coluna-ponto pedidos__coluna-ponto--${colunaAtiva.status}`}
+                      aria-hidden="true"
+                    />
+                    {colunaAtiva.titulo}
+                  </h2>
+                  <span className="pedidos__coluna-contagem">{totalDa(colunaAtiva.status)}</span>
+                </header>
+
+                {totalDa(colunaAtiva.status) === 0 && (
+                  <p className="pedidos__vazio">
+                    Nenhum pedido em “{colunaAtiva.titulo.toLowerCase()}” agora.
+                  </p>
+                )}
+
+                {pedidos
+                  .filter((pedido) => pedido.status === colunaAtiva.status)
+                  .map((pedido) => cartao(pedido, colunaAtiva.acao))}
+              </section>
             </div>
 
             {cancelados.length > 0 && (
               <section className="painel__secao">
                 <h2 className="painel__subtitulo">Cancelados</h2>
                 <p className="painel__ajuda">
-                  Não entregues, então não contam no faturamento. Arquivar guarda o
-                  histórico; apagar só existe aqui, para faxina.
+                  Não entregues, então não contam no faturamento. Arquivar guarda o histórico;
+                  apagar só existe aqui, para faxina.
                 </p>
 
                 <div className="pedidos__cancelados">
-                  {cancelados.map((pedido) => (
-                    <CartaoPedido
-                      key={pedido._id}
-                      pedido={pedido}
-                      acao={null}
-                      ocupado={ocupado === pedido._id}
-                      confirmando={
-                        confirmar?.id === pedido._id ? confirmar.acao : null
-                      }
-                      onAvancar={() => {}}
-                      onArquivar={() =>
-                        executar(pedido._id, () => servicoPedidos.arquivar(pedido._id))
-                      }
-                      onPedirConfirmacao={(acao) =>
-                        setConfirmar({ id: pedido._id, acao })
-                      }
-                      onDesistir={() => setConfirmar(null)}
-                      onConfirmar={() => confirmarAcao(pedido)}
-                    />
-                  ))}
+                  {cancelados.map((pedido) => cartao(pedido, null))}
                 </div>
               </section>
             )}
@@ -549,8 +634,8 @@ export default function Pedidos() {
             {pedidos.length === 0 && (
               <section className="painel__secao">
                 <p className="painel__aviso">
-                  Nenhum pedido {periodo === 'hoje' ? 'hoje' : 'até agora'}. Quando um
-                  cliente fechar o pedido, ele aparece aqui na hora.
+                  Nenhum pedido {periodo === 'hoje' ? 'hoje' : 'até agora'}. Quando um cliente
+                  fechar o pedido, ele aparece aqui na hora.
                 </p>
               </section>
             )}

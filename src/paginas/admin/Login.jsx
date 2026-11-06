@@ -34,7 +34,7 @@ export default function Login() {
   return (
     <main className="acesso">
       <form className="acesso__cartao" onSubmit={enviar}>
-        <span className="acesso__marca">Sistema Delivery</span>
+        <span className="acesso__marca">iCardápio</span>
         <h1 className="acesso__titulo">Entrar no painel</h1>
         <p className="acesso__descricao">Use o e-mail e a senha da sua loja.</p>
 

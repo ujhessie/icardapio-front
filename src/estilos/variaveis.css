@@ -22,4 +22,18 @@
 
   --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --fonte-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* ---------- Painel (casca + dashboard) ----------
+     O painel tem paleta própria: fundo frio, cartões brancos e boas sombras.
+     Fica separado do público, que segue a cor da loja. */
+  --painel-fundo: #f4f5f9;
+  --painel-superficie: #ffffff;
+  --painel-borda: #e5e7f0;
+  --painel-texto: #14161f;
+  --painel-fraco: #6f7484;
+  --painel-lateral: #131320;
+  --painel-lateral-texto: #a9abbd;
+  --painel-roxo: #6c4cf1;
+  --raio-card: 16px;
+  --sombra-card: 0 1px 2px rgba(20, 22, 31, 0.04), 0 12px 30px -22px rgba(20, 22, 31, 0.4);
 }

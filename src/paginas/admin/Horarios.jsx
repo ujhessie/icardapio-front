@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import CabecalhoPainel from '../../componentes/admin/CabecalhoPainel.jsx'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { statusDaLoja } from '../../utils/horario.js'
 import './Painel.css'
@@ -242,8 +241,6 @@ export default function Horarios() {
 
   return (
     <div className="painel">
-      <CabecalhoPainel />
-
       <main className="painel__conteudo">
         <div className="painel__cabecalho">
           <div>

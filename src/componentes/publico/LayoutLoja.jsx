@@ -94,7 +94,7 @@ function ConteudoLoja() {
 
       <footer className="loja__rodape">
         <span>{loja.nome}</span>
-        <span className="loja__rodape-selo">Cardápio digital por Sistema Delivery</span>
+        <span className="loja__rodape-selo">Cardápio digital por iCardápio</span>
       </footer>
     </div>
   )

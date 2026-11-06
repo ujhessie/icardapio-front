@@ -651,11 +651,24 @@
   text-align: left;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.25;
+  display: flex;
+  flex-direction: column;
+}
+
+.loja__barra-detalhe {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .loja__barra-total {
   font-family: var(--fonte-mono);
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .loja__carrinho-fundo {
@@ -668,14 +681,13 @@
 }
 
 .loja__carrinho {
-  width: min(420px, 100%);
+  width: min(440px, 100%);
   height: 100%;
   background: var(--loja-superficie);
-  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
+  overflow: hidden;
+  box-shadow: -16px 0 40px rgba(30, 22, 15, 0.18);
   animation: loja-entrar 0.2s ease-out;
 }
 
@@ -691,22 +703,47 @@
   }
 }
 
+/* Topo e rodapé ficam parados; só a lista de itens rola. */
 .loja__carrinho-topo {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--loja-borda);
+  flex-shrink: 0;
+}
+
+.loja__carrinho-identidade {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
 .loja__carrinho-topo h2 {
   font-family: var(--loja-serif);
   font-size: 23px;
   font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.loja__carrinho-sub {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--loja-fraco);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .loja__fechar {
   width: 34px;
   height: 34px;
+  flex-shrink: 0;
   border-radius: 999px;
   border: 1px solid var(--loja-borda);
   background: transparent;
@@ -719,29 +756,94 @@
   background: #f4efe8;
 }
 
+/* Carrinho vazio: continua vendendo, em vez de só avisar. */
+.loja__carrinho-vazio {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 20px 40px;
+  max-width: 100%;
+}
+
+.loja__carrinho-vazio-titulo {
+  font-family: var(--loja-serif);
+  font-size: 21px;
+  font-weight: 600;
+}
+
 .loja__carrinho-itens {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 4px 20px 8px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
   flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .loja__carrinho-item {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: 14px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--loja-borda);
+}
+
+.loja__carrinho-item:last-child {
+  border-bottom: 0;
 }
 
 .loja__carrinho-item-topo {
   display: flex;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 10px;
+}
+
+.loja__carrinho-item-foto {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--loja-cor) 10%, #fff);
+  color: var(--loja-cor);
+  font-family: var(--loja-serif);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.loja__carrinho-item-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.loja__carrinho-item-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.loja__carrinho-item-nome {
   font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.loja__carrinho-item-unit {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--loja-fraco);
 }
 
 .loja__carrinho-item-controles {
@@ -760,7 +862,7 @@
 }
 
 .loja__contador button {
-  width: 30px;
+  width: 32px;
   height: 30px;
   border: 0;
   background: transparent;
@@ -801,23 +903,62 @@
   color: var(--loja-texto);
 }
 
+.loja__observacao::placeholder {
+  color: color-mix(in srgb, var(--loja-fraco) 75%, transparent);
+}
+
 .loja__carrinho-rodape {
   border-top: 1px solid var(--loja-borda);
-  padding-top: 16px;
+  padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+  flex-shrink: 0;
+  background: var(--loja-superficie);
 }
 
 .loja__carrinho-total {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  font-size: 15px;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.loja__carrinho-total > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.loja__carrinho-total-nota {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--loja-fraco);
+}
+
+.loja__carrinho-total strong {
+  font-family: var(--fonte-mono);
+  font-size: 21px;
+  font-weight: 600;
 }
 
 .loja__carrinho-nota {
   font-size: 12px;
   color: var(--loja-fraco);
+  line-height: 1.45;
+}
+
+.loja__carrinho-aviso {
+  font-size: 12px;
+  color: var(--loja-alerta);
+  background: #fdf7e8;
+  border: 1px solid #ecd9a5;
+  border-radius: 8px;
+  padding: 7px 10px;
+  line-height: 1.4;
 }
 
 .loja__botao {
@@ -1542,12 +1683,54 @@
 /* ---------- Meus pedidos ---------- */
 
 .loja__meus {
-  max-width: 760px;
+  max-width: 780px;
   margin: 0 auto;
   padding: 24px 24px 64px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 22px;
+}
+
+.loja__meus-topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--loja-borda);
+}
+
+.loja__meus-titulo {
+  font-family: var(--loja-serif);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.loja__meus-contagem {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--loja-fraco);
+  padding-bottom: 3px;
+}
+
+.loja__meus-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loja__meus-secao-titulo {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--loja-fraco);
 }
 
 .loja__meus-lista {
@@ -1566,17 +1749,36 @@
   gap: 10px;
 }
 
+/* Borda de status sem empurrar o conteúdo: sombra interna em vez de borda. */
+.loja__cartao--vivo {
+  box-shadow: inset 3px 0 0 var(--loja-cor);
+}
+
 .loja__cartao-topo {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.loja__cartao-identidade {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
 }
 
 .loja__cartao-numero {
   font-family: var(--loja-serif);
   font-size: 22px;
   font-weight: 600;
+  line-height: 1.15;
+}
+
+.loja__cartao-quando {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--loja-fraco);
 }
 
 .loja__cartao-status {
@@ -1588,10 +1790,12 @@
   border-radius: 999px;
   padding: 3px 9px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .loja__cartao-status--andamento {
   color: var(--loja-cor);
+  background: color-mix(in srgb, var(--loja-cor) 8%, #fff);
 }
 
 .loja__cartao-status--entregue {
@@ -1602,10 +1806,81 @@
   color: var(--loja-erro);
 }
 
-.loja__cartao-info {
-  font-size: 13px;
+/* Trilha das etapas: o cliente vê onde o pedido parou sem abrir o detalhe. */
+.loja__trilha-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 2px 0;
+}
+
+.loja__trilha {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loja__trilha-ponto {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--loja-borda);
+}
+
+.loja__trilha-ponto--feito {
+  background: color-mix(in srgb, var(--loja-cor) 45%, #fff);
+}
+
+.loja__trilha-ponto--atual {
+  background: var(--loja-cor);
+}
+
+.loja__trilha-legenda {
+  font-size: 11.5px;
   color: var(--loja-fraco);
+}
+
+.loja__cartao-itens {
+  font-size: 13.5px;
   line-height: 1.5;
+}
+
+.loja__cartao-rodape {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--loja-borda);
+}
+
+.loja__cartao-tipo {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--loja-fraco);
+}
+
+.loja__cartao-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--loja-fraco);
+}
+
+.loja__cartao-total strong {
+  font-family: var(--fonte-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--loja-texto);
+}
+
+.loja__cartao-aviso {
+  font-size: 12.5px;
+  color: var(--loja-erro);
 }
 
 .loja__cartao-acoes {
@@ -1619,6 +1894,29 @@
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+}
+
+.loja__vazio-pedidos {
+  background: var(--loja-superficie);
+  border: 1px solid var(--loja-borda);
+  border-radius: 14px;
+  box-shadow: inset 3px 0 0 var(--loja-borda);
+  padding: 26px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.loja__vazio-pedidos .loja__nota {
+  font-size: 13px;
+  max-width: 46ch;
+}
+
+.loja__carregando-loja {
+  font-size: 14px;
+  color: var(--loja-fraco);
+  padding: 8px 0;
 }
 
 .loja__botao--secundario {
@@ -1772,6 +2070,20 @@
     padding: 16px 16px 48px;
   }
 
+  .loja__meus-topo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .loja__meus-titulo {
+    font-size: 28px;
+  }
+
+  .loja__meus-contagem {
+    padding-bottom: 0;
+  }
+
   .loja__checkout {
     padding-bottom: 112px;
   }
@@ -1828,6 +2140,36 @@
   .loja__produto {
     padding: 10px;
     gap: 8px;
+  }
+
+  .loja__cartao {
+    padding: 14px;
+  }
+
+  .loja__vazio-pedidos {
+    padding: 20px 16px;
+  }
+
+  /* Gaveta ocupa a tela toda no celular: é uma tarefa, não um painel lateral. */
+  .loja__carrinho {
+    width: 100%;
+    box-shadow: none;
+  }
+
+  .loja__carrinho-topo {
+    padding: 14px 16px 12px;
+  }
+
+  .loja__carrinho-itens {
+    padding: 4px 16px 8px;
+  }
+
+  .loja__carrinho-rodape {
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .loja__carrinho-vazio {
+    padding: 20px 16px 32px;
   }
 
   .loja__produto-foto {

@@ -201,9 +201,12 @@ export function abrirCanalDaLoja() {
         .sort()
         .join('|')
 
-      // Primeira leitura serve só de referência: a tela já carregou a lista.
-      if (assinaturaAnterior !== null && assinatura !== assinaturaAnterior) {
-        emitir('pedido:atualizado')
+      // Primeira leitura serve de referência: quem precisa saber o que já
+      // existia (o sino não pode tocar para pedido velho) se ancora nela.
+      if (assinaturaAnterior === null) {
+        emitir('pedidos:iniciais', { pedidos: lista })
+      } else if (assinatura !== assinaturaAnterior) {
+        emitir('pedido:atualizado', { pedidos: lista })
       }
 
       assinaturaAnterior = assinatura

@@ -30,7 +30,7 @@ export default function StatusSistema() {
   return (
     <main className="status">
       <header className="status__topo">
-        <span className="status__marca">Sistema Delivery</span>
+        <span className="status__marca">iCardápio</span>
         <h1 className="status__titulo">Base do projeto no ar</h1>
         <p className="status__descricao">
           Front, API e banco na mesma conversa. A próxima etapa é o login e o cadastro de lojas.

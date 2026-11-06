@@ -1,0 +1,44 @@
+/* Chip do contador de etapa: compartilhado pelo quadro e pelo dashboard. */
+
+.tempo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 999px;
+  background: #f1f2f7;
+  color: var(--painel-fraco);
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.tempo svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+/* Prazo acabando: dá para resolver no corre. */
+.tempo--atencao {
+  border-color: #f7e2b8;
+  background: #fff8ea;
+  color: #96690c;
+}
+
+/* Estourou: o pedido já está atrasado e alguém precisa ver isso de longe. */
+.tempo--atrasado {
+  border-color: #f7cfcb;
+  background: #ffedeb;
+  color: #c0362c;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tempo {
+    transition: none;
+  }
+}

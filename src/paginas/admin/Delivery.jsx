@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import CabecalhoPainel from '../../componentes/admin/CabecalhoPainel.jsx'
 import { bairros as servicoBairros } from '../../servicos/bairros.js'
 import { formatarDinheiro, paraCentavos, paraReais } from '../../utils/dinheiro.js'
 import './Painel.css'
@@ -142,8 +141,6 @@ export default function Delivery() {
 
   return (
     <div className="painel">
-      <CabecalhoPainel />
-
       <main className="painel__conteudo painel__conteudo--largo">
         <div className="painel__cabecalho">
           <h1 className="painel__titulo">Delivery</h1>

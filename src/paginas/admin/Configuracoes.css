@@ -1,0 +1,104 @@
+/* Tela de Configurações: por enquanto, os tempos de atendimento. */
+
+.config__tempos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-4);
+}
+
+/* Cada etapa é um cartão: nome, o que conta e o campo. */
+.config__campo {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: var(--esp-4);
+  border: 1px solid var(--painel-borda);
+  border-radius: 12px;
+  background: var(--painel-fundo);
+  cursor: text;
+}
+
+.config__campo:focus-within {
+  border-color: var(--cor-destaque);
+  background: #fff;
+}
+
+.config__campo-nome {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.config__campo-ajuda {
+  font-size: 12.5px;
+  color: var(--cor-texto-fraco);
+  line-height: 1.35;
+}
+
+/* Campo numérico com a unidade colada, para ninguém digitar "min". */
+.config__entrada {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.config__entrada input {
+  width: 84px;
+  padding: 8px 10px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 9px;
+  background: #fff;
+  font-family: var(--fonte-mono);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--painel-texto);
+}
+
+.config__entrada input:focus {
+  outline: 2px solid color-mix(in srgb, var(--cor-destaque) 30%, transparent);
+  outline-offset: 1px;
+  border-color: var(--cor-destaque);
+}
+
+.config__entrada span {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+}
+
+.config__resumo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+  padding-top: var(--esp-4);
+  border-top: 1px dashed var(--painel-borda);
+  font-size: 14px;
+  color: var(--cor-texto-fraco);
+}
+
+.config__resumo strong {
+  font-family: var(--fonte-mono);
+  font-size: 13.5px;
+  color: var(--painel-texto);
+}
+
+.config__loja {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+}
+
+.config__loja strong {
+  color: var(--painel-texto);
+  font-weight: 600;
+}
+
+@media (max-width: 620px) {
+  .config__tempos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

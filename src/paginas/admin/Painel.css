@@ -5,6 +5,9 @@
 }
 
 .painel__topo {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15,11 +18,21 @@
 }
 
 .painel__marca {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
   font-family: var(--fonte-mono);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cor-destaque);
+  white-space: nowrap;
+}
+
+.painel__marca-selo {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--cor-neutro);
 }
 
 .painel__nav {
@@ -272,6 +285,90 @@
   flex-wrap: wrap;
 }
 
+.painel__cabecalho--loja {
+  align-items: flex-end;
+  padding-bottom: var(--esp-3);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.painel__etiqueta {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cor-texto-fraco);
+}
+
+/* Farol da loja: aberta fecha em verde, fechada em vermelho. */
+.painel__farol {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  padding: 5px 11px;
+  white-space: nowrap;
+}
+
+.painel__farol::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.painel__farol--aberta {
+  color: var(--cor-ok);
+  border-color: color-mix(in srgb, var(--cor-ok) 35%, var(--cor-borda));
+  background: color-mix(in srgb, var(--cor-ok) 6%, #fff);
+}
+
+.painel__farol--fechada {
+  color: var(--cor-erro);
+  border-color: color-mix(in srgb, var(--cor-erro) 30%, var(--cor-borda));
+  background: color-mix(in srgb, var(--cor-erro) 5%, #fff);
+}
+
+/* Atalhos: o painel inicial serve para chegar rápido no que importa. */
+.painel__atalhos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-3);
+}
+
+.painel__atalho {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--esp-4);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  color: var(--cor-texto);
+  transition: border-color 0.15s ease;
+}
+
+.painel__atalho:hover {
+  text-decoration: none;
+  border-color: color-mix(in srgb, var(--cor-destaque) 45%, var(--cor-borda));
+}
+
+.painel__atalho-titulo {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.painel__atalho-texto {
+  font-size: 12.5px;
+  color: var(--cor-texto-fraco);
+  line-height: 1.4;
+}
+
 .painel__numeros {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -286,6 +383,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--esp-1);
+}
+
+/* Fila com pedido esperando: o número tem que puxar o olho. */
+.painel__numero--destaque {
+  border-color: color-mix(in srgb, var(--cor-destaque) 40%, var(--cor-borda));
+  background: color-mix(in srgb, var(--cor-destaque) 5%, #fff);
+}
+
+.painel__numero--destaque .painel__numero-valor {
+  color: var(--cor-destaque);
 }
 
 .painel__numero-valor {
@@ -461,10 +568,25 @@
   .painel__nav {
     order: 3;
     width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .painel__nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .painel__link {
+    white-space: nowrap;
   }
 
   .painel__conteudo {
     padding: var(--esp-5) var(--esp-4) var(--esp-6);
+  }
+
+  .painel__atalhos {
+    grid-template-columns: 1fr;
   }
 
   .cardapio__linha-form {
@@ -562,8 +684,9 @@
   gap: var(--esp-3);
 }
 
-/* As seis colunas cabem lado a lado a partir de ~1200px. Abaixo disso o quadro
-   rola na horizontal, que é como o lojista usa o kanban no celular. */
+/* Seis colunas lado a lado. 180px é o mínimo que ainda segura um cartão de
+   pedido; abaixo disso o quadro rola na horizontal. Acima de 900px o celular
+   assume com as abas, então esse mínimo só vale para o desktop. */
 .pedidos__quadro {
   display: grid;
   grid-template-columns: repeat(6, minmax(180px, 1fr));
@@ -571,6 +694,7 @@
   overflow-x: auto;
   padding-bottom: var(--esp-2);
   scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
 }
 
 .pedidos__coluna {
@@ -583,14 +707,17 @@
 
 .pedidos__coluna-topo {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--esp-2);
-  padding: 0 2px 2px;
+  padding: 0 2px 6px;
   border-bottom: 1px solid var(--cor-borda);
 }
 
 .pedidos__coluna-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -598,10 +725,45 @@
   color: var(--cor-texto-fraco);
 }
 
+/* Ponto de status: a etapa fica legível mesmo em coluna estreita. */
+.pedidos__coluna-ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--cor-neutro);
+}
+
+.pedidos__coluna-ponto--novo {
+  background: var(--cor-destaque);
+}
+
+.pedidos__coluna-ponto--aceito,
+.pedidos__coluna-ponto--preparando {
+  background: var(--cor-alerta);
+}
+
+.pedidos__coluna-ponto--pronto,
+.pedidos__coluna-ponto--saiu_entrega {
+  background: var(--cor-ok);
+}
+
 .pedidos__coluna-contagem {
   font-family: var(--fonte-mono);
   font-size: 12px;
   color: var(--cor-texto-fraco);
+  min-width: 14px;
+  text-align: right;
+}
+
+/* Coluna com pedido esperando resposta: o cabeçalho chama. */
+.pedidos__coluna--chamando .pedidos__coluna-topo {
+  border-bottom-color: color-mix(in srgb, var(--cor-destaque) 55%, var(--cor-borda));
+}
+
+.pedidos__coluna--chamando .pedidos__coluna-contagem {
+  color: var(--cor-destaque);
+  font-weight: 600;
 }
 
 .pedidos__vazio {
@@ -609,34 +771,48 @@
   border-radius: var(--raio);
   padding: var(--esp-4) var(--esp-2);
   font-size: 12px;
-  color: var(--cor-texto-fraco);
+  color: var(--cor-neutro);
   text-align: center;
 }
 
 .pedido {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   padding: var(--esp-3);
   background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
+  border-left: 3px solid var(--cor-borda);
   border-radius: var(--raio);
+  transition: opacity 0.15s ease;
 }
 
+/* Pedido novo é o único que pode "gritar": é o que precisa de ação agora. */
 .pedido--novo {
-  border-color: color-mix(in srgb, var(--cor-destaque) 45%, var(--cor-borda));
+  border-color: color-mix(in srgb, var(--cor-destaque) 35%, var(--cor-borda));
+  border-left-color: var(--cor-destaque);
+}
+
+/* Entregue/cancelado fica na coluna para consulta, com menos peso visual. */
+.pedido--final {
+  opacity: 0.7;
+}
+
+.pedido--final:hover {
+  opacity: 1;
 }
 
 .pedido__topo {
   display: flex;
-  align-items: center;
-  gap: var(--esp-2);
+  align-items: baseline;
+  gap: 6px;
 }
 
 .pedido__numero {
   font-family: var(--fonte-mono);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .pedido__hora {
@@ -647,21 +823,32 @@
 
 .pedido__tipo {
   margin-left: auto;
+  align-self: center;
 }
 
 .pedido__cliente {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .pedido__telefone,
 .pedido__endereco,
-.pedido__idade,
 .pedido__pagamento {
   font-size: 12px;
   color: var(--cor-texto-fraco);
   line-height: 1.4;
+}
+
+/* O lojista abre o painel no celular: o telefone precisa discar. */
+.pedido__telefone {
+  align-self: flex-start;
+  text-decoration: none;
+}
+
+.pedido__telefone:hover {
+  color: var(--cor-destaque);
+  text-decoration: underline;
 }
 
 .pedido__referencia {
@@ -671,7 +858,7 @@
 
 .pedido__itens {
   list-style: none;
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -688,12 +875,16 @@
 .pedido__item-quantidade {
   flex-shrink: 0;
   font-family: var(--fonte-mono);
+  font-weight: 600;
   color: var(--cor-destaque);
 }
 
+/* Observação é instrução de cozinha: não pode sumir no meio do item. */
 .pedido__item-observacao {
   display: block;
+  margin-top: 1px;
   font-size: 11px;
+  line-height: 1.35;
   color: var(--cor-alerta);
 }
 
@@ -702,8 +893,8 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--esp-2);
-  margin-top: 2px;
-  padding-top: 6px;
+  margin-top: 3px;
+  padding-top: 7px;
   border-top: 1px solid var(--cor-borda);
 }
 
@@ -726,10 +917,18 @@
   white-space: nowrap;
 }
 
+/* Contador da etapa atual (o chip vem de TempoDoPedido). */
+.pedido__tempo {
+  align-self: flex-start;
+  margin-top: 1px;
+}
+
 .pedido__avancar {
   width: 100%;
-  padding: 8px 12px;
+  margin-top: 4px;
+  padding: 9px 12px;
   font-size: 13px;
+  font-weight: 600;
 }
 
 .pedido__acoes {
@@ -1080,5 +1279,116 @@
 
   .previa-loja__telefone {
     display: none;
+  }
+}
+
+/* ---------- Pedidos no celular: quadro vira abas ----------
+   Seis colunas não cabem em 390px. Rolar de lado esconde pedido — e pedido
+   escondido é pedido esquecido. Então: uma etapa por vez, escolhida em abas,
+   com os cartões ocupando a largura toda. */
+
+.pedidos__movel {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .pedidos__quadro {
+    display: none;
+  }
+
+  .pedidos__movel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pedidos__abas {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    margin: 0 calc(-1 * var(--esp-4));
+    padding: 2px var(--esp-4) 6px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .pedidos__abas::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pedidos__aba {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--painel-borda);
+    border-radius: 999px;
+    background: var(--painel-superficie);
+    color: var(--painel-fraco);
+    font-size: 13px;
+    font-weight: 550;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  .pedidos__aba--cheia {
+    color: var(--painel-texto);
+  }
+
+  .pedidos__aba--ativa,
+  .pedidos__aba--ativa.pedidos__aba--cheia {
+    background: var(--cor-destaque);
+    border-color: var(--cor-destaque);
+    color: #fff;
+  }
+
+  .pedidos__aba-contagem {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(20, 22, 31, 0.07);
+    font-family: var(--fonte-mono);
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .pedidos__aba--ativa .pedidos__aba-contagem {
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .pedidos__coluna--movel {
+    gap: 10px;
+  }
+
+  .pedidos__coluna--movel .pedidos__coluna-topo {
+    padding-bottom: 8px;
+  }
+
+  .pedidos__coluna--movel .pedido {
+    gap: 7px;
+    padding: var(--esp-4);
+  }
+
+  /* Dedo, não mouse: o botão de avançar precisa de altura. */
+  .pedidos__coluna--movel .pedido__avancar {
+    padding: 13px 12px;
+    font-size: 14px;
+  }
+
+  .pedidos__coluna--movel .pedido__cliente {
+    font-size: 15.5px;
+  }
+
+  .pedidos__coluna--movel .pedido__link-acao {
+    padding: 8px 0;
+  }
+
+  .pedidos__cancelados {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pedidos__filtros {
+    justify-content: flex-start;
   }
 }

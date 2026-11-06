@@ -74,7 +74,7 @@ export default function Cadastro() {
   return (
     <main className="acesso">
       <form className="acesso__cartao" onSubmit={enviar}>
-        <span className="acesso__marca">Sistema Delivery</span>
+        <span className="acesso__marca">iCardápio</span>
         <h1 className="acesso__titulo">Criar minha loja</h1>
         <p className="acesso__descricao">
           Seu cadastro passa por uma análise antes de ficar no ar.

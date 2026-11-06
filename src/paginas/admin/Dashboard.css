@@ -1,0 +1,1003 @@
+/* Dashboard do lojista: visão do dia em uma tela. */
+
+.dashboard {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 26px 26px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--painel-texto);
+}
+
+/* ---------- Topo ---------- */
+
+.dash__topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+
+.dash__titulo {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.dash__subtitulo {
+  margin-top: 3px;
+  font-size: 13.5px;
+  color: var(--painel-fraco);
+}
+
+.dash__data {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--painel-fraco);
+}
+
+.dash__data svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.dash__data strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--painel-texto);
+}
+
+.dash__data span {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Link da loja para copiar no cabeçalho do dashboard. */
+.dash__link-loja {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dash__link-loja-url {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--painel-fraco);
+  word-break: break-all;
+  max-width: 200px;
+}
+
+/* ---------- KPIs ---------- */
+
+.dash__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.kpi {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 17px;
+  border: 1px solid var(--painel-borda);
+  border-radius: var(--raio-card);
+  background: var(--painel-superficie);
+  box-shadow: var(--sombra-card);
+}
+
+/* Tinta por KPI: identifica o número sem precisar ler o rótulo. */
+.kpi--roxo {
+  background: #f7f4ff;
+  border-color: #e7e1fb;
+}
+
+.kpi--verde {
+  background: #f0fbf4;
+  border-color: #d9f0e2;
+}
+
+.kpi--laranja {
+  background: #fff5ed;
+  border-color: #fbe2cf;
+}
+
+.kpi--azul {
+  background: #f0f5ff;
+  border-color: #dbe5fb;
+}
+
+.kpi__icone {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  box-shadow: 0 4px 12px -8px rgba(20, 22, 31, 0.5);
+}
+
+.kpi__icone svg {
+  width: 20px;
+  height: 20px;
+}
+
+.kpi--roxo .kpi__icone {
+  color: var(--painel-roxo);
+}
+
+.kpi--verde .kpi__icone {
+  color: var(--cor-ok);
+}
+
+.kpi--laranja .kpi__icone {
+  color: var(--cor-destaque);
+}
+
+.kpi--azul .kpi__icone {
+  color: #2f6fd0;
+}
+
+.kpi__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.kpi__valor {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.kpi__rotulo {
+  font-size: 12.5px;
+  font-weight: 550;
+}
+
+.kpi__nota {
+  font-family: var(--fonte-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Grade principal ---------- */
+
+.dash__grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(290px, 1fr);
+  /* Pedidos ocupa as duas primeiras linhas e o gráfico encaixa embaixo das
+     ações: assim a coluna da direita não sobra vazia embaixo do cartão curto. */
+  grid-template-areas:
+    'pedidos acoes'
+    'pedidos grafico'
+    'atividade banner';
+  gap: 14px;
+  align-items: start;
+}
+
+.dash__pedidos {
+  grid-area: pedidos;
+  /* O cartão ocupa as duas linhas da coluna: sem isso, um dia sem pedidos
+     deixa um buraco cinza embaixo dele. */
+  align-self: stretch;
+}
+
+.dash__acoes {
+  grid-area: acoes;
+}
+
+.dash__grafico {
+  grid-area: grafico;
+}
+
+.dash__atividade {
+  grid-area: atividade;
+}
+
+.dash__banner {
+  grid-area: banner;
+}
+
+.dash__cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 17px;
+  border: 1px solid var(--painel-borda);
+  border-radius: var(--raio-card);
+  background: var(--painel-superficie);
+  box-shadow: var(--sombra-card);
+}
+
+.dash__cartao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dash__cartao-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.dash__cartao-icone {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+}
+
+.dash__cartao-icone svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dash__cartao-icone--laranja {
+  background: #fff0e5;
+  color: var(--cor-destaque);
+}
+
+.dash__cartao-icone--roxo {
+  background: #f1ecff;
+  color: var(--painel-roxo);
+}
+
+.dash__cartao-icone--verde {
+  background: #e8f8ee;
+  color: var(--cor-ok);
+}
+
+.dash__link-topo {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--cor-destaque);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dash__link-topo:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Abas de pedidos ---------- */
+
+.dash__abas {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.dash__abas::-webkit-scrollbar {
+  display: none;
+}
+
+.dash__aba {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 999px;
+  background: #fbfbfe;
+  color: var(--painel-fraco);
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.dash__aba:hover {
+  color: var(--painel-texto);
+}
+
+.dash__aba--ativa,
+.dash__aba--ativa:hover {
+  background: var(--cor-destaque);
+  border-color: var(--cor-destaque);
+  color: #fff;
+}
+
+/* ---------- Cartão de pedido resumido ---------- */
+
+.dash__pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 13px;
+  background: #fcfcfe;
+}
+
+.dash__pedido-topo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.dash__pedido-numero {
+  font-family: var(--fonte-mono);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dash__pedido-quando {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--painel-fraco);
+}
+
+.dash__selo {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dash__selo--novo {
+  background: #fff0e5;
+  color: var(--cor-destaque);
+}
+
+.dash__selo--andamento {
+  background: #f4f0ff;
+  color: var(--painel-roxo);
+}
+
+.dash__selo--pronto {
+  background: #e8f8ee;
+  color: var(--cor-ok);
+}
+
+.dash__selo--final {
+  background: #f1f2f7;
+  color: var(--painel-fraco);
+}
+
+.dash__pedido-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.dash__pedido-dados {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dash__pedido-cliente {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.dash__pedido-linha {
+  font-size: 12px;
+  color: var(--painel-fraco);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash__pedido-itens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.dash__pedido-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f1f0fa;
+  font-size: 11.5px;
+}
+
+.dash__pedido-item b {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  color: var(--painel-roxo);
+}
+
+.dash__pedido-preco {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: #f6f2ff;
+  white-space: nowrap;
+}
+
+.dash__pedido-preco span {
+  font-size: 10.5px;
+  color: var(--painel-fraco);
+}
+
+.dash__pedido-preco strong {
+  font-family: var(--fonte-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--painel-roxo);
+}
+
+/* Trilha de etapas: mostra onde o pedido está sem abrir o detalhe. */
+.dash__etapas {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 2px;
+}
+
+.dash__etapa {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--painel-fraco);
+}
+
+.dash__etapa::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--painel-borda);
+}
+
+.dash__etapa:first-child::before {
+  display: none;
+}
+
+.dash__etapa-ponto {
+  position: relative;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--painel-superficie);
+  border: 2px solid var(--painel-borda);
+}
+
+.dash__etapa--feita {
+  color: var(--painel-texto);
+}
+
+.dash__etapa--feita::before {
+  background: color-mix(in srgb, var(--painel-roxo) 35%, var(--painel-borda));
+}
+
+.dash__etapa--feita .dash__etapa-ponto {
+  background: var(--painel-roxo);
+  border-color: var(--painel-roxo);
+}
+
+.dash__etapa--atual .dash__etapa-ponto {
+  box-shadow: 0 0 0 4px rgba(108, 76, 241, 0.16);
+}
+
+.dash__vazio {
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--painel-fraco);
+  line-height: 1.5;
+}
+
+/* Dia sem pedido: o cartão é alto, então o vazio precisa parecer intencional. */
+.dash__pedidos-vazio {
+  flex: 1;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 18px 12px;
+  text-align: center;
+}
+
+.dash__pedidos-vazio-icone {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #f4f2ff;
+  color: var(--painel-roxo);
+}
+
+.dash__pedidos-vazio-icone svg {
+  width: 22px;
+  height: 22px;
+}
+
+.dash__pedidos-vazio strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.dash__pedidos-vazio > span:last-child {
+  max-width: 300px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--painel-fraco);
+}
+
+/* ---------- Ações rápidas ---------- */
+
+.dash__atalhos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.dash__atalho {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 15px 8px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 12px;
+  background: #fcfcfe;
+  color: var(--painel-texto);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.dash__atalho:hover {
+  border-color: var(--cor-destaque);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.dash__atalho-icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.dash__atalho-icone svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dash__atalho-icone--laranja {
+  background: #fff0e5;
+  color: var(--cor-destaque);
+}
+
+.dash__atalho-icone--roxo {
+  background: #f1ecff;
+  color: var(--painel-roxo);
+}
+
+.dash__atalho-icone--verde {
+  background: #e8f8ee;
+  color: var(--cor-ok);
+}
+
+.dash__atalho-icone--azul {
+  background: #eaf1ff;
+  color: #2f6fd0;
+}
+
+.dash__atalho--breve {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dash__atalho--breve:hover {
+  border-color: var(--painel-borda);
+  transform: none;
+}
+
+/* ---------- Atividade recente ---------- */
+
+.dash__atividade-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash__atividade-item {
+  display: flex;
+  gap: 9px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--painel-borda);
+}
+
+.dash__atividade-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.dash__atividade-ponto {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.dash__atividade-ponto--novo {
+  background: var(--cor-destaque);
+}
+
+.dash__atividade-ponto--andamento {
+  background: var(--painel-roxo);
+}
+
+.dash__atividade-ponto--entregue {
+  background: var(--cor-ok);
+}
+
+.dash__atividade-ponto--cancelado {
+  background: var(--cor-erro);
+}
+
+.dash__atividade-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dash__atividade-texto strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.dash__atividade-texto span {
+  font-size: 11.5px;
+  color: var(--painel-fraco);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash__atividade-hora {
+  margin-left: auto;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  color: #a3a7b8;
+  white-space: nowrap;
+}
+
+/* ---------- Banner da plataforma ---------- */
+
+.dash__banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: var(--raio-card);
+  background: var(--painel-lateral);
+  color: #fff;
+}
+
+/* Um único gradiente, só para dar profundidade ao banner. */
+.dash__banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 88% 10%, rgba(232, 93, 4, 0.38), transparent 58%);
+  pointer-events: none;
+}
+
+.dash__banner-titulo {
+  position: relative;
+  z-index: 1;
+  font-size: 16.5px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.dash__banner-texto {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #b9bac7;
+}
+
+.dash__banner-acao {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  background: var(--cor-destaque);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dash__banner-acao:hover {
+  filter: brightness(0.92);
+  text-decoration: none;
+}
+
+/* ---------- Gráfico ---------- */
+
+.dash__grafico-filtros {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.dash__grafico-filtro {
+  padding: 5px 11px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 999px;
+  background: #fbfbfe;
+  color: var(--painel-fraco);
+  font-size: 11.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.dash__grafico-filtro:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dash__grafico-filtro--ativo,
+.dash__grafico-filtro--ativo:hover {
+  background: var(--cor-destaque);
+  border-color: var(--cor-destaque);
+  color: #fff;
+}
+
+.dash__grafico-resumo {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.dash__grafico-resumo strong {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.dash__grafico-resumo span {
+  font-size: 11.5px;
+  color: var(--painel-fraco);
+}
+
+.dash__barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  height: 168px;
+  padding-top: 6px;
+}
+
+.dash__barra-coluna {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.dash__barra-area {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.dash__barra {
+  width: 100%;
+  max-width: 36px;
+  margin: 0 auto;
+  min-height: 3px;
+  border-radius: 7px 7px 3px 3px;
+  background: #ecebf7;
+}
+
+.dash__barra--cheia {
+  background: linear-gradient(180deg, #8f74f7, var(--painel-roxo));
+}
+
+.dash__barra-rotulo {
+  font-size: 10.5px;
+  color: var(--painel-fraco);
+  white-space: nowrap;
+}
+
+.dash__barra-data {
+  font-family: var(--fonte-mono);
+  font-size: 9px;
+  color: #a3a7b8;
+  white-space: nowrap;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 1180px) {
+  .dash__grade {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'pedidos'
+      'acoes'
+      'grafico'
+      'atividade'
+      'banner';
+  }
+
+  .dash__atalhos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard {
+    padding: 18px 14px 28px;
+    gap: 12px;
+  }
+
+  .dash__titulo {
+    font-size: 22px;
+  }
+
+  .dash__subtitulo {
+    font-size: 12.5px;
+  }
+
+  .dash__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .kpi {
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .kpi__icone {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .kpi__icone svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .kpi__valor {
+    font-size: 20px;
+  }
+
+  .kpi__rotulo {
+    font-size: 11.5px;
+  }
+
+  .kpi__nota {
+    display: none;
+  }
+
+  .dash__cartao {
+    padding: 14px;
+    gap: 11px;
+  }
+
+  .dash__pedido-corpo {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .dash__pedido-preco {
+    align-items: flex-end;
+  }
+
+  .dash__pedido-preco strong {
+    font-size: 15px;
+  }
+
+  .dash__etapas {
+    display: none;
+  }
+
+  .dash__atalhos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dash__barras {
+    height: 160px;
+    gap: 5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .dash__topo {
+    align-items: flex-start;
+  }
+
+  .dash__data {
+    display: none;
+  }
+
+  .dash__aba {
+    padding: 6px 10px;
+    font-size: 11.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash__atalho,
+  .dash__aba {
+    transition: none;
+  }
+
+  .dash__atalho:hover {
+    transform: none;
+  }
+}

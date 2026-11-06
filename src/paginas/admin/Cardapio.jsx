@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import CabecalhoPainel from '../../componentes/admin/CabecalhoPainel.jsx'
 import { cardapio as servicoCardapio } from '../../servicos/cardapio.js'
 import { formatarDinheiro, paraCentavos, paraReais } from '../../utils/dinheiro.js'
 import './Painel.css'
@@ -219,8 +218,6 @@ export default function Cardapio() {
 
   return (
     <div className="painel">
-      <CabecalhoPainel />
-
       <main className="painel__conteudo painel__conteudo--largo">
         <div className="painel__cabecalho">
           <h1 className="painel__titulo">Cardápio</h1>

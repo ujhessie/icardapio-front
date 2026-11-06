@@ -1,10 +1,12 @@
 import { Route, Routes } from 'react-router-dom'
+import CascaPainel from '../componentes/admin/CascaPainel.jsx'
 import Login from '../paginas/admin/Login.jsx'
 import Painel from '../paginas/admin/Painel.jsx'
 import Pedidos from '../paginas/admin/Pedidos.jsx'
 import Cardapio from '../paginas/admin/Cardapio.jsx'
 import Horarios from '../paginas/admin/Horarios.jsx'
 import Delivery from '../paginas/admin/Delivery.jsx'
+import Configuracoes from '../paginas/admin/Configuracoes.jsx'
 import LayoutLoja from '../componentes/publico/LayoutLoja.jsx'
 import Cadastro from '../paginas/publico/Cadastro.jsx'
 import CardapioLoja from '../paginas/publico/CardapioLoja.jsx'
@@ -18,7 +20,11 @@ import RotaProtegida from './RotaProtegida.jsx'
 /**
  * Tabela de rotas do front.
  * Público: /, /cadastro, /admin/login e /:slug (cardápio da loja)
- * Painel:  /admin, /admin/cardapio e /admin/delivery (exigem login; as duas últimas são da loja)
+ * Painel:  /admin, /admin/pedidos, /admin/cardapio, /admin/horarios,
+ *          /admin/delivery e /admin/configuracoes
+ *
+ * O painel é uma rota-mãe com a casca (barra lateral / barra inferior) e as
+ * páginas entram no Outlet dela — assim a moldura é uma só.
  */
 export default function Rotas() {
   return (
@@ -26,60 +32,70 @@ export default function Rotas() {
       <Route path="/" element={<StatusSistema />} />
       <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/admin/login" element={<Login />} />
+
       <Route
         path="/admin"
         element={
           <RotaProtegida>
-            <Painel />
+            <CascaPainel />
           </RotaProtegida>
         }
-      />
-      <Route
-        path="/admin/cardapio"
-        element={
-          <RotaProtegida>
-            <RotaDaLoja>
-              <Cardapio />
-            </RotaDaLoja>
-          </RotaProtegida>
-        }
-      />
-      <Route
-        path="/admin/pedidos"
-        element={
-          <RotaProtegida>
+      >
+        <Route index element={<Painel />} />
+
+        <Route
+          path="pedidos"
+          element={
             <RotaDaLoja>
               <Pedidos />
             </RotaDaLoja>
-          </RotaProtegida>
-        }
-      />
-      <Route
-        path="/admin/horarios"
-        element={
-          <RotaProtegida>
+          }
+        />
+
+        <Route
+          path="cardapio"
+          element={
+            <RotaDaLoja>
+              <Cardapio />
+            </RotaDaLoja>
+          }
+        />
+
+        <Route
+          path="horarios"
+          element={
             <RotaDaLoja>
               <Horarios />
             </RotaDaLoja>
-          </RotaProtegida>
-        }
-      />
-      <Route
-        path="/admin/delivery"
-        element={
-          <RotaProtegida>
+          }
+        />
+
+        <Route
+          path="delivery"
+          element={
             <RotaDaLoja>
               <Delivery />
             </RotaDaLoja>
-          </RotaProtegida>
-        }
-      />
+          }
+        />
+
+        <Route
+          path="configuracoes"
+          element={
+            <RotaDaLoja>
+              <Configuracoes />
+            </RotaDaLoja>
+          }
+        />
+      </Route>
+
       <Route path="/:slug" element={<LayoutLoja />}>
         <Route index element={<CardapioLoja />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="pedidos" element={<MeusPedidos />} />
         <Route path="pedido/:pedidoId" element={<AcompanharPedido />} />
       </Route>
+
       <Route path="*" element={<p className="tela-carregando">Página não encontrada.</p>} />
     </Routes>
   )
