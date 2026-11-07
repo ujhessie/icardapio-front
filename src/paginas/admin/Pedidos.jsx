@@ -7,15 +7,17 @@ import { abrirCanalDaLoja } from '../../servicos/tempoReal.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 import { TEMPOS_PADRAO } from '../../utils/tempos.js'
 import './Painel.css'
+import './Pedidos.css'
 
 /*
  * Quadro de pedidos.
  *
  * A fila anda da esquerda para a direita e o status só avança — quem garante
- * isso é a API. O canal de novidades mantém a tela atualizada sem recarregar.
+ * isso é a API. No desktop o lojista pode arrastar a ficha até a etapa
+ * seguinte; no celular a mesma coisa é feita pelo botão do cartão.
  *
- * No celular o quadro de 6 colunas não cabe: em vez de rolar de lado, a tela
- * mostra as etapas como abas e só a coluna escolhida, um cartão por linha.
+ * Cancelado não ocupa espaço no quadro: fica fechado no fim da tela, para
+ * consulta, e no histórico (Arquivados) quando é arquivado.
  */
 
 const COLUNAS = [
@@ -26,6 +28,9 @@ const COLUNAS = [
   { status: 'saiu_entrega', titulo: 'Saiu para entrega', acao: 'Marcar entregue' },
   { status: 'entregue', titulo: 'Entregue', acao: null },
 ]
+
+// Ordem do atendimento: define até onde cada pedido pode ser arrastado.
+const ORDEM = COLUNAS.map((coluna) => coluna.status)
 
 const PROXIMO_STATUS = {
   novo: 'aceito',
@@ -57,128 +62,149 @@ function dataDoPedido(criadoEm) {
   })
 }
 
-function CartaoPedido({
+function podeAvancarPara(pedido, status) {
+  return ORDEM.indexOf(status) > ORDEM.indexOf(pedido.status)
+}
+
+function Ficha({
   pedido,
   tempos,
   acao,
   confirmando,
   ocupado,
+  arrastando,
   onAvancar,
   onArquivar,
   onPedirConfirmacao,
   onDesistir,
   onConfirmar,
+  onComecarArrasto,
+  onTerminarArrasto,
 }) {
-  const terminado = pedido.status === 'entregue'
-  const cancelado = pedido.status === 'cancelado'
-  const finalizado = terminado || cancelado
   const telefoneLimpo = (pedido.cliente.telefone || '').replace(/\D/g, '')
+  const observacao = pedido.observacao
 
   return (
     <article
-      className={`pedido ${pedido.status === 'novo' ? 'pedido--novo' : ''} ${
-        finalizado ? 'pedido--final' : ''
+      className={`ficha ${pedido.status === 'novo' ? 'ficha--novo' : ''} ${
+        arrastando ? 'ficha--arrastando' : ''
       }`}
+      draggable={!confirmando}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', pedido._id)
+        e.dataTransfer.effectAllowed = 'move'
+        onComecarArrasto(pedido._id)
+      }}
+      onDragEnd={onTerminarArrasto}
     >
-      <header className="pedido__topo">
-        <span className="pedido__numero">#{pedido.numero}</span>
-        <span className="pedido__hora">{horaDoPedido(pedido.criadoEm)}</span>
-        <span className="etiqueta etiqueta--neutro pedido__tipo">
+      <header className="ficha__cabeca">
+        <span className="ficha__numero">#{pedido.numero}</span>
+        <span className="ficha__hora">{horaDoPedido(pedido.criadoEm)}</span>
+        <span
+          className={`ficha__origem ${
+            pedido.tipo === 'delivery' ? 'ficha__origem--entrega' : ''
+          }`}
+        >
           {pedido.tipo === 'delivery' ? 'Delivery' : 'Balcão'}
         </span>
       </header>
 
-      <p className="pedido__cliente">{pedido.cliente.nome}</p>
+      <p className="ficha__cliente">{pedido.cliente.nome}</p>
 
-      {/* O lojista abre o pedido no celular: telefone tem que discar. */}
-      {telefoneLimpo ? (
-        <a className="pedido__telefone" href={`tel:${telefoneLimpo}`}>
+      {/* O lojista atende pelo celular: o telefone tem que discar. */}
+      {telefoneLimpo && (
+        <a className="ficha__telefone" href={`tel:${telefoneLimpo}`}>
           {pedido.cliente.telefone}
         </a>
-      ) : (
-        <p className="pedido__telefone">sem telefone</p>
       )}
 
-      <ul className="pedido__itens">
+      <ul className="ficha__itens">
         {pedido.itens.map((item, indice) => (
-          <li className="pedido__item" key={`${item.nome}-${indice}`}>
-            <span className="pedido__item-quantidade">{item.quantidade}×</span>
+          <li className="ficha__item" key={`${item.nome}-${indice}`}>
+            <span className="ficha__item-qtd">{item.quantidade}×</span>
             <span>
               {item.nome}
-              {item.observacao && (
-                <span className="pedido__item-observacao">“{item.observacao}”</span>
-              )}
+              {item.observacao && <span className="ficha__obs">“{item.observacao}”</span>}
             </span>
           </li>
         ))}
       </ul>
 
       {pedido.tipo === 'delivery' && pedido.endereco?.rua && (
-        <p className="pedido__endereco">
+        <p className="ficha__endereco">
           {pedido.endereco.rua}, {pedido.endereco.numero} · {pedido.bairroNome}
           {pedido.endereco.referencia && (
-            <span className="pedido__referencia">Referência: {pedido.endereco.referencia}</span>
+            <span className="ficha__referencia">Referência: {pedido.endereco.referencia}</span>
           )}
         </p>
       )}
 
-      <div className="pedido__rodape">
-        <div className="pedido__pagamento-bloco">
-          <span className="pedido__pagamento">
-            {PAGAMENTO[pedido.pagamento] || pedido.pagamento}
-          </span>
-          {pedido.pagamento === 'dinheiro' && pedido.trocoPara > 0 && (
-            <span className="pedido__troco">
-              troco para {formatarDinheiro(pedido.trocoPara)}
-            </span>
-          )}
-        </div>
-        <strong className="pedido__total">{formatarDinheiro(pedido.total)}</strong>
-      </div>
+      {observacao && (
+        <p className="ficha__endereco">
+          <span className="ficha__referencia">Observação do cliente</span>
+          {observacao}
+        </p>
+      )}
 
-      {!finalizado && (
-        <div className="pedido__tempo">
+      {pedido.status !== 'entregue' && pedido.status !== 'cancelado' && (
+        <div className="ficha__tempo">
           <TempoDoPedido pedido={pedido} tempos={tempos} />
         </div>
       )}
 
+      <footer className="ficha__rodape">
+        <div className="ficha__pagamento">
+          <span className="ficha__pagamento-nome">
+            {PAGAMENTO[pedido.pagamento] || pedido.pagamento}
+          </span>
+          {pedido.pagamento === 'dinheiro' && pedido.trocoPara > 0 && (
+            <span className="ficha__troco">troco para {formatarDinheiro(pedido.trocoPara)}</span>
+          )}
+        </div>
+        <strong className="ficha__total">{formatarDinheiro(pedido.total)}</strong>
+      </footer>
+
       {confirmando ? (
-        <div className="pedido__confirmar">
-          <span>{confirmando === 'remover' ? 'Apagar de vez?' : 'Cancelar pedido?'}</span>
-          <button
-            className="botao botao--perigo"
-            type="button"
-            disabled={ocupado}
-            onClick={onConfirmar}
-          >
-            {confirmando === 'remover' ? 'Apagar' : 'Sim'}
-          </button>
-          <button
-            className="botao botao--secundario"
-            type="button"
-            disabled={ocupado}
-            onClick={onDesistir}
-          >
-            Não
-          </button>
+        <div className="ficha__confirmar">
+          <span className="ficha__confirmar-texto">
+            {confirmando === 'remover' ? 'Apagar de vez?' : 'Cancelar este pedido?'}
+          </span>
+          <div className="ficha__confirmar-botoes">
+            <button
+              className="ficha__confirmar-nao"
+              type="button"
+              disabled={ocupado}
+              onClick={onDesistir}
+            >
+              Não
+            </button>
+            <button
+              className="ficha__confirmar-sim"
+              type="button"
+              disabled={ocupado}
+              onClick={onConfirmar}
+            >
+              {confirmando === 'remover' ? 'Apagar' : 'Cancelar pedido'}
+            </button>
+          </div>
         </div>
       ) : (
         <>
           {acao && (
             <button
-              className="botao pedido__avancar"
+              className="ficha__acao"
               type="button"
               disabled={ocupado}
               onClick={onAvancar}
             >
-              {acao}
+              {ocupado ? 'Salvando…' : acao}
             </button>
           )}
 
-          <div className="pedido__acoes">
-            {(terminado || cancelado) && (
+          <div className="ficha__links">
+            {(pedido.status === 'entregue' || pedido.status === 'cancelado') && (
               <button
-                className="pedido__link-acao"
+                className="ficha__link"
                 type="button"
                 disabled={ocupado}
                 onClick={onArquivar}
@@ -187,9 +213,9 @@ function CartaoPedido({
               </button>
             )}
 
-            {!finalizado && (
+            {pedido.status !== 'entregue' && pedido.status !== 'cancelado' && (
               <button
-                className="pedido__link-acao pedido__link-acao--perigo"
+                className="ficha__link ficha__link--perigo"
                 type="button"
                 disabled={ocupado}
                 onClick={() => onPedirConfirmacao('cancelar')}
@@ -198,9 +224,9 @@ function CartaoPedido({
               </button>
             )}
 
-            {cancelado && (
+            {pedido.status === 'cancelado' && (
               <button
-                className="pedido__link-acao pedido__link-acao--perigo"
+                className="ficha__link ficha__link--perigo"
                 type="button"
                 disabled={ocupado}
                 onClick={() => onPedirConfirmacao('remover')}
@@ -226,11 +252,15 @@ export default function Pedidos() {
   const [ocupado, setOcupado] = useState(null)
   const [confirmar, setConfirmar] = useState(null)
 
-  // Prazo de cada etapa, por loja. Enquanto não chega, vale o padrão: um
-  // contador nunca pode ser o motivo de o quadro não abrir.
+  // Prazo de cada etapa, por loja. Enquanto não chega, vale o padrão: contador
+  // nunca pode ser o motivo de o quadro não abrir.
   const [tempos, setTempos] = useState(TEMPOS_PADRAO)
 
-  // Aba só existe no celular. null = segue a fila (primeira etapa com pedido).
+  // Ficha sendo arrastada e coluna sob o ponteiro.
+  const [arrastandoId, setArrastandoId] = useState(null)
+  const [colunaAlvo, setColunaAlvo] = useState(null)
+
+  // Aba só existe no celular. null = segue a fila.
   const [abaEscolhida, setAbaEscolhida] = useState(null)
 
   const arquivados = visao === 'arquivados'
@@ -252,7 +282,7 @@ export default function Pedidos() {
     }
   }, [periodo, arquivados])
 
-  // O handler do canal precisa sempre da versão nova de carregar().
+  // O canal precisa sempre da versão nova de carregar().
   const carregarAtual = useRef(carregar)
 
   useEffect(() => {
@@ -273,8 +303,7 @@ export default function Pedidos() {
         if (ativo) setTempos({ ...TEMPOS_PADRAO, ...(loja.tempos || {}) })
       })
       .catch(() => {
-        // Sem os tempos da loja o contador usa o padrão. Não vale derrubar o
-        // quadro por causa de um enfeite.
+        // Sem os tempos da loja o contador usa o padrão.
       })
 
     return () => {
@@ -306,15 +335,16 @@ export default function Pedidos() {
 
   const cancelados = pedidos.filter((pedido) => pedido.status === 'cancelado')
 
+  // O quadro só trabalha com pedido em andamento: cancelado fica de fora.
+  const noQuadro = pedidos.filter((pedido) => pedido.status !== 'cancelado')
+
   function totalDa(status) {
-    return pedidos.filter((pedido) => pedido.status === status).length
+    return noQuadro.filter((pedido) => pedido.status === status).length
   }
 
-  // No celular, abre na etapa que precisa de ação; se nada estiver parado,
-  // abre na primeira da fila.
+  // No celular abre na primeira etapa que tem pedido esperando.
   const statusDaVez =
-    COLUNAS.find((coluna) => totalDa(coluna.status) > 0 && coluna.status !== 'entregue')
-      ?.status || 'novo'
+    COLUNAS.find((coluna) => totalDa(coluna.status) > 0)?.status || 'novo'
 
   const abaAtiva = abaEscolhida ?? statusDaVez
   const colunaAtiva = COLUNAS.find((coluna) => coluna.status === abaAtiva) || COLUNAS[0]
@@ -342,6 +372,22 @@ export default function Pedidos() {
     executar(pedido._id, () => servicoPedidos.mudarStatus(pedido._id, proximo))
   }
 
+  /* Arrastar e soltar: leva o pedido para a etapa onde a ficha caiu. Só vale
+     para frente — voltar etapa não existe no atendimento. */
+  function soltarNaColuna(evento, status) {
+    evento.preventDefault()
+
+    const id = evento.dataTransfer.getData('text/plain')
+    const pedido = pedidos.find((item) => item._id === id)
+
+    setColunaAlvo(null)
+    setArrastandoId(null)
+
+    if (!pedido || !podeAvancarPara(pedido, status)) return
+
+    executar(pedido._id, () => servicoPedidos.mudarStatus(pedido._id, status))
+  }
+
   function confirmarAcao(pedido) {
     const acao = confirmar?.acao
 
@@ -355,293 +401,311 @@ export default function Pedidos() {
     }
   }
 
-  function cartao(pedido, acao) {
+  function ficha(pedido, acao) {
     return (
-      <CartaoPedido
+      <Ficha
         key={pedido._id}
         pedido={pedido}
         tempos={tempos}
         acao={acao}
         ocupado={ocupado === pedido._id}
         confirmando={confirmar?.id === pedido._id ? confirmar.acao : null}
+        arrastando={arrastandoId === pedido._id}
         onAvancar={() => avancar(pedido)}
         onArquivar={() => executar(pedido._id, () => servicoPedidos.arquivar(pedido._id))}
         onPedirConfirmacao={(novaAcao) => setConfirmar({ id: pedido._id, acao: novaAcao })}
         onDesistir={() => setConfirmar(null)}
         onConfirmar={() => confirmarAcao(pedido)}
+        onComecarArrasto={setArrastandoId}
+        onTerminarArrasto={() => {
+          setArrastandoId(null)
+          setColunaAlvo(null)
+        }}
       />
     )
   }
 
   return (
-    <div className="painel">
-      <main className="painel__conteudo painel__conteudo--quadro">
-        <div className="painel__cabecalho">
-          <div>
-            <h1 className="painel__titulo">{arquivados ? 'Pedidos arquivados' : 'Pedidos'}</h1>
-            <p className="painel__ajuda">
-              {arquivados
-                ? 'Saíram do quadro mas continuam valendo para relatórios e faturamento.'
-                : 'A fila anda da esquerda para a direita. O cliente acompanha cada mudança.'}
-            </p>
-          </div>
+    <div className="tabuleiro">
+      <header className="tabuleiro__topo">
+        <div>
+          <h1 className="tabuleiro__titulo">
+            {arquivados ? 'Pedidos arquivados' : 'Pedidos'}
+          </h1>
+          <p className="tabuleiro__subtitulo">
+            {arquivados
+              ? 'Histórico do que saiu do quadro. Continua valendo para relatórios e faturamento.'
+              : 'A fila corre da esquerda para a direita. '}
+            {!arquivados && (
+              <span className="tabuleiro__dica">Arraste a ficha para mudar a etapa.</span>
+            )}
+          </p>
+        </div>
 
-          <div className="pedidos__filtros">
-            <span className={`pedidos__aovivo ${aoVivo ? 'pedidos__aovivo--ligado' : ''}`}>
-              {aoVivo ? 'ao vivo' : 'reconectando'}
-            </span>
+        <div className="tabuleiro__controles">
+          <span className={`tabuleiro__sinal ${aoVivo ? 'tabuleiro__sinal--ligado' : ''}`}>
+            {aoVivo ? 'ao vivo' : 'reconectando'}
+          </span>
 
-            <div
-              className="pedidos__grupo pedidos__grupo--periodo"
-              role="group"
-              aria-label="Período"
+          <div className="segmento" role="group" aria-label="Período">
+            <button
+              type="button"
+              className={`segmento__botao ${periodo === 'hoje' ? 'segmento__botao--ativo' : ''}`}
+              onClick={() => setPeriodo('hoje')}
             >
-              <button
-                type="button"
-                className={`pedidos__filtro ${periodo === 'hoje' ? 'pedidos__filtro--ativo' : ''}`}
-                onClick={() => setPeriodo('hoje')}
-              >
-                Hoje
-              </button>
-              <button
-                type="button"
-                className={`pedidos__filtro ${periodo === 'todos' ? 'pedidos__filtro--ativo' : ''}`}
-                onClick={() => setPeriodo('todos')}
-              >
-                Todos
-              </button>
-            </div>
+              Hoje
+            </button>
+            <button
+              type="button"
+              className={`segmento__botao ${periodo === 'todos' ? 'segmento__botao--ativo' : ''}`}
+              onClick={() => setPeriodo('todos')}
+            >
+              Todos
+            </button>
+          </div>
 
-            <div className="pedidos__grupo" role="group" aria-label="Visão">
-              <button
-                type="button"
-                className={`pedidos__filtro ${!arquivados ? 'pedidos__filtro--ativo' : ''}`}
-                onClick={() => setVisao('quadro')}
-              >
-                Quadro
-              </button>
-              <button
-                type="button"
-                className={`pedidos__filtro ${arquivados ? 'pedidos__filtro--ativo' : ''}`}
-                onClick={() => setVisao('arquivados')}
-              >
-                Arquivados
-              </button>
-            </div>
+          <div className="segmento" role="group" aria-label="Visão">
+            <button
+              type="button"
+              className={`segmento__botao ${!arquivados ? 'segmento__botao--ativo' : ''}`}
+              onClick={() => setVisao('quadro')}
+            >
+              Quadro
+            </button>
+            <button
+              type="button"
+              className={`segmento__botao ${arquivados ? 'segmento__botao--ativo' : ''}`}
+              onClick={() => setVisao('arquivados')}
+            >
+              Arquivados
+            </button>
           </div>
         </div>
+      </header>
 
-        {erro && <p className="painel__aviso painel__aviso--erro">{erro}</p>}
+      {erro && <p className="tabuleiro__erro">{erro}</p>}
 
-        <div className="painel__numeros">
-          <div className={`painel__numero ${numeros.fila > 0 ? 'painel__numero--destaque' : ''}`}>
-            <span className="painel__numero-valor">{numeros.fila}</span>
-            <span className="painel__numero-rotulo">na fila agora</span>
-          </div>
-          <div className="painel__numero">
-            <span className="painel__numero-valor">{numeros.entregues}</span>
-            <span className="painel__numero-rotulo">entregues hoje</span>
-          </div>
-          <div className="painel__numero">
-            <span className="painel__numero-valor">{formatarDinheiro(numeros.faturamento)}</span>
-            <span className="painel__numero-rotulo">faturamento de hoje</span>
-          </div>
-          <div className="painel__numero">
-            <span className="painel__numero-valor">{formatarDinheiro(numeros.ticket)}</span>
-            <span className="painel__numero-rotulo">ticket médio</span>
-          </div>
+      <div className="tabuleiro__resumo">
+        <div className={`tabuleiro__numero ${numeros.fila > 0 ? 'tabuleiro__numero--destaque' : ''}`}>
+          <span className="tabuleiro__numero-valor">{numeros.fila}</span>
+          <span className="tabuleiro__numero-rotulo">na fila agora</span>
         </div>
+        <div className="tabuleiro__numero">
+          <span className="tabuleiro__numero-valor">{numeros.entregues}</span>
+          <span className="tabuleiro__numero-rotulo">entregues hoje</span>
+        </div>
+        <div className="tabuleiro__numero">
+          <span className="tabuleiro__numero-valor">{formatarDinheiro(numeros.faturamento)}</span>
+          <span className="tabuleiro__numero-rotulo">faturamento de hoje</span>
+        </div>
+        <div className="tabuleiro__numero">
+          <span className="tabuleiro__numero-valor">{formatarDinheiro(numeros.ticket)}</span>
+          <span className="tabuleiro__numero-rotulo">ticket médio</span>
+        </div>
+      </div>
 
-        {carregando && <p className="painel__ajuda">Carregando pedidos…</p>}
+      {carregando && <p className="tabuleiro__subtitulo">Carregando pedidos…</p>}
 
-        {!carregando && arquivados && (
-          <section className="painel__secao">
-            {pedidos.length === 0 && (
-              <p className="painel__aviso">
-                Nenhum pedido arquivado {periodo === 'hoje' ? 'hoje' : 'até agora'}.
-              </p>
-            )}
+      {!carregando && arquivados && (
+        <section className="historico">
+          {pedidos.length === 0 && (
+            <p className="tabuleiro__aviso-texto">
+              Nenhum pedido arquivado {periodo === 'hoje' ? 'hoje' : 'até agora'}.
+            </p>
+          )}
 
-            {pedidos.length > 0 && (
-              <ul className="painel__lista">
-                {pedidos.map((pedido) => (
-                  <li className="painel__item" key={pedido._id}>
-                    <div className="painel__item-texto">
-                      <strong>
-                        #{pedido.numero} · {pedido.cliente.nome}
-                      </strong>
-                      <span className="painel__item-detalhe">
-                        {dataDoPedido(pedido.criadoEm)} · {formatarDinheiro(pedido.total)} ·{' '}
-                        {pedido.status === 'cancelado' ? 'cancelado' : 'entregue'}
+          {pedidos.map((pedido) => (
+            <div className="historico__linha" key={pedido._id}>
+              <div className="historico__texto">
+                <strong className="historico__titulo">
+                  #{pedido.numero} · {pedido.cliente.nome}
+                </strong>
+                <span className="historico__detalhe">
+                  {dataDoPedido(pedido.criadoEm)} · {formatarDinheiro(pedido.total)} ·{' '}
+                  {pedido.status === 'cancelado' ? 'cancelado' : 'entregue'}
+                </span>
+              </div>
+
+              <div className="historico__acoes">
+                {confirmar?.id === pedido._id ? (
+                  <>
+                    <span className="ficha__confirmar-texto">Apagar de vez?</span>
+                    <button
+                      className="historico__botao historico__botao--perigo"
+                      type="button"
+                      disabled={ocupado === pedido._id}
+                      onClick={() => confirmarAcao(pedido)}
+                    >
+                      Apagar
+                    </button>
+                    <button
+                      className="historico__botao"
+                      type="button"
+                      onClick={() => setConfirmar(null)}
+                    >
+                      Não
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="historico__botao"
+                      type="button"
+                      disabled={ocupado === pedido._id}
+                      onClick={() =>
+                        executar(pedido._id, () => servicoPedidos.desarquivar(pedido._id))
+                      }
+                    >
+                      Desarquivar
+                    </button>
+
+                    {pedido.status === 'cancelado' && (
+                      <button
+                        className="historico__botao historico__botao--perigo"
+                        type="button"
+                        disabled={ocupado === pedido._id}
+                        onClick={() => setConfirmar({ id: pedido._id, acao: 'remover' })}
+                      >
+                        Apagar
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {!carregando && !arquivados && (
+        <>
+          {/* Desktop: seis prateleiras lado a lado, com arrastar e soltar. */}
+          <div className="tabuleiro__quadro">
+            {COLUNAS.map((coluna, indice) => {
+              const cartoes = noQuadro.filter((pedido) => pedido.status === coluna.status)
+              const arrastado = pedidos.find((pedido) => pedido._id === arrastandoId)
+              const aceita = arrastado ? podeAvancarPara(arrastado, coluna.status) : false
+
+              const classeAlvo =
+                colunaAlvo === coluna.status
+                  ? aceita
+                    ? 'prateleira--alvo'
+                    : 'prateleira--bloqueada'
+                  : ''
+
+              return (
+                <section
+                  className={`prateleira ${classeAlvo}`}
+                  key={coluna.status}
+                  data-status={coluna.status}
+                  onDragOver={(e) => {
+                    if (!arrastandoId) return
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = aceita ? 'move' : 'none'
+                    setColunaAlvo(coluna.status)
+                  }}
+                  onDragLeave={(e) => {
+                    // Só limpa quando o ponteiro sai da coluna de verdade.
+                    if (e.currentTarget.contains(e.relatedTarget)) return
+                    setColunaAlvo(null)
+                  }}
+                  onDrop={(e) => soltarNaColuna(e, coluna.status)}
+                >
+                  <header className="prateleira__topo">
+                    <h2 className="prateleira__nome">
+                      <span className="prateleira__passo" aria-hidden="true">
+                        {indice + 1}
                       </span>
-                    </div>
+                      {coluna.titulo}
+                    </h2>
+                    <span className="prateleira__contagem">{cartoes.length}</span>
+                  </header>
 
-                    <div className="painel__acoes-linha">
-                      {confirmar?.id === pedido._id ? (
-                        <>
-                          <span className="pedido__confirmar-texto">Apagar de vez?</span>
-                          <button
-                            className="botao botao--perigo botao--pequeno"
-                            type="button"
-                            disabled={ocupado === pedido._id}
-                            onClick={() => confirmarAcao(pedido)}
-                          >
-                            Apagar
-                          </button>
-                          <button
-                            className="botao botao--secundario botao--pequeno"
-                            type="button"
-                            onClick={() => setConfirmar(null)}
-                          >
-                            Não
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="botao botao--secundario botao--pequeno"
-                            type="button"
-                            disabled={ocupado === pedido._id}
-                            onClick={() =>
-                              executar(pedido._id, () => servicoPedidos.desarquivar(pedido._id))
-                            }
-                          >
-                            Desarquivar
-                          </button>
+                  <div className="prateleira__corpo">
+                    {cartoes.length === 0 && (
+                      <p className="prateleira__vazio">Nenhum pedido</p>
+                    )}
 
-                          {/* Apagar só vale para cancelado — a API recusa o resto. */}
-                          {pedido.status === 'cancelado' && (
-                            <button
-                              className="botao botao--texto-perigo"
-                              type="button"
-                              disabled={ocupado === pedido._id}
-                              onClick={() => setConfirmar({ id: pedido._id, acao: 'remover' })}
-                            >
-                              Apagar
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
+                    {cartoes.map((pedido) => ficha(pedido, coluna.acao))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
 
-        {!carregando && !arquivados && (
-          <>
-            {/* Desktop: as seis colunas lado a lado. */}
-            <div className="pedidos__quadro">
+          {/* Celular: uma etapa por vez, escolhida nas abas. */}
+          <div className="tabuleiro__movel">
+            <div className="tabuleiro__abas" role="tablist" aria-label="Etapas do pedido">
               {COLUNAS.map((coluna) => {
-                const cartoes = pedidos.filter((pedido) => pedido.status === coluna.status)
+                const total = totalDa(coluna.status)
 
                 return (
-                  <section
-                    className={`pedidos__coluna ${
-                      coluna.status === 'novo' && cartoes.length > 0
-                        ? 'pedidos__coluna--chamando'
-                        : ''
-                    }`}
+                  <button
                     key={coluna.status}
+                    type="button"
+                    role="tab"
+                    aria-selected={abaAtiva === coluna.status}
+                    className={`tabuleiro__aba ${
+                      abaAtiva === coluna.status ? 'tabuleiro__aba--ativa' : ''
+                    }`}
+                    onClick={() => setAbaEscolhida(coluna.status)}
                   >
-                    <header className="pedidos__coluna-topo">
-                      <h2 className="pedidos__coluna-titulo">
-                        <span
-                          className={`pedidos__coluna-ponto pedidos__coluna-ponto--${coluna.status}`}
-                          aria-hidden="true"
-                        />
-                        {coluna.titulo}
-                      </h2>
-                      <span className="pedidos__coluna-contagem">{cartoes.length}</span>
-                    </header>
-
-                    {cartoes.length === 0 && <p className="pedidos__vazio">vazio</p>}
-
-                    {cartoes.map((pedido) => cartao(pedido, coluna.acao))}
-                  </section>
+                    {coluna.titulo}
+                    <span className="tabuleiro__aba-contagem">{total}</span>
+                  </button>
                 )
               })}
             </div>
 
-            {/* Celular: uma etapa por vez, escolhida nas abas. */}
-            <div className="pedidos__movel">
-              <div className="pedidos__abas" role="tablist" aria-label="Etapas do pedido">
-                {COLUNAS.map((coluna) => {
-                  const total = totalDa(coluna.status)
+            <section className="prateleira">
+              <header className="prateleira__topo">
+                <h2 className="prateleira__nome">
+                  <span className="prateleira__passo" aria-hidden="true">
+                    {ORDEM.indexOf(colunaAtiva.status) + 1}
+                  </span>
+                  {colunaAtiva.titulo}
+                </h2>
+                <span className="prateleira__contagem">{totalDa(colunaAtiva.status)}</span>
+              </header>
 
-                  return (
-                    <button
-                      key={coluna.status}
-                      type="button"
-                      role="tab"
-                      aria-selected={abaAtiva === coluna.status}
-                      className={`pedidos__aba ${
-                        abaAtiva === coluna.status ? 'pedidos__aba--ativa' : ''
-                      } ${total > 0 ? 'pedidos__aba--cheia' : ''}`}
-                      onClick={() => setAbaEscolhida(coluna.status)}
-                    >
-                      <span
-                        className={`pedidos__coluna-ponto pedidos__coluna-ponto--${coluna.status}`}
-                        aria-hidden="true"
-                      />
-                      {coluna.titulo}
-                      <span className="pedidos__aba-contagem">{total}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <section className="pedidos__coluna pedidos__coluna--movel">
-                <header className="pedidos__coluna-topo">
-                  <h2 className="pedidos__coluna-titulo">
-                    <span
-                      className={`pedidos__coluna-ponto pedidos__coluna-ponto--${colunaAtiva.status}`}
-                      aria-hidden="true"
-                    />
-                    {colunaAtiva.titulo}
-                  </h2>
-                  <span className="pedidos__coluna-contagem">{totalDa(colunaAtiva.status)}</span>
-                </header>
-
+              <div className="prateleira__corpo">
                 {totalDa(colunaAtiva.status) === 0 && (
-                  <p className="pedidos__vazio">
-                    Nenhum pedido em “{colunaAtiva.titulo.toLowerCase()}” agora.
+                  <p className="prateleira__vazio">
+                    Nenhum pedido em “{colunaAtiva.titulo.toLowerCase()}”
                   </p>
                 )}
 
-                {pedidos
+                {noQuadro
                   .filter((pedido) => pedido.status === colunaAtiva.status)
-                  .map((pedido) => cartao(pedido, colunaAtiva.acao))}
-              </section>
-            </div>
+                  .map((pedido) => ficha(pedido, colunaAtiva.acao))}
+              </div>
+            </section>
+          </div>
 
-            {cancelados.length > 0 && (
-              <section className="painel__secao">
-                <h2 className="painel__subtitulo">Cancelados</h2>
-                <p className="painel__ajuda">
-                  Não entregues, então não contam no faturamento. Arquivar guarda o histórico;
-                  apagar só existe aqui, para faxina.
-                </p>
+          {noQuadro.length === 0 && (
+            <section className="tabuleiro__aviso">
+              <p className="tabuleiro__aviso-titulo">
+                Nenhum pedido {periodo === 'hoje' ? 'hoje' : 'até agora'}
+              </p>
+              <p className="tabuleiro__aviso-texto">
+                Quando um cliente fechar um pedido, ele aparece aqui na hora.
+              </p>
+            </section>
+          )}
 
-                <div className="pedidos__cancelados">
-                  {cancelados.map((pedido) => cartao(pedido, null))}
-                </div>
-              </section>
-            )}
+          {cancelados.length > 0 && (
+            <details className="tabuleiro__cancelados">
+              <summary>
+                Cancelados ({cancelados.length})
+              </summary>
 
-            {pedidos.length === 0 && (
-              <section className="painel__secao">
-                <p className="painel__aviso">
-                  Nenhum pedido {periodo === 'hoje' ? 'hoje' : 'até agora'}. Quando um cliente
-                  fechar o pedido, ele aparece aqui na hora.
-                </p>
-              </section>
-            )}
-          </>
-        )}
-      </main>
+              <div className="tabuleiro__cancelados-lista">
+                {cancelados.map((pedido) => ficha(pedido, null))}
+              </div>
+            </details>
+          )}
+        </>
+      )}
     </div>
   )
 }

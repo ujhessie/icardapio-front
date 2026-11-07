@@ -1,0 +1,866 @@
+/* Tela de pedidos: quadro kanban do lojista.
+ *
+ * Segue a linguagem do dashboard: fundo frio, cartões brancos, sombra suave,
+ * laranja só na ação. Nada de gradiente, vidro ou enfeite animado.
+ *
+ * Estas classes são exclusivas desta tela (prefixos tabuleiro/prateleira/ficha)
+ * para não disputar espaço com as classes antigas que vivem no Painel.css.
+ */
+
+.tabuleiro {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 26px 26px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--painel-texto);
+}
+
+/* ---------- Topo ---------- */
+
+.tabuleiro__topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tabuleiro__titulo {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.tabuleiro__subtitulo {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--painel-fraco);
+  max-width: 64ch;
+}
+
+.tabuleiro__controles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Sinal de tempo real: mentir "ao vivo" é pior que avisar que caiu. */
+.tabuleiro__sinal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+}
+
+.tabuleiro__sinal::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.tabuleiro__sinal--ligado {
+  color: var(--cor-ok);
+}
+
+.segmento {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 10px;
+  background: var(--painel-superficie);
+}
+
+.segmento__botao {
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-family: var(--fonte);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--painel-fraco);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.segmento__botao:hover {
+  color: var(--painel-texto);
+}
+
+.segmento__botao--ativo,
+.segmento__botao--ativo:hover {
+  background: var(--painel-lateral);
+  color: #fff;
+}
+
+/* ---------- Números do dia ---------- */
+
+.tabuleiro__resumo {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--painel-borda);
+  border-radius: var(--raio-card);
+  background: var(--painel-superficie);
+  box-shadow: var(--sombra-card);
+  overflow: hidden;
+}
+
+.tabuleiro__numero {
+  flex: 1 1 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 13px 18px;
+  border-left: 1px solid var(--painel-borda);
+}
+
+.tabuleiro__numero:first-child {
+  border-left: 0;
+}
+
+.tabuleiro__numero-valor {
+  font-family: var(--fonte-mono);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tabuleiro__numero-rotulo {
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+}
+
+.tabuleiro__numero--destaque .tabuleiro__numero-valor {
+  color: var(--cor-destaque);
+}
+
+/* ---------- Quadro (desktop) ---------- */
+
+/* Seis etapas numa fileira só, como quadro de verdade. A rolagem fica
+   contida no quadro: a página em si nunca rola de lado. */
+.tabuleiro__quadro {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(272px, 1fr);
+  gap: 14px;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  min-width: 0;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #d7dae5 transparent;
+}
+
+.tabuleiro__quadro::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tabuleiro__quadro::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d7dae5;
+}
+
+.prateleira {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--painel-borda);
+  border-radius: var(--raio-card);
+  background: #fafbfd;
+  scroll-snap-align: start;
+}
+
+.prateleira__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid var(--painel-borda);
+}
+
+.prateleira__nome {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--painel-texto);
+}
+
+/* Número da etapa: dá a ordem da fila mesmo com as colunas quebrando linha. */
+.prateleira__passo {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #eceef5;
+  color: var(--painel-fraco);
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.prateleira__contagem {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--painel-fraco);
+  background: #eceef5;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.prateleira__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 88px;
+  border-radius: 12px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Coluna que aceita o cartão arrastado. */
+.prateleira--alvo .prateleira__corpo {  background: #fff1e4;
+  box-shadow: inset 0 0 0 1px #f6c89f;
+}
+
+/* Coluna para onde o pedido não pode ir: esmaece em vez de mentir que aceita. */
+.prateleira--bloqueada .prateleira__corpo {
+  background: #f7f8fb;
+}
+
+.prateleira__vazio {
+  border: 1px dashed var(--painel-borda);
+  border-radius: 12px;
+  padding: 18px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--painel-fraco);
+}
+
+/* ---------- Ficha do pedido ---------- */
+
+.ficha {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 14px;
+  background: var(--painel-superficie);
+  box-shadow: 0 1px 2px rgba(20, 22, 31, 0.04), 0 12px 26px -22px rgba(20, 22, 31, 0.55);
+  cursor: grab;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ficha:active {
+  cursor: grabbing;
+}
+
+.ficha:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+}
+
+.ficha--arrastando {
+  opacity: 0.4;
+}
+
+/* Pedido que ninguém aceitou ainda: borda quente, sem piscar. */
+.ficha--novo {
+  border-color: #f6d3b4;
+  box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.07), 0 12px 26px -22px rgba(20, 22, 31, 0.55);
+}
+
+.ficha__cabeca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ficha__numero {
+  font-family: var(--fonte-mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.ficha--novo .ficha__numero {
+  color: var(--cor-destaque);
+}
+
+.ficha__hora {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--painel-fraco);
+}
+
+.ficha__origem {
+  margin-left: auto;
+  font-family: var(--fonte-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+  border: 1px solid var(--painel-borda);
+  border-radius: 999px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+.ficha__origem--entrega {
+  color: #2f6fd0;
+  border-color: #dbe5fb;
+  background: #f2f6ff;
+}
+
+.ficha__cliente {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* No celular o telefone precisa discar: é por ali que se avisa o cliente. */
+.ficha__telefone {
+  align-self: flex-start;
+  margin-top: -4px;
+  font-size: 12.5px;
+  color: var(--painel-fraco);
+  text-decoration: none;
+}
+
+.ficha__telefone:hover {
+  color: var(--cor-destaque);
+  text-decoration: underline;
+}
+
+.ficha__itens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ficha__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.ficha__item-qtd {
+  flex-shrink: 0;
+  min-width: 22px;
+  font-family: var(--fonte-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cor-destaque);
+}
+
+.ficha__obs {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--cor-alerta);
+}
+
+.ficha__endereco {
+  padding-left: 10px;
+  border-left: 2px solid var(--painel-borda);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--painel-fraco);
+}
+
+.ficha__referencia {
+  display: block;
+  font-size: 11.5px;
+  color: var(--painel-fraco);
+}
+
+.ficha__tempo {
+  display: flex;
+}
+
+.ficha__rodape {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--painel-borda);
+}
+
+.ficha__pagamento {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ficha__pagamento-nome {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+}
+
+.ficha__troco {
+  font-size: 11px;
+  color: var(--painel-fraco);
+}
+
+.ficha__total {
+  font-family: var(--fonte-mono);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- Ações da ficha ---------- */
+
+.ficha__acao {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--cor-destaque);
+  color: #fff;
+  font-family: var(--fonte);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.ficha__acao:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.ficha__acao:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ficha__links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ficha__link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--fonte);
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--painel-fraco);
+  cursor: pointer;
+}
+
+.ficha__link:hover:not(:disabled) {
+  color: var(--painel-texto);
+  text-decoration: underline;
+}
+
+.ficha__link--perigo:hover:not(:disabled) {
+  color: var(--cor-erro);
+}
+
+.ficha__link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Confirmação dentro do próprio cartão: nada de alert() do navegador. */
+.ficha__confirmar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #f3cfcb;
+  border-radius: 10px;
+  background: #fdf2f1;
+}
+
+.ficha__confirmar-texto {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--cor-erro);
+}
+
+.ficha__confirmar-botoes {
+  display: flex;
+  gap: 8px;
+}
+
+.ficha__confirmar-botoes button {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ficha__confirmar-sim {
+  background: var(--cor-erro);
+  color: #fff;
+}
+
+.ficha__confirmar-nao {
+  background: #fff;
+  border-color: var(--painel-borda);
+  color: var(--painel-texto);
+}
+
+/* ---------- Cancelados (fechados por padrão) ---------- */
+
+.tabuleiro__cancelados {
+  border: 1px solid var(--painel-borda);
+  border-radius: var(--raio-card);
+  background: var(--painel-superficie);
+  box-shadow: var(--sombra-card);
+  padding: 12px 16px;
+}
+
+.tabuleiro__cancelados summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--painel-fraco);
+  cursor: pointer;
+  list-style: none;
+}
+
+.tabuleiro__cancelados summary::-webkit-details-marker {
+  display: none;
+}
+
+.tabuleiro__cancelados summary::before {
+  content: '▸';
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.tabuleiro__cancelados[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.tabuleiro__cancelados summary:hover {
+  color: var(--painel-texto);
+}
+
+.tabuleiro__cancelados-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ---------- Histórico (arquivados) ---------- */
+
+.historico {
+  border: 1px solid var(--painel-borda);
+  border-radius: var(--raio-card);
+  background: var(--painel-superficie);
+  box-shadow: var(--sombra-card);
+  padding: 6px 18px;
+}
+
+.historico__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--painel-borda);
+}
+
+.historico__linha:last-child {
+  border-bottom: 0;
+}
+
+.historico__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.historico__titulo {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.historico__detalhe {
+  font-family: var(--fonte-mono);
+  font-size: 11.5px;
+  color: var(--painel-fraco);
+}
+
+.historico__acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.historico__botao {
+  padding: 6px 12px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 8px;
+  background: #fff;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--painel-texto);
+  cursor: pointer;
+}
+
+.historico__botao:hover:not(:disabled) {
+  border-color: var(--cor-destaque);
+  color: var(--cor-destaque);
+}
+
+.historico__botao--perigo {
+  border-color: #f3cfcb;
+  color: var(--cor-erro);
+}
+
+.historico__botao--perigo:hover:not(:disabled) {
+  background: #fdf2f1;
+  border-color: var(--cor-erro);
+}
+
+/* ---------- Aviso de estado vazio ---------- */
+
+.tabuleiro__aviso {
+  border: 1px solid var(--painel-borda);
+  border-radius: var(--raio-card);
+  background: var(--painel-superficie);
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.tabuleiro__aviso-titulo {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.tabuleiro__aviso-texto {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--painel-fraco);
+}
+
+.tabuleiro__erro {
+  padding: 10px 14px;
+  border: 1px solid #f3cfcb;
+  border-radius: 10px;
+  background: #fdf2f1;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--cor-erro);
+}
+
+/* ---------- Celular e tablet: uma etapa por vez ---------- */
+
+.tabuleiro__movel {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .tabuleiro {
+    padding: 18px 14px 36px;
+    gap: 14px;
+  }
+
+  .tabuleiro__titulo {
+    font-size: 23px;
+  }
+
+  /* Arrastar é coisa de mouse: no toque a instrução só confunde. */
+  .tabuleiro__dica {
+    display: none;
+  }
+
+  .tabuleiro__quadro {
+    display: none;
+  }
+
+  .tabuleiro__movel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  /* Abas rolam dentro da própria faixa: a página nunca ganha rolagem lateral. */
+  .tabuleiro__abas {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+
+  .tabuleiro__abas::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabuleiro__aba {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--painel-borda);
+    border-radius: 999px;
+    background: var(--painel-superficie);
+    color: var(--painel-fraco);
+    font-family: var(--fonte);
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .tabuleiro__aba--ativa,
+  .tabuleiro__aba--ativa:hover {
+    background: var(--painel-lateral);
+    border-color: var(--painel-lateral);
+    color: #fff;
+  }
+
+  .tabuleiro__aba-contagem {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #f1f2f7;
+    color: var(--painel-fraco);
+    font-family: var(--fonte-mono);
+    font-size: 10.5px;
+    text-align: center;
+  }
+
+  .tabuleiro__aba--ativa .tabuleiro__aba-contagem {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+
+  .tabuleiro__resumo {
+    /* Quatro números ainda cabem numa linha no tablet. */
+    flex-wrap: nowrap;
+  }
+
+  .tabuleiro__numero {
+    padding: 12px 14px;
+  }
+
+  .tabuleiro__numero-valor {
+    font-size: 17px;
+  }
+
+  /* No toque não existe arrastar: o cartão cresce e o botão também. */
+  .ficha {
+    padding: 15px;
+  }
+
+  /* Uma etapa por vez: a coluna cresce à vontade, sem rolagem interna. */
+  .prateleira__corpo {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    align-items: start;
+  }
+
+  .ficha__cliente {
+    font-size: 16px;
+  }
+
+  .ficha__item {
+    font-size: 14px;
+  }
+
+  .ficha__acao {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .ficha__telefone {
+    font-size: 13.5px;
+  }
+
+  .tabuleiro__cancelados-lista {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Celular: números em 2x2 e cartão de etapa ocupando a largura toda. */
+@media (max-width: 720px) {
+  .tabuleiro__resumo {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tabuleiro__numero:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--painel-borda);
+  }
+
+  .tabuleiro__numero:nth-child(4) {
+    border-top: 1px solid var(--painel-borda);
+  }
+
+  .prateleira__corpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ficha,
+  .prateleira__corpo,
+  .segmento__botao,
+  .ficha__acao,
+  .tabuleiro__cancelados summary::before {
+    transition: none;
+  }
+}
