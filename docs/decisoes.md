@@ -232,3 +232,26 @@ Jesse estiver trabalhando só nele.
 passar pelo painel. Custo aceito: o guia existe em dois lugares e precisa ser atualizado nos
 dois quando mudar — melhor que ter metade do contexto faltando.
 
+---
+
+## 021 — Quadro de pedidos redesenhado, com arrastar e soltar (07/11/2026)
+
+**Contexto:** o quadro era a tela mais usada do painel e a mais fraca: cartão pequeno, letra
+miúda, seis colunas espremidas e nenhum jeito de mover o pedido sem caçar o botão certo. Duas
+tentativas anteriores foram reprovadas, e uma delas mutilou o `Painel.css` — derrubou Horários.
+**Decisão:** a tela ganhou arquivo próprio (`Pedidos.css`) com prefixos exclusivos
+(`tabuleiro__`, `prateleira__`, `ficha__`, `historico__`), e o `Painel.css` não é mais tocado: as
+classes antigas `pedidos__`/`pedido__` ficam órfãs, sem efeito. As seis etapas ficam numa fileira
+só, cada uma como um cartão com número (1–6) e contagem, com a rolagem horizontal **presa no
+quadro** (a página nunca rola de lado). Arrastar a ficha muda a etapa e **só avança**: a coluna
+que não aceita o pedido esmaece em vez de fingir que aceita, e a API garante a mesma regra.
+Cancelado sai do quadro e vive numa gaveta `<details>` fechada no fim da tela. No celular e no
+tablet (≤1024px) o quadro vira abas com contagem e uma etapa por vez, com cartão e botão maiores.
+Cancelar e apagar confirmam dentro do próprio cartão (nunca `alert()`), e o contador de etapa usa
+os tempos da loja (`5/5/30/10` como padrão).
+**Consequência:** o visual novo não disputa CSS com as outras telas, então Horários, dashboard e
+Configurações continuam como estavam. A API precisou ir no mesmo deploy: pedido em aberto passou
+a aparecer sempre na lista (antes sumia na virada do dia), os `marcos` dão o tempo certo de cada
+etapa e `/pedidos/estatisticas` alimenta o painel. No toque não existe arrastar — lá quem manda é
+o botão do cartão.
+

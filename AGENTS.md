@@ -316,6 +316,7 @@ Histórico completo em [`docs/decisoes.md`](docs/decisoes.md).
 | 04/11/2026 | Acompanhamento com status grande, WhatsApp com o nº do pedido e "pedir de novo" no fim |
 | 04/11/2026 | Nome do produto: **iCardápio** (`icardapio.vercel.app`) |
 | 04/11/2026 | Deploy na Vercel: API vira função serverless (`api/index.js`) e o tempo real sai do Socket.io para polling |
+| 07/11/2026 | Quadro de pedidos com CSS próprio (`Pedidos.css`): arrastar e soltar, cancelados em gaveta e uma etapa por vez no celular |
 
 ---
 
@@ -335,6 +336,7 @@ Histórico completo em [`docs/decisoes.md`](docs/decisoes.md).
 - [x] Fase 4.4 — cardápio público redesenhado: capa da loja, lista em 2 colunas, modal do produto e categorias fixas
 - [x] Fase 4.5 — checkout em página única (resumo fixo/barra no celular) e acompanhamento redesenhado com WhatsApp e repetir
 - [x] Fase 4.6 — adaptação para deploy: API serverless na Vercel (`api/index.js`), conexão do Mongo reaproveitada e tempo real por polling
+- [x] Fase 4.7 — `/admin/pedidos` redesenhado: `Pedidos.css` próprio, seis etapas numa fileira com rolagem presa no quadro, arrastar e soltar (só avança), cancelados em gaveta fechada e uma etapa por vez no celular
 
 ### Em andamento
 - (nada — próxima tela a definir com o Jesse)
