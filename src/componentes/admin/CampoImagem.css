@@ -1,0 +1,247 @@
+/*
+ * Campo de imagem (foto de produto, logo e capa da loja).
+ *
+ * Mesma linguagem do resto do painel: borda fina, cartão branco, mono para
+ * número e etiqueta. O estado "arrastando" muda a cor da borda em vez de
+ * sacudir a tela — quem usa no celular não tem mouse.
+ */
+
+.img {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.img__topo {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.img__rotulo {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+}
+
+.img__limite {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--cor-neutro);
+}
+
+.img__ajuda {
+  font-size: 12.5px;
+  color: var(--cor-texto-fraco);
+  max-width: 55ch;
+}
+
+/* O input continua no DOM (é ele que abre a janela de arquivos), só invisível. */
+.img__arquivo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.img__soltar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 22px 16px;
+  border: 1.5px dashed var(--cor-borda);
+  border-radius: 12px;
+  background: var(--cor-fundo);
+  color: var(--cor-texto-fraco);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.img__soltar:hover:not(:disabled),
+.img__soltar--ativo {
+  border-color: var(--cor-destaque);
+  background: color-mix(in srgb, var(--cor-destaque) 5%, #fff);
+  color: var(--cor-texto);
+}
+
+.img__soltar:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.img__soltar-icone {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--cor-borda);
+  background: #fff;
+  color: var(--cor-destaque);
+}
+
+/* ---------- Prévia pronta ---------- */
+
+.img__pronto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 14px;
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.img__previa {
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--cor-fundo);
+}
+
+.img__previa img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.img__previa--quadrada {
+  width: 80px;
+  height: 80px;
+}
+
+/* Logo: fundo branco e `contain`, senão logo com transparência some no cinza. */
+.img__previa--logo {
+  width: 64px;
+  height: 64px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--cor-borda);
+}
+
+.img__previa--logo img {
+  object-fit: contain;
+  padding: 4px;
+}
+
+/* Capa ocupa a linha inteira: é assim que ela aparece no cardápio. */
+.img__previa--larga {
+  flex: 1 1 100%;
+  height: 104px;
+}
+
+.img__previa-vazia {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-neutro);
+}
+
+.img__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.img__aviso {
+  flex: 1 1 100%;
+  font-size: 12.5px;
+  color: var(--cor-alerta);
+}
+
+/* ---------- Progresso ---------- */
+
+.img__progresso {
+  position: relative;
+  height: 26px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-fundo);
+  overflow: hidden;
+}
+
+.img__progresso-barra {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--cor-destaque) 20%, #fff);
+  transition: width 0.2s ease;
+}
+
+.img__progresso-texto {
+  position: relative;
+  display: block;
+  line-height: 24px;
+  text-align: center;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-texto);
+}
+
+.img__erro {
+  font-size: 12.5px;
+  color: var(--cor-erro);
+}
+
+/* ---------- Link manual ---------- */
+
+.img__link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.img__link input {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--cor-texto);
+  font-size: 13px;
+}
+
+.img__link input:focus {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 1px;
+}
+
+.img__link-abrir {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-destaque);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--cor-destaque) 35%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.img__link-abrir:hover {
+  text-decoration-color: var(--cor-destaque);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .img__soltar,
+  .img__progresso-barra {
+    transition: none;
+  }
+}

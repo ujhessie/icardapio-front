@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import CampoImagem from '../../componentes/admin/CampoImagem.jsx'
 import { cardapio as servicoCardapio } from '../../servicos/cardapio.js'
 import { formatarDinheiro, paraCentavos, paraReais } from '../../utils/dinheiro.js'
 import './Painel.css'
@@ -8,6 +9,7 @@ const PRODUTO_VAZIO = {
   nome: '',
   descricao: '',
   preco: '',
+  imagem: '',
   disponivel: true,
 }
 
@@ -26,6 +28,8 @@ export default function Cardapio() {
   const [formulario, setFormulario] = useState(PRODUTO_VAZIO)
   const [produtoEditandoId, setProdutoEditandoId] = useState('')
   const [produtoApagando, setProdutoApagando] = useState('')
+  // Upload em voo: o formulário espera a foto chegar para não salvar sem ela.
+  const [envios, setEnvios] = useState({})
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -133,6 +137,7 @@ export default function Cardapio() {
       nome: produto.nome,
       descricao: produto.descricao || '',
       preco: paraReais(produto.preco),
+      imagem: produto.imagem || '',
       disponivel: produto.disponivel,
     })
   }
@@ -163,6 +168,7 @@ export default function Cardapio() {
       nome: formulario.nome,
       descricao: formulario.descricao,
       preco: centavos,
+      imagem: formulario.imagem,
       disponivel: formulario.disponivel,
     }
 
@@ -215,6 +221,8 @@ export default function Cardapio() {
       setProcessando('')
     }
   }
+
+  const enviandoImagem = Object.values(envios).some(Boolean)
 
   return (
     <div className="painel">
@@ -367,6 +375,18 @@ export default function Cardapio() {
           </p>
 
           <form className="painel__formulario" onSubmit={salvarProduto}>
+            <CampoImagem
+              className="campo--largo"
+              rotulo="Foto do produto"
+              ajuda="É o que o cliente vê no cardápio. Foto quadrada, com o prato centralizado, funciona melhor."
+              tipo="produto"
+              formato="quadrada"
+              valor={formulario.imagem}
+              onMudar={(url) => setFormulario((atual) => ({ ...atual, imagem: url }))}
+              aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, produto: ativo }))}
+              desabilitado={processando === 'produto'}
+            />
+
             <label className="campo">
               <span>Categoria</span>
               <select value={formulario.categoriaId} onChange={alterar('categoriaId')} required>
@@ -427,12 +447,18 @@ export default function Cardapio() {
                 </button>
               )}
 
-              <button className="botao" type="submit" disabled={processando === 'produto'}>
-                {processando === 'produto'
-                  ? 'Salvando…'
-                  : produtoEditandoId
-                    ? 'Salvar alterações'
-                    : 'Adicionar produto'}
+              <button
+                className="botao"
+                type="submit"
+                disabled={processando === 'produto' || enviandoImagem}
+              >
+                {enviandoImagem
+                  ? 'Enviando a foto…'
+                  : processando === 'produto'
+                    ? 'Salvando…'
+                    : produtoEditandoId
+                      ? 'Salvar alterações'
+                      : 'Adicionar produto'}
               </button>
             </div>
           </form>
@@ -460,11 +486,21 @@ export default function Cardapio() {
                   <ul className="painel__lista">
                     {itens.map((produto) => (
                       <li key={produto._id} className="painel__item">
-                        <div className="painel__item-texto">
-                          <strong>{produto.nome}</strong>
-                          {produto.descricao && (
-                            <span className="painel__item-detalhe">{produto.descricao}</span>
-                          )}
+                        <div className="cardapio__item">
+                          <span className="cardapio__miniatura">
+                            {produto.imagem ? (
+                              <img src={produto.imagem} alt="" loading="lazy" />
+                            ) : (
+                              produto.nome.charAt(0).toUpperCase()
+                            )}
+                          </span>
+
+                          <div className="painel__item-texto">
+                            <strong>{produto.nome}</strong>
+                            {produto.descricao && (
+                              <span className="painel__item-detalhe">{produto.descricao}</span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="painel__acoes-linha">

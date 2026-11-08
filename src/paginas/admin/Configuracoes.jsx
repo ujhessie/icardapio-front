@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CampoImagem from '../../componentes/admin/CampoImagem.jsx'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { TEMPO_MAX, TEMPO_MIN, TEMPOS_PADRAO, tempoTotal } from '../../utils/tempos.js'
 import './Configuracoes.css'
@@ -7,13 +8,31 @@ import './Painel.css'
 /*
  * Configurações da loja.
  *
- * Por enquanto só os tempos de atendimento — que é o que o painel usa para
- * avisar que um pedido está atrasado. Cada loja tem os seus: uma pizzaria não
- * tem o mesmo ritmo de uma barbearia.
+ * Duas coisas que o lojista ajusta sozinho:
  *
- * Os valores são guardados em minutos, por etapa, e o relógio de cada etapa
- * começa quando o pedido entra nela.
+ * 1. Tempos de atendimento — o que o painel usa para avisar que um pedido está
+ *    atrasado. Cada loja tem os seus: uma pizzaria não tem o ritmo de uma
+ *    barbearia.
+ * 2. Identidade — nome, logo, foto de capa e cor. É o que o cliente vê primeiro
+ *    no cardápio.
+ *
+ * Os valores de tempo são guardados em minutos, por etapa, e o relógio de cada
+ * etapa começa quando o pedido entra nela.
  */
+
+const COR_PADRAO = '#e85d04'
+
+const IDENTIDADE_VAZIA = {
+  nome: '',
+  logo: '',
+  capa: '',
+  corPrimaria: COR_PADRAO,
+}
+
+// O input de cor só aceita "#rrggbb": valor antigo ou digitado à mão cai no padrão.
+function corValida(valor) {
+  return /^#[0-9a-f]{6}$/i.test(valor || '') ? valor : COR_PADRAO
+}
 
 const CAMPOS = [
   {
@@ -64,6 +83,14 @@ export default function Configuracoes() {
   const [salvo, setSalvo] = useState(false)
   const [erro, setErro] = useState('')
 
+  const [identidade, setIdentidade] = useState(IDENTIDADE_VAZIA)
+  const [identidadeSuja, setIdentidadeSuja] = useState(false)
+  const [identidadeSalva, setIdentidadeSalva] = useState(false)
+  const [salvandoIdentidade, setSalvandoIdentidade] = useState(false)
+  const [erroIdentidade, setErroIdentidade] = useState('')
+  // Upload em voo: salvar no meio perderia a imagem.
+  const [envios, setEnvios] = useState({})
+
   async function carregar() {
     setCarregando(true)
 
@@ -72,8 +99,16 @@ export default function Configuracoes() {
 
       setLoja(dados)
       setValores(comoTexto(dados.tempos))
+      setIdentidade({
+        nome: dados.nome || '',
+        logo: dados.logo || '',
+        capa: dados.capa || '',
+        corPrimaria: corValida(dados.corPrimaria),
+      })
       setSujo(false)
+      setIdentidadeSuja(false)
       setErro('')
+      setErroIdentidade('')
     } catch (e) {
       setErro(e.message)
     } finally {
@@ -93,6 +128,14 @@ export default function Configuracoes() {
 
     return () => clearTimeout(timer)
   }, [salvo])
+
+  useEffect(() => {
+    if (!identidadeSalva) return undefined
+
+    const timer = setTimeout(() => setIdentidadeSalva(false), 1800)
+
+    return () => clearTimeout(timer)
+  }, [identidadeSalva])
 
   function alterar(chave, valor) {
     setValores((atual) => ({ ...atual, [chave]: valor }))
@@ -158,6 +201,54 @@ export default function Configuracoes() {
   const total = tempoTotal(
     Object.fromEntries(CAMPOS.map(({ chave, rotulo }) => [chave, Number(valores[chave]) || 0])),
   )
+
+  /* ---------------- Identidade da loja ---------------- */
+
+  function alterarIdentidade(campo, valor) {
+    setIdentidade((atual) => ({ ...atual, [campo]: valor }))
+    setIdentidadeSuja(true)
+    setIdentidadeSalva(false)
+    setErroIdentidade('')
+  }
+
+  async function salvarIdentidade(evento) {
+    evento.preventDefault()
+    setErroIdentidade('')
+
+    const nome = identidade.nome.trim()
+
+    if (nome.length < 2) {
+      setErroIdentidade('Informe o nome da loja.')
+      return
+    }
+
+    setSalvandoIdentidade(true)
+
+    try {
+      const { loja: dados } = await servicoLojas.atualizarMinha({
+        nome,
+        logo: identidade.logo,
+        capa: identidade.capa,
+        corPrimaria: corValida(identidade.corPrimaria),
+      })
+
+      setLoja(dados)
+      setIdentidade({
+        nome: dados.nome,
+        logo: dados.logo || '',
+        capa: dados.capa || '',
+        corPrimaria: corValida(dados.corPrimaria),
+      })
+      setIdentidadeSuja(false)
+      setIdentidadeSalva(true)
+    } catch (e) {
+      setErroIdentidade(e.message)
+    } finally {
+      setSalvandoIdentidade(false)
+    }
+  }
+
+  const enviandoImagem = Object.values(envios).some(Boolean)
 
   return (
     <div className="painel">
@@ -239,6 +330,139 @@ export default function Configuracoes() {
                 >
                   Voltar ao padrão
                 </button>
+              </div>
+            </section>
+
+            <section className="painel__secao">
+              <h2 className="painel__subtitulo">Identidade da loja</h2>
+              <p className="painel__ajuda">
+                Nome, logo, foto do topo e cor. É a primeira coisa que o cliente vê quando abre o
+                cardápio.
+              </p>
+
+              {erroIdentidade && <p className="painel__aviso painel__aviso--erro">{erroIdentidade}</p>}
+
+              <div className="identidade">
+                <div className="identidade__previa">
+                  <span className="identidade__previa-titulo">como o cliente vê</span>
+
+                  <div
+                    className="identidade__previa-capa"
+                    style={
+                      identidade.capa
+                        ? { backgroundImage: `url("${identidade.capa}")` }
+                        : { backgroundColor: corValida(identidade.corPrimaria) }
+                    }
+                  >
+                    {!identidade.capa && (
+                      <span className="identidade__previa-dica">
+                        sem foto de capa — o topo fica na cor da loja
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="identidade__previa-rodape">
+                    <span
+                      className="identidade__previa-logo"
+                      style={{ backgroundColor: corValida(identidade.corPrimaria) }}
+                    >
+                      {identidade.logo ? (
+                        <img src={identidade.logo} alt="" />
+                      ) : (
+                        (identidade.nome || 'Loja').charAt(0).toUpperCase()
+                      )}
+                    </span>
+
+                    <span className="identidade__previa-texto">
+                      <strong>{identidade.nome || 'Nome da loja'}</strong>
+                      {loja?.slug && <code>/{loja.slug}</code>}
+                    </span>
+                  </div>
+                </div>
+
+                <form className="identidade__form" onSubmit={salvarIdentidade}>
+                  <label className="campo">
+                    <span>Nome da loja</span>
+                    <input
+                      value={identidade.nome}
+                      onChange={(evento) => alterarIdentidade('nome', evento.target.value)}
+                      placeholder="Ex: Pizzaria do Zé"
+                      maxLength={60}
+                      required
+                    />
+                  </label>
+
+                  <div className="campo">
+                    <span>Cor principal</span>
+
+                    <div className="identidade__cor">
+                      <input
+                        type="color"
+                        value={corValida(identidade.corPrimaria)}
+                        onChange={(evento) => alterarIdentidade('corPrimaria', evento.target.value)}
+                        aria-label="Cor principal da loja"
+                      />
+                      <code>{corValida(identidade.corPrimaria)}</code>
+
+                      {corValida(identidade.corPrimaria) !== COR_PADRAO && (
+                        <button
+                          className="img__link-abrir"
+                          type="button"
+                          onClick={() => alterarIdentidade('corPrimaria', COR_PADRAO)}
+                        >
+                          voltar ao padrão
+                        </button>
+                      )}
+                    </div>
+
+                    <span className="identidade__dica">
+                      Usada nos botões, no topo e no destaque do cardápio.
+                    </span>
+                  </div>
+
+                  <CampoImagem
+                    rotulo="Logo"
+                    ajuda="De preferência quadrada e com fundo transparente (PNG). Aparece no topo do cardápio."
+                    tipo="logo"
+                    formato="logo"
+                    valor={identidade.logo}
+                    onMudar={(url) => alterarIdentidade('logo', url)}
+                    aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, logo: ativo }))}
+                    desabilitado={salvandoIdentidade}
+                  />
+
+                  <CampoImagem
+                    rotulo="Foto de capa"
+                    ajuda="A faixa do topo do cardápio. Foto larga (deitada) funciona melhor; o corte é automático."
+                    tipo="capa"
+                    formato="larga"
+                    valor={identidade.capa}
+                    onMudar={(url) => alterarIdentidade('capa', url)}
+                    aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, capa: ativo }))}
+                    desabilitado={salvandoIdentidade}
+                  />
+
+                  <div className="painel__acoes identidade__acoes">
+                    {identidadeSuja && (
+                      <span className="horarios__pendente">alterações não salvas</span>
+                    )}
+                    {identidadeSalva && !identidadeSuja && (
+                      <span className="horarios__salvo">salvo</span>
+                    )}
+
+                    <button
+                      className="botao"
+                      type="submit"
+                      disabled={salvandoIdentidade || enviandoImagem}
+                    >
+                      {enviandoImagem
+                        ? 'Enviando a imagem…'
+                        : salvandoIdentidade
+                          ? 'Salvando…'
+                          : 'Salvar identidade'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </section>
 

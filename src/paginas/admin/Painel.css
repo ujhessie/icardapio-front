@@ -525,6 +525,36 @@
   width: auto;
 }
 
+/* Linha do produto na listagem: miniatura + nome, como o cliente vê. */
+.cardapio__item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-width: 0;
+}
+
+.cardapio__miniatura {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--cor-destaque) 10%, #fff);
+  color: var(--cor-destaque);
+  font-family: var(--fonte-titulo);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.cardapio__miniatura img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .aviso {
   border-radius: 8px;
   padding: var(--esp-3) var(--esp-4);
