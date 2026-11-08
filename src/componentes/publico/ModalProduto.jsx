@@ -20,6 +20,8 @@ export default function ModalProduto({
 }) {
   const [quantidade, setQuantidade] = useState(1)
   const [observacao, setObservacao] = useState('')
+  // Foto externa pode sair do ar: cai na inicial em vez de quadrado quebrado.
+  const [fotoFalhou, setFotoFalhou] = useState(false)
   const botaoFechar = useRef(null)
   const fundo = useRef(null)
   const aoFechar = useRef(onFechar)
@@ -34,6 +36,7 @@ export default function ModalProduto({
   useEffect(() => {
     setQuantidade(1)
     setObservacao('')
+    setFotoFalhou(false)
   }, [produto?._id])
 
   // Esc fecha, o foco vai pro X e volta pro card de onde o cliente veio.
@@ -101,8 +104,8 @@ export default function ModalProduto({
         </button>
 
         <div className="loja__modal-foto" aria-hidden="true">
-          {produto.imagem ? (
-            <img src={produto.imagem} alt="" />
+          {produto.imagem && !fotoFalhou ? (
+            <img src={produto.imagem} alt="" onError={() => setFotoFalhou(true)} />
           ) : (
             <span>{produto.nome.charAt(0).toUpperCase()}</span>
           )}

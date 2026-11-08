@@ -7,6 +7,64 @@ import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 
+/*
+ * Card do produto.
+ *
+ * A foto é externa (URL do painel) e pode sair do ar: `fotoFalhou` troca a
+ * imagem pela inicial da loja em vez de deixar um quadrado quebrado. Cada card
+ * guarda o próprio estado — um item sem foto não afeta os outros.
+ */
+function CartaoProduto({ produto, podePedir, onAbrir, onAdicionar }) {
+  const [fotoFalhou, setFotoFalhou] = useState(false)
+  const temFoto = Boolean(produto.imagem) && !fotoFalhou
+
+  return (
+    <article className="loja__produto">
+      <button
+        className="loja__produto-abrir"
+        type="button"
+        onClick={onAbrir}
+        aria-label={`Ver ${produto.nome}`}
+      >
+        <span className={`loja__produto-foto ${temFoto ? 'loja__produto-foto--cheia' : ''}`}>
+          {temFoto ? (
+            <img
+              src={produto.imagem}
+              alt=""
+              loading="lazy"
+              onError={() => setFotoFalhou(true)}
+            />
+          ) : (
+            produto.nome.charAt(0).toUpperCase()
+          )}
+        </span>
+
+        <span className="loja__produto-texto">
+          <span className="loja__produto-nome">{produto.nome}</span>
+
+          {produto.descricao && (
+            <span className="loja__produto-desc">{produto.descricao}</span>
+          )}
+        </span>
+      </button>
+
+      <div className="loja__produto-acoes">
+        <span className="loja__produto-preco">{formatarDinheiro(produto.preco)}</span>
+
+        <button
+          className="loja__adicionar"
+          type="button"
+          onClick={onAdicionar}
+          disabled={!podePedir}
+          aria-label={`Adicionar ${produto.nome} ao carrinho`}
+        >
+          +
+        </button>
+      </div>
+    </article>
+  )
+}
+
 export default function CardapioLoja() {
   const { dados, status } = useLoja()
   const { slug } = useParams()
@@ -157,45 +215,13 @@ export default function CardapioLoja() {
 
                 <div className="loja__produtos">
                   {categoria.produtos.map((produto) => (
-                    <article key={produto._id} className="loja__produto">
-                      <button
-                        className="loja__produto-abrir"
-                        type="button"
-                        onClick={() => setProdutoAberto(produto)}
-                      >
-                        <span className="loja__produto-foto" aria-hidden="true">
-                          {produto.imagem ? (
-                            <img src={produto.imagem} alt="" loading="lazy" />
-                          ) : (
-                            produto.nome.charAt(0).toUpperCase()
-                          )}
-                        </span>
-
-                        <span className="loja__produto-texto">
-                          <span className="loja__produto-nome">{produto.nome}</span>
-
-                          {produto.descricao && (
-                            <span className="loja__produto-desc">{produto.descricao}</span>
-                          )}
-
-                          <span className="loja__produto-preco">
-                            {formatarDinheiro(produto.preco)}
-                          </span>
-                        </span>
-                      </button>
-
-                      <div className="loja__produto-acoes">
-                        <button
-                          className="loja__adicionar"
-                          type="button"
-                          onClick={() => adicionar(produto)}
-                          disabled={!status.aberto}
-                          aria-label={`Adicionar ${produto.nome} ao carrinho`}
-                        >
-                          Adicionar
-                        </button>
-                      </div>
-                    </article>
+                    <CartaoProduto
+                      key={produto._id}
+                      produto={produto}
+                      podePedir={status.aberto}
+                      onAbrir={() => setProdutoAberto(produto)}
+                      onAdicionar={() => adicionar(produto)}
+                    />
                   ))}
                 </div>
               </section>

@@ -195,22 +195,51 @@
 /* ---------- Capa do cardápio ---------- */
 
 /*
- * A capa usa a cor da loja como fundo sólido, com um escurecimento sutil só na
- * base para o texto branco não brigar com cores claras. Sem imagem de fundo:
- * foto de capa fica para quando o Cloudinary entrar.
+ * A capa tem dois estados: com foto e sem foto (cor da loja segurando o topo).
+ * O degradê escuro é o que garante texto branco legível em qualquer imagem —
+ * sem ele, uma foto clara engole o nome da loja.
  */
 .loja__capa {
   position: relative;
   background: var(--loja-cor);
   color: #fff;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.loja__capa--foto {
+  background: #191410;
+}
+
+.loja__capa-foto {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .loja__capa::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.22));
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.24));
   pointer-events: none;
+}
+
+/* Com foto o degradê precisa ser mais forte: escurece o topo (a foto é o
+   assunto) e fecha em quase preto embaixo, onde mora o texto. */
+.loja__capa--foto::after {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.34) 0%,
+    rgba(0, 0, 0, 0.1) 30%,
+    rgba(0, 0, 0, 0.58) 74%,
+    rgba(0, 0, 0, 0.82) 100%
+  );
 }
 
 .loja__capa-conteudo {
@@ -224,6 +253,13 @@
   gap: 18px;
 }
 
+/* Com foto, o conteúdo senta no pé da imagem: a foto é a estrela. */
+.loja__capa--foto .loja__capa-conteudo {
+  min-height: 330px;
+  justify-content: flex-end;
+  padding-top: 96px;
+}
+
 .loja__capa-topo {
   display: flex;
   align-items: center;
@@ -231,9 +267,9 @@
 }
 
 .loja__capa-mark {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
   flex-shrink: 0;
   overflow: hidden;
   display: grid;
@@ -241,8 +277,9 @@
   background: #fff;
   color: var(--loja-cor);
   font-family: var(--loja-serif);
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 600;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
 .loja__capa-mark img {
@@ -258,10 +295,14 @@
 
 .loja__capa-nome {
   font-family: var(--loja-serif);
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.loja__capa--foto .loja__capa-nome {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.5);
 }
 
 .loja__capa-linha {
@@ -280,7 +321,9 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
   border-radius: 999px;
   padding: 4px 11px;
 }
@@ -348,9 +391,11 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  background: rgba(255, 255, 255, 0.14);
-  border-radius: 10px;
-  padding: 7px 13px;
+  background: rgba(0, 0, 0, 0.36);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 8px 14px;
 }
 
 .loja__capa-chip-rotulo {
@@ -457,11 +502,11 @@
 
 .loja__secao-titulo {
   font-family: var(--loja-serif);
-  font-size: 25px;
+  font-size: 26px;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
+  letter-spacing: -0.015em;
+  padding-bottom: 10px;
+  margin-bottom: 18px;
   border-bottom: 1px solid var(--loja-borda);
 }
 
@@ -469,28 +514,30 @@
 .loja__produtos {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .loja__produto {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   align-items: stretch;
   background: var(--loja-superficie);
   border: 1px solid var(--loja-borda);
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 12px;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .loja__produto:hover {
-  border-color: color-mix(in srgb, var(--loja-cor) 45%, var(--loja-borda));
+  border-color: color-mix(in srgb, var(--loja-cor) 38%, var(--loja-borda));
+  box-shadow: 0 14px 30px rgba(36, 31, 26, 0.09);
+  transform: translateY(-2px);
 }
 
 /* O "abrir" é um botão de verdade: teclado e leitor de tela funcionam igual. */
 .loja__produto-abrir {
   display: flex;
-  gap: 13px;
+  gap: 14px;
   flex: 1;
   min-width: 0;
   padding: 0;
@@ -499,23 +546,28 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 14px;
 }
 
 .loja__produto-foto {
-  width: 88px;
-  height: 88px;
-  border-radius: 10px;
+  width: 104px;
+  height: 104px;
+  border-radius: 14px;
   flex-shrink: 0;
   align-self: flex-start;
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: color-mix(in srgb, var(--loja-cor) 10%, #fff);
+  background: color-mix(in srgb, var(--loja-cor) 12%, #fff);
   color: var(--loja-cor);
   font-family: var(--loja-serif);
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 600;
+}
+
+/* Foto real ganha um leve anel interno: separa do fundo branco sem borda dura. */
+.loja__produto-foto--cheia {
+  box-shadow: inset 0 0 0 1px rgba(36, 31, 26, 0.06);
 }
 
 .loja__produto-foto img {
@@ -528,15 +580,18 @@
 .loja__produto-texto {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  gap: 5px;
   flex: 1;
   min-width: 0;
+  padding: 2px 0;
 }
 
 .loja__produto-nome {
-  font-size: 15.5px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.28;
+  letter-spacing: -0.005em;
 }
 
 .loja__produto-desc {
@@ -550,17 +605,20 @@
 }
 
 .loja__produto-preco {
-  margin-top: auto;
-  padding-top: 6px;
   font-family: var(--fonte-mono);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .loja__produto-acoes {
   display: flex;
+  flex-direction: column;
   align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
   flex-shrink: 0;
+  padding: 2px 0;
 }
 
 .loja__preco {
@@ -571,31 +629,40 @@
 }
 
 /*
- * Secundário de propósito: esse botão se repete em todo card, então sólido na
- * cor da loja vira dez manchas laranja na tela e o preço perde peso. Contorno
- * na cor da marca, preenche no hover — continua óbvio, sem gritar.
+ * O "+" é o único ponto sólido do card: ação rápida, alvo grande de dedo e o
+ * preço logo acima já diz quanto custa. O corpo do card (foto, nome, descrição)
+ * abre a ficha completa, onde ficam quantidade e observação.
  */
 .loja__adicionar {
-  background: transparent;
-  color: var(--loja-cor);
-  border: 1px solid color-mix(in srgb, var(--loja-cor) 45%, var(--loja-borda));
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0 0 2px;
+  background: var(--loja-cor);
+  color: #fff;
+  border: 0;
   border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(36, 31, 26, 0.18);
+  transition: filter 0.15s ease, transform 0.15s ease;
 }
 
 .loja__adicionar:hover:not(:disabled) {
-  background: var(--loja-cor);
-  border-color: var(--loja-cor);
-  color: #fff;
+  filter: brightness(1.08);
+  transform: scale(1.06);
+}
+
+.loja__adicionar:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .loja__adicionar:disabled {
+  background: var(--loja-borda);
   color: var(--loja-fraco);
-  border-color: var(--loja-borda);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -805,9 +872,9 @@
 }
 
 .loja__carrinho-item-foto {
-  width: 46px;
-  height: 46px;
-  border-radius: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   flex-shrink: 0;
   overflow: hidden;
   display: grid;
@@ -2028,15 +2095,20 @@
     gap: 14px;
   }
 
+  .loja__capa--foto .loja__capa-conteudo {
+    min-height: 260px;
+    padding-top: 84px;
+  }
+
   .loja__capa-mark {
     width: 52px;
     height: 52px;
-    border-radius: 14px;
+    border-radius: 15px;
     font-size: 24px;
   }
 
   .loja__capa-nome {
-    font-size: 24px;
+    font-size: 27px;
   }
 
   .loja__capa-atalho--discreto {
@@ -2139,7 +2211,12 @@
 @media (max-width: 480px) {
   .loja__produto {
     padding: 10px;
-    gap: 8px;
+    gap: 10px;
+    border-radius: 16px;
+  }
+
+  .loja__produto-abrir {
+    gap: 11px;
   }
 
   .loja__cartao {
@@ -2173,13 +2250,23 @@
   }
 
   .loja__produto-foto {
-    width: 76px;
-    height: 76px;
-    font-size: 28px;
+    width: 84px;
+    height: 84px;
+    font-size: 30px;
   }
 
   .loja__produto-nome {
     font-size: 15px;
+  }
+
+  .loja__produto-preco {
+    font-size: 14px;
+  }
+
+  .loja__adicionar {
+    width: 38px;
+    height: 38px;
+    font-size: 23px;
   }
 
   .loja__secao-titulo {

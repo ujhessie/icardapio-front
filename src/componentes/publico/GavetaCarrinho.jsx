@@ -1,7 +1,31 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
+
+/*
+ * Foto da linha do carrinho, com o mesmo trato do cardápio: se a imagem
+ * externa falhar, aparece a inicial em vez de um quadrado quebrado.
+ */
+function FotoItem({ item }) {
+  const [falhou, setFalhou] = useState(false)
+
+  return (
+    <span className="loja__carrinho-item-foto" aria-hidden="true">
+      {item.imagem && !falhou ? (
+        <img
+          src={item.imagem}
+          alt=""
+          loading="lazy"
+          onError={() => setFalhou(true)}
+        />
+      ) : (
+        item.nome.charAt(0).toUpperCase()
+      )}
+    </span>
+  )
+}
 
 /*
  * Gaveta do carrinho.
@@ -78,13 +102,7 @@ export default function GavetaCarrinho({ onFechar }) {
               {itens.map((item) => (
                 <li key={item.linhaId} className="loja__carrinho-item">
                   <div className="loja__carrinho-item-topo">
-                    <span className="loja__carrinho-item-foto" aria-hidden="true">
-                      {item.imagem ? (
-                        <img src={item.imagem} alt="" loading="lazy" />
-                      ) : (
-                        item.nome.charAt(0).toUpperCase()
-                      )}
-                    </span>
+                    <FotoItem item={item} />
 
                     <div className="loja__carrinho-item-texto">
                       <strong className="loja__carrinho-item-nome">{item.nome}</strong>

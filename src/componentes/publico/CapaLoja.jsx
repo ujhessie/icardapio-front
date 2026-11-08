@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
 
@@ -6,7 +7,7 @@ import { formatarDinheiro } from '../../utils/dinheiro.js'
  *
  * Só mostra informação que existe de verdade. Se a loja não tiver bairro
  * cadastrado, o chip de entrega simplesmente não aparece — nada de "30-45 min"
- * inventado.
+ * inventado. Se não tiver foto de capa, a cor da marca segura o topo sozinha.
  */
 
 function menorValor(lista) {
@@ -15,15 +16,30 @@ function menorValor(lista) {
 }
 
 export default function CapaLoja({ loja, status, bairros = [] }) {
+  // Foto externa pode sair do ar: se falhar, o topo volta pra cor da loja em
+  // vez de virar um retângulo quebrado.
+  const [fotoFalhou, setFotoFalhou] = useState(false)
+
   const [tituloStatus, detalheStatus] = status.texto.split(' · ')
 
   const tempo = menorValor(bairros.map((bairro) => bairro.tempoEstimado))
   const taxa = menorValor(bairros.map((bairro) => bairro.taxaEntrega))
 
   const telefoneLimpo = (loja.telefone || '').replace(/\D/g, '')
+  const temFoto = Boolean(loja.capa) && !fotoFalhou
 
   return (
-    <header className="loja__capa">
+    <header className={`loja__capa ${temFoto ? 'loja__capa--foto' : ''}`}>
+      {temFoto && (
+        <img
+          className="loja__capa-foto"
+          src={loja.capa}
+          alt=""
+          aria-hidden="true"
+          onError={() => setFotoFalhou(true)}
+        />
+      )}
+
       <div className="loja__capa-conteudo">
         <div className="loja__capa-topo">
           <div className="loja__capa-mark" aria-hidden="true">
