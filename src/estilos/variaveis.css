@@ -20,8 +20,16 @@
   --esp-6: 32px;
   --esp-7: 48px;
 
-  --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --fonte-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  /*
+   * Tipografia: uma família por papel.
+   * - Inter: interface (texto, botão, formulário, tabela).
+   * - Fraunces: títulos (h1/h2) — é a serifada da casa.
+   * - JetBrains Mono: número, preço, tempo e código de pedido (coluna alinhada).
+   * Os arquivos vêm de public/fontes (ver estilos/fontes.css).
+   */
+  --fonte: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fonte-titulo: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --fonte-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
 
   /* ---------- Painel (casca + dashboard) ----------
      O painel tem paleta própria: fundo frio, cartões brancos e boas sombras.

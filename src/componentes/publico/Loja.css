@@ -10,7 +10,7 @@
   --loja-erro: #b4372c;
   --loja-ok: #2f7d4f;
   --loja-alerta: #8a6100;
-  --loja-serif: Georgia, 'Times New Roman', serif;
+  --loja-serif: var(--fonte-titulo);
 
   min-height: 100%;
   background: var(--loja-fundo);
@@ -298,7 +298,7 @@
   font-size: 34px;
   font-weight: 600;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
 }
 
 .loja__capa--foto .loja__capa-nome {

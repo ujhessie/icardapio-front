@@ -27,6 +27,18 @@ p {
   margin: 0;
 }
 
+/*
+ * Títulos de página falam na serifada da casa (Fraunces). Só o h1: os h2/h3 do
+ * app são títulos de cartão e de seção pequena (15–16px), onde serifada vira
+ * ruído. O peso desce um pouco porque a Fraunces tem mais contraste que a sans.
+ * No cardápio público, as classes que já usam --loja-serif continuam serifadas.
+ */
+h1 {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
 a {
   color: var(--cor-destaque);
   text-decoration: none;
