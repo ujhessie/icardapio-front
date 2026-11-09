@@ -1,4 +1,10 @@
-/* Chip do contador de etapa: compartilhado pelo quadro e pelo dashboard. */
+/* Contadores do pedido: compartilhados pelo quadro e pelo dashboard. */
+
+.tempos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 
 .tempo {
   display: inline-flex;
@@ -22,6 +28,17 @@
   flex-shrink: 0;
 }
 
+/* Tempo na tela: idade do pedido. É referência, não cobrança — fica neutro. */
+.tempo--tela {
+  background: transparent;
+  border-style: dashed;
+}
+
+/* Tempo na etapa: esse sim tem prazo. */
+.tempo--etapa.tempo--ok {
+  background: #f1f2f7;
+}
+
 /* Prazo acabando: dá para resolver no corre. */
 .tempo--atencao {
   border-color: #f7e2b8;
@@ -35,10 +52,43 @@
   background: #ffedeb;
   color: #c0362c;
   font-weight: 600;
+  /* Treme em ciclos: chama atenção sem virar metrônomo na tela toda. */
+  animation: tempo-tremer 2.4s ease-in-out infinite;
 }
 
+@keyframes tempo-tremer {
+  0%,
+  92%,
+  100% {
+    transform: translateX(0);
+  }
+  2% {
+    transform: translateX(-2px);
+  }
+  4% {
+    transform: translateX(2px);
+  }
+  6% {
+    transform: translateX(-2px);
+  }
+  8% {
+    transform: translateX(2px);
+  }
+  10% {
+    transform: translateX(-1px);
+  }
+  12% {
+    transform: translateX(0);
+  }
+}
+
+/* Quem pediu menos movimento continua vendo o vermelho, só sem o tremelique. */
 @media (prefers-reduced-motion: reduce) {
   .tempo {
     transition: none;
+  }
+
+  .tempo--atrasado {
+    animation: none;
   }
 }
