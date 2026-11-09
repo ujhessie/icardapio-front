@@ -73,7 +73,13 @@ function tocarNota(ctx, frequencia, quando, duracao, volume) {
   }
 }
 
-/** Ding-dong de campainha: duas notas descendo. */
+/** Agenda um ding-dong de campainha (duas notas descendo) no instante dado. */
+function agendarSino(ctx, quando) {
+  tocarNota(ctx, 987.77, quando, 0.85, 0.32) // B5
+  tocarNota(ctx, 659.25, quando + 0.17, 1.1, 0.3) // E5
+}
+
+/** Ding-dong único, na hora. Usado no teste do botão de som. */
 export function tocarSino() {
   if (!somLigado()) return
 
@@ -87,8 +93,36 @@ export function tocarSino() {
 
   if (!ctx) return
 
-  const agora = ctx.currentTime + 0.02
+  agendarSino(ctx, ctx.currentTime + 0.02)
+}
 
-  tocarNota(ctx, 987.77, agora, 0.85, 0.32) // B5
-  tocarNota(ctx, 659.25, agora + 0.17, 1.1, 0.3) // E5
+/**
+ * Alerta de pedido novo: o sino toca `vezes` vezes, com `intervalo` segundos
+ * entre uma e outra (padrão: 3 toques a cada 5 s).
+ *
+ * O agendamento é feito no relógio do próprio áudio, e não em setInterval.
+ * Isso importa: aba em segundo plano tem timers estrangulados pelo navegador
+ * (chega a 1 min de atraso) e o alerta saía fora de hora — ou não saía. No
+ * relógio do áudio os toques já ficam marcados e disparam no tempo certo.
+ */
+export function tocarAlerta({ vezes = 3, intervalo = 5 } = {}) {
+  if (!somLigado()) return
+
+  let ctx
+
+  try {
+    ctx = garantirContexto()
+  } catch {
+    return
+  }
+
+  if (!ctx) return
+
+  // Um respiro depois do resume(): o contexto recém-retomado ainda está
+  // acertando o relógio.
+  const base = ctx.currentTime + 0.05
+
+  for (let i = 0; i < vezes; i += 1) {
+    agendarSino(ctx, base + i * intervalo)
+  }
 }

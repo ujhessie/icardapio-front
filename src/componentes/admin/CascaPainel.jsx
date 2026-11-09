@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contextos/AuthContexto.jsx'
-import { guardarSom, prepararSom, somLigado, tocarSino } from '../../servicos/som.js'
+import { guardarSom, prepararSom, somLigado, tocarAlerta, tocarSino } from '../../servicos/som.js'
 import { abrirCanalDaLoja } from '../../servicos/tempoReal.js'
 import './CascaPainel.css'
 
@@ -128,6 +128,10 @@ function itemClasse({ isActive }) {
   return isActive ? 'casca__item casca__item--ativo' : 'casca__item'
 }
 
+// Alerta de pedido novo: 3 toques, um a cada 5 segundos.
+const VEZES_DO_ALERTA = 3
+const INTERVALO_DO_ALERTA_S = 5
+
 export default function CascaPainel() {
   const { usuario, sair } = useAuth()
   const navegar = useNavigate()
@@ -147,8 +151,8 @@ export default function CascaPainel() {
   // pop-up ou aberto na tela de pedidos). Guarda o objeto para o pop-up
   // mostrar número e cliente.
   const [pedidoPendente, setPedidoPendente] = useState(null)
-  // Timer do som repetido: toca de novo a cada 5s enquanto o pedido não for
-  // atendido e o usuário não estiver na tela de pedidos.
+  // Timer do repique: o sino toca em rajadas de 3 enquanto o pedido estiver
+  // pendente e o usuário longe da tela de pedidos.
   const somTimer = useRef(null)
 
   const localizacao = useLocation()
@@ -162,17 +166,31 @@ export default function CascaPainel() {
     setPedidoPendente(null)
   }, [estaNaTelaDePedidos])
 
-  function iniciarSom() {
-    pararSom()
+  /*
+   * Rajada de alerta: 3 toques, um a cada 5 s (0 s, 5 s e 10 s). Terminada a
+   * rajada, espera mais um intervalo e repete — o pedido continua sem dono.
+   * Sai do ar quando o pedido é atendido (pedidoPendente some), quando o som é
+   * desligado ou quando o usuário abre a tela de pedidos.
+   */
+  useEffect(() => {
+    if (!pedidoPendente || estaNaTelaDePedidos || !som) {
+      pararSom()
+      return undefined
+    }
 
-    // Toca agora e depois de novo a cada 5 segundos.
-    tocarSino()
-    somTimer.current = setInterval(tocarSino, 5000)
-  }
+    function rajada() {
+      tocarAlerta({ vezes: VEZES_DO_ALERTA, intervalo: INTERVALO_DO_ALERTA_S })
+      somTimer.current = setTimeout(rajada, VEZES_DO_ALERTA * INTERVALO_DO_ALERTA_S * 1000)
+    }
+
+    rajada()
+
+    return () => pararSom()
+  }, [pedidoPendente, estaNaTelaDePedidos, som])
 
   function pararSom() {
     if (somTimer.current) {
-      clearInterval(somTimer.current)
+      clearTimeout(somTimer.current)
       somTimer.current = null
     }
   }
@@ -186,12 +204,20 @@ export default function CascaPainel() {
       prepararSom()
     }
 
+    // Aba voltou ao primeiro plano: o navegador costuma suspender o áudio de
+    // aba parada. Retomar aqui evita o "tocou uma vez e sumiu".
+    function aoVoltar() {
+      if (document.visibilityState === 'visible') prepararSom()
+    }
+
     window.addEventListener('pointerdown', destravar, { once: true })
     window.addEventListener('keydown', destravar, { once: true })
+    document.addEventListener('visibilitychange', aoVoltar)
 
     return () => {
       window.removeEventListener('pointerdown', destravar)
       window.removeEventListener('keydown', destravar)
+      document.removeEventListener('visibilitychange', aoVoltar)
     }
   }, [daLoja])
 
@@ -219,13 +245,8 @@ export default function CascaPainel() {
         )
 
         if (chegou) {
+          // O efeito abaixo cuida do sino: basta marcar o pedido pendente.
           setPedidoPendente(chegou)
-
-          if (som) {
-            // Só dispara o loop se o usuário não estiver na tela de pedidos.
-            // Se estiver, o useEffect acima já para o som ao montar.
-            if (!estaNaTelaDePedidos) iniciarSom()
-          }
         }
       }
 
@@ -264,10 +285,7 @@ export default function CascaPainel() {
       tocarSino()
     }
 
-    // Se já tem um pedido pendendo e som foi religado, retoma o loop.
-    if (proximo && pedidoPendente && !estaNaTelaDePedidos) {
-      iniciarSom()
-    }
+    // Se já tem um pedido pendendo, o efeito do alerta retoma sozinho.
   }
 
   function sairAgora() {
