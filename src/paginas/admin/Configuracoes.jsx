@@ -29,6 +29,23 @@ const IDENTIDADE_VAZIA = {
   corPrimaria: COR_PADRAO,
 }
 
+// Etapas que a loja pode mostrar ou esconder. A ordem aqui é a do atendimento —
+// é ela que manda no quadro e na tela do cliente.
+const ETAPAS_DO_FLUXO = [
+  { status: 'novo', rotulo: 'Novo', ajuda: 'O pedido acabou de chegar.' },
+  { status: 'aceito', rotulo: 'Aceito', ajuda: 'Você confirmou o pedido.' },
+  { status: 'preparando', rotulo: 'Preparando', ajuda: 'Está sendo feito.' },
+  { status: 'pronto', rotulo: 'Pronto', ajuda: 'Esperando sair.' },
+  { status: 'saiu_entrega', rotulo: 'Saiu para entrega', ajuda: 'A caminho do cliente.' },
+  { status: 'entregue', rotulo: 'Entregue', ajuda: 'Fim do atendimento.' },
+]
+
+const FLUXO_PADRAO = {
+  etapas: ETAPAS_DO_FLUXO.map((etapa) => etapa.status),
+  autoAceite: false,
+  modoBalcao: 'cliente',
+}
+
 // O input de cor só aceita "#rrggbb": valor antigo ou digitado à mão cai no padrão.
 function corValida(valor) {
   return /^#[0-9a-f]{6}$/i.test(valor || '') ? valor : COR_PADRAO
@@ -91,6 +108,12 @@ export default function Configuracoes() {
   // Upload em voo: salvar no meio perderia a imagem.
   const [envios, setEnvios] = useState({})
 
+  const [fluxo, setFluxo] = useState(FLUXO_PADRAO)
+  const [fluxoSujo, setFluxoSujo] = useState(false)
+  const [fluxoSalvo, setFluxoSalvo] = useState(false)
+  const [salvandoFluxo, setSalvandoFluxo] = useState(false)
+  const [erroFluxo, setErroFluxo] = useState('')
+
   async function carregar() {
     setCarregando(true)
 
@@ -105,10 +128,13 @@ export default function Configuracoes() {
         capa: dados.capa || '',
         corPrimaria: corValida(dados.corPrimaria),
       })
+      setFluxo({ ...FLUXO_PADRAO, ...(dados.fluxoPedidos || {}) })
       setSujo(false)
       setIdentidadeSuja(false)
+      setFluxoSujo(false)
       setErro('')
       setErroIdentidade('')
+      setErroFluxo('')
     } catch (e) {
       setErro(e.message)
     } finally {
@@ -136,6 +162,14 @@ export default function Configuracoes() {
 
     return () => clearTimeout(timer)
   }, [identidadeSalva])
+
+  useEffect(() => {
+    if (!fluxoSalvo) return undefined
+
+    const timer = setTimeout(() => setFluxoSalvo(false), 1800)
+
+    return () => clearTimeout(timer)
+  }, [fluxoSalvo])
 
   function alterar(chave, valor) {
     setValores((atual) => ({ ...atual, [chave]: valor }))
@@ -201,6 +235,68 @@ export default function Configuracoes() {
   const total = tempoTotal(
     Object.fromEntries(CAMPOS.map(({ chave, rotulo }) => [chave, Number(valores[chave]) || 0])),
   )
+
+  /* ---------------- Fluxo de pedidos ---------------- */
+
+  const ORDEM_DAS_ETAPAS = ETAPAS_DO_FLUXO.map((etapa) => etapa.status)
+
+  function alterarFluxo(mudanca) {
+    setFluxo(mudanca)
+    setFluxoSujo(true)
+    setFluxoSalvo(false)
+    setErroFluxo('')
+  }
+
+  function alternarEtapa(status) {
+    setFluxo((atual) => {
+      const escolhidas = atual.etapas.includes(status)
+        ? atual.etapas.filter((etapa) => etapa !== status)
+        : [...atual.etapas, status]
+
+      return {
+        ...atual,
+        // Sempre na ordem do atendimento, nunca na ordem dos cliques.
+        etapas: ORDEM_DAS_ETAPAS.filter((etapa) => escolhidas.includes(etapa)),
+      }
+    })
+
+    setFluxoSujo(true)
+    setFluxoSalvo(false)
+    setErroFluxo('')
+  }
+
+  function alternarAutoAceite() {
+    alterarFluxo((atual) => ({ ...atual, autoAceite: !atual.autoAceite }))
+  }
+
+  const ultimaEtapa = ETAPAS_DO_FLUXO.find(
+    (etapa) => etapa.status === fluxo.etapas[fluxo.etapas.length - 1],
+  )
+
+  async function salvarFluxo(evento) {
+    evento.preventDefault()
+    setErroFluxo('')
+
+    if (fluxo.etapas.length === 0) {
+      setErroFluxo('Escolha pelo menos uma etapa para o quadro.')
+      return
+    }
+
+    setSalvandoFluxo(true)
+
+    try {
+      const { loja: dados } = await servicoLojas.atualizarMinha({ fluxoPedidos: fluxo })
+
+      setLoja(dados)
+      setFluxo({ ...FLUXO_PADRAO, ...(dados.fluxoPedidos || {}) })
+      setFluxoSujo(false)
+      setFluxoSalvo(true)
+    } catch (e) {
+      setErroFluxo(e.message)
+    } finally {
+      setSalvandoFluxo(false)
+    }
+  }
 
   /* ---------------- Identidade da loja ---------------- */
 
@@ -331,6 +427,86 @@ export default function Configuracoes() {
                   Voltar ao padrão
                 </button>
               </div>
+            </section>
+
+            <section className="painel__secao">
+              <h2 className="painel__subtitulo">Fluxo de pedidos</h2>
+              <p className="painel__ajuda">
+                Quais etapas aparecem no quadro — e na tela de acompanhamento do cliente. Etapa
+                desmarcada não desaparece do sistema: o pedido passa por ela sem parar.
+              </p>
+
+              {erroFluxo && <p className="painel__aviso painel__aviso--erro">{erroFluxo}</p>}
+
+              <form className="fluxo" onSubmit={salvarFluxo}>
+                <fieldset className="fluxo__grupo">
+                  <legend className="config__campo-nome">Etapas visíveis</legend>
+
+                  <div className="fluxo__etapas">
+                    {ETAPAS_DO_FLUXO.map((etapa) => (
+                      <label
+                        className={`fluxo__etapa ${
+                          fluxo.etapas.includes(etapa.status) ? 'fluxo__etapa--ativa' : ''
+                        }`}
+                        key={etapa.status}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={fluxo.etapas.includes(etapa.status)}
+                          onChange={() => alternarEtapa(etapa.status)}
+                        />
+                        <span className="fluxo__etapa-texto">
+                          <strong>{etapa.rotulo}</strong>
+                          <span className="config__campo-ajuda">{etapa.ajuda}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <label className="fluxo__auto">
+                  <span className="fluxo__auto-texto">
+                    <strong>Aceitar pedidos automaticamente</strong>
+                    <span className="config__campo-ajuda">
+                      O pedido que chega já entra como “Aceito”. Você só avança para o preparo.
+                    </span>
+                  </span>
+
+                  <input
+                    type="checkbox"
+                    className="fluxo__interruptor"
+                    checked={fluxo.autoAceite}
+                    onChange={alternarAutoAceite}
+                    aria-label="Aceitar pedidos automaticamente"
+                  />
+                </label>
+
+                <div className="config__resumo">
+                  <span>
+                    {fluxo.etapas.length === 0 ? (
+                      'Nenhuma etapa escolhida.'
+                    ) : (
+                      <>
+                        A última etapa do quadro é <strong>{ultimaEtapa?.rotulo}</strong>: quem
+                        chega nela finaliza o pedido.
+                      </>
+                    )}
+                  </span>
+
+                  <span className="fluxo__acoes">
+                    {fluxoSujo && <span className="horarios__pendente">alterações não salvas</span>}
+                    {fluxoSalvo && !fluxoSujo && <span className="horarios__salvo">salvo</span>}
+
+                    <button
+                      className="botao botao--pequeno"
+                      type="submit"
+                      disabled={salvandoFluxo || !fluxoSujo}
+                    >
+                      {salvandoFluxo ? 'Salvando…' : 'Salvar fluxo'}
+                    </button>
+                  </span>
+                </div>
+              </form>
             </section>
 
             <section className="painel__secao">

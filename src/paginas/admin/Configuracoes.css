@@ -265,3 +265,148 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Fluxo de pedidos ---------- */
+
+.fluxo {
+  display: grid;
+  gap: var(--esp-4);
+}
+
+.fluxo__grupo {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fluxo__grupo legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.fluxo__etapas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* Cada etapa e um cartao que se acende quando esta escolhida. */
+.fluxo__etapa {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 11px;
+  background: var(--painel-fundo);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fluxo__etapa:hover {
+  border-color: color-mix(in srgb, var(--cor-destaque) 45%, var(--painel-borda));
+}
+
+.fluxo__etapa--ativa {
+  border-color: color-mix(in srgb, var(--cor-destaque) 55%, var(--painel-borda));
+  background: color-mix(in srgb, var(--cor-destaque) 6%, #fff);
+}
+
+.fluxo__etapa input {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--cor-destaque);
+  cursor: pointer;
+}
+
+.fluxo__etapa-texto {
+  display: grid;
+  gap: 2px;
+  font-size: 13.5px;
+}
+
+/* Linha do auto-aceite: texto de um lado, interruptor do outro. */
+.fluxo__auto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: 14px var(--esp-4);
+  border: 1px solid var(--painel-borda);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.fluxo__auto-texto {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+}
+
+/* Interruptor: o checkbox nativo nao da para estilizar, entao o visual e
+   desenhado no ::before e o input so guarda o estado. */
+.fluxo__interruptor {
+  appearance: none;
+  position: relative;
+  width: 44px;
+  height: 25px;
+  flex-shrink: 0;
+  margin: 0;
+  border-radius: 999px;
+  background: #d8dae6;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.fluxo__interruptor::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 22, 31, 0.3);
+  transition: transform 0.18s ease;
+}
+
+.fluxo__interruptor:checked {
+  background: var(--cor-destaque);
+}
+
+.fluxo__interruptor:checked::before {
+  transform: translateX(19px);
+}
+
+.fluxo__interruptor:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cor-destaque) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.fluxo__acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fluxo__etapa,
+  .fluxo__interruptor,
+  .fluxo__interruptor::before {
+    transition: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .fluxo__etapas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fluxo__auto {
+    align-items: flex-start;
+  }
+}

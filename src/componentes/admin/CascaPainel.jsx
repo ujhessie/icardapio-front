@@ -235,14 +235,22 @@ export default function CascaPainel() {
       const pedidos = Array.isArray(lista) ? lista : []
       const anteriores = conhecidos.current
 
-      setNovos(pedidos.filter((pedido) => pedido.status === 'novo').length)
+      /*
+       * Pedido que pede atenção: o que acabou de chegar e o que o auto-aceite
+       * já marcou como "aceito" — esse ainda precisa começar o preparo.
+       */
+      const pendentes = pedidos.filter(
+        (pedido) =>
+          pedido.status === 'novo' ||
+          (pedido.aceitoAutomaticamente === true && pedido.status === 'aceito'),
+      )
+
+      setNovos(pendentes.length)
 
       // Chegou pedido novo = id que não existia antes. Na primeira leitura não
       // existe "antes": tudo que já estava aberto é histórico, não alerta.
       if (podeTocar && anteriores) {
-        const chegou = pedidos.find(
-          (pedido) => pedido.status === 'novo' && !anteriores.has(pedido._id),
-        )
+        const chegou = pendentes.find((pedido) => !anteriores.has(pedido._id))
 
         if (chegou) {
           // O efeito abaixo cuida do sino: basta marcar o pedido pendente.
@@ -428,7 +436,11 @@ export default function CascaPainel() {
       {pedidoPendente && (
         <div className="casca__popup">
           <div className="casca__popup-card">
-            <div className="casca__popup-titulo">Novo pedido</div>
+            <div className="casca__popup-titulo">
+              {pedidoPendente.aceitoAutomaticamente
+                ? 'Pedido aceito automaticamente.'
+                : 'Novo pedido'}
+            </div>
             <div className="casca__popup-dados">
               <strong>#{pedidoPendente.numero}</strong>
               <span>{pedidoPendente.cliente.nome}</span>

@@ -120,12 +120,32 @@ export default function AcompanharPedido() {
     )
   }
 
-  const passos =
-    pedido.tipo === 'balcao'
-      ? PASSOS.filter((passo) => passo.status !== 'saiu_entrega')
-      : PASSOS
+  // O cliente vê as mesmas etapas que a loja escolheu no painel. Balcão não
+  // tem "saiu para entrega" — não faz sentido para quem retira na loja.
+  const etapasDaLoja = dados?.loja?.fluxoPedidos?.etapas
+  const visiveis = (Array.isArray(etapasDaLoja) && etapasDaLoja.length
+    ? etapasDaLoja
+    : PASSOS.map((passo) => passo.status)
+  ).filter((status) => pedido.tipo !== 'balcao' || status !== 'saiu_entrega')
 
-  const indiceAtual = passos.findIndex((passo) => passo.status === pedido.status)
+  const passos = PASSOS.filter((passo) => visiveis.includes(passo.status))
+
+  /*
+   * Etapa escondida não pode deixar o cliente sem referência: o pedido aparece
+   * no primeiro passo visível a partir do status real — o mesmo que o painel
+   * faz com as colunas. Assim as duas telas contam a mesma história.
+   */
+  const posicaoReal = PASSOS.findIndex((passo) => passo.status === pedido.status)
+  const indiceAtual =
+    posicaoReal < 0
+      ? passos.length - 1
+      : Math.max(
+          0,
+          passos.findIndex(
+            (passo) => PASSOS.findIndex((base) => base.status === passo.status) >= posicaoReal,
+          ),
+        )
+
   const atual = passos[indiceAtual]
   const cancelado = pedido.status === 'cancelado'
   const finalizado = cancelado || pedido.status === 'entregue'

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { lerToken } from '../../servicos/api.js'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
@@ -32,12 +32,49 @@ const COLUNAS = [
 // Ordem do atendimento: define até onde cada pedido pode ser arrastado.
 const ORDEM = COLUNAS.map((coluna) => coluna.status)
 
-const PROXIMO_STATUS = {
-  novo: 'aceito',
-  aceito: 'preparando',
-  preparando: 'pronto',
-  pronto: 'saiu_entrega',
-  saiu_entrega: 'entregue',
+// Fluxo de fábrica. A loja escolhe quais etapas aparecem em Configurações.
+const FLUXO_PADRAO = { etapas: [...ORDEM], autoAceite: false }
+
+/*
+ * Colunas que o quadro vai mostrar.
+ *
+ * `alvo` é para onde o botão da coluna leva e `acao` é o texto dele. A última
+ * coluna visível finaliza o pedido: se a loja escondeu "Entregue", "Pronto"
+ * vira o fim da linha — sem isso o pedido ficaria preso no quadro para sempre.
+ */
+function colunasDa(etapas) {
+  const visiveis = COLUNAS.filter((coluna) => etapas.includes(coluna.status))
+  const lista = visiveis.length ? visiveis : COLUNAS
+
+  return lista.map((coluna, indice) => {
+    const proxima = lista[indice + 1]
+    const ultima = !proxima
+    const alvo = ultima ? (coluna.status === 'entregue' ? null : 'entregue') : proxima.status
+
+    // Etapa escondida no meio do caminho: o texto diz para onde o pedido vai.
+    const pulaEtapa =
+      !ultima && ORDEM.indexOf(proxima.status) !== ORDEM.indexOf(coluna.status) + 1
+
+    let acao = coluna.acao
+
+    if (ultima) acao = alvo ? 'Finalizar pedido' : null
+    else if (pulaEtapa) acao = `Mover para ${proxima.titulo}`
+
+    return { ...coluna, acao, alvo }
+  })
+}
+
+/*
+ * Em que coluna um pedido aparece: a do próprio status. Se essa etapa estiver
+ * escondida, ele cai na próxima etapa visível — pedido nenhum pode sumir.
+ */
+function colunaDoPedido(pedido, colunas) {
+  const posicao = ORDEM.indexOf(pedido.status)
+
+  return (
+    colunas.find((coluna) => ORDEM.indexOf(coluna.status) >= posicao) ||
+    colunas[colunas.length - 1]
+  )
 }
 
 const PAGAMENTO = {
@@ -255,6 +292,9 @@ export default function Pedidos() {
   // Prazo de cada etapa, por loja. Enquanto não chega, vale o padrão: contador
   // nunca pode ser o motivo de o quadro não abrir.
   const [tempos, setTempos] = useState(TEMPOS_PADRAO)
+  // Quais etapas esta loja mostra. Mesmo caso: até a resposta chegar, o fluxo
+  // completo vale, senão o quadro abriria vazio.
+  const [fluxo, setFluxo] = useState(FLUXO_PADRAO)
 
   // Ficha sendo arrastada e coluna sob o ponteiro.
   const [arrastandoId, setArrastandoId] = useState(null)
@@ -300,7 +340,16 @@ export default function Pedidos() {
     servicoLojas
       .minha()
       .then(({ loja }) => {
-        if (ativo) setTempos({ ...TEMPOS_PADRAO, ...(loja.tempos || {}) })
+        if (!ativo) return
+
+        setTempos({ ...TEMPOS_PADRAO, ...(loja.tempos || {}) })
+
+        const etapas = loja.fluxoPedidos?.etapas
+
+        setFluxo({
+          etapas: Array.isArray(etapas) && etapas.length ? etapas : FLUXO_PADRAO.etapas,
+          autoAceite: loja.fluxoPedidos?.autoAceite === true,
+        })
       })
       .catch(() => {
         // Sem os tempos da loja o contador usa o padrão.
@@ -338,16 +387,18 @@ export default function Pedidos() {
   // O quadro só trabalha com pedido em andamento: cancelado fica de fora.
   const noQuadro = pedidos.filter((pedido) => pedido.status !== 'cancelado')
 
+  const colunas = useMemo(() => colunasDa(fluxo.etapas), [fluxo.etapas])
+
   function totalDa(status) {
-    return noQuadro.filter((pedido) => pedido.status === status).length
+    return noQuadro.filter((pedido) => colunaDoPedido(pedido, colunas).status === status).length
   }
 
   // No celular abre na primeira etapa que tem pedido esperando.
   const statusDaVez =
-    COLUNAS.find((coluna) => totalDa(coluna.status) > 0)?.status || 'novo'
+    colunas.find((coluna) => totalDa(coluna.status) > 0)?.status || colunas[0].status
 
   const abaAtiva = abaEscolhida ?? statusDaVez
-  const colunaAtiva = COLUNAS.find((coluna) => coluna.status === abaAtiva) || COLUNAS[0]
+  const colunaAtiva = colunas.find((coluna) => coluna.status === abaAtiva) || colunas[0]
 
   async function executar(id, acao) {
     setOcupado(id)
@@ -364,12 +415,14 @@ export default function Pedidos() {
     }
   }
 
-  function avancar(pedido) {
-    const proximo = PROXIMO_STATUS[pedido.status]
+  function avancar(pedido, coluna) {
+    // Pedido numa etapa escondida: primeiro ele alcança a coluna onde está.
+    const alvo =
+      ORDEM.indexOf(pedido.status) < ORDEM.indexOf(coluna.status) ? coluna.status : coluna.alvo
 
-    if (!proximo) return
+    if (!alvo) return
 
-    executar(pedido._id, () => servicoPedidos.mudarStatus(pedido._id, proximo))
+    executar(pedido._id, () => servicoPedidos.mudarStatus(pedido._id, alvo))
   }
 
   /* Arrastar e soltar: leva o pedido para a etapa onde a ficha caiu. Só vale
@@ -401,17 +454,17 @@ export default function Pedidos() {
     }
   }
 
-  function ficha(pedido, acao) {
+  function ficha(pedido, coluna) {
     return (
       <Ficha
         key={pedido._id}
         pedido={pedido}
         tempos={tempos}
-        acao={acao}
+        acao={coluna?.acao || null}
         ocupado={ocupado === pedido._id}
         confirmando={confirmar?.id === pedido._id ? confirmar.acao : null}
         arrastando={arrastandoId === pedido._id}
-        onAvancar={() => avancar(pedido)}
+        onAvancar={() => coluna && avancar(pedido, coluna)}
         onArquivar={() => executar(pedido._id, () => servicoPedidos.arquivar(pedido._id))}
         onPedirConfirmacao={(novaAcao) => setConfirmar({ id: pedido._id, acao: novaAcao })}
         onDesistir={() => setConfirmar(null)}
@@ -581,8 +634,10 @@ export default function Pedidos() {
         <>
           {/* Desktop: seis prateleiras lado a lado, com arrastar e soltar. */}
           <div className="tabuleiro__quadro">
-            {COLUNAS.map((coluna, indice) => {
-              const cartoes = noQuadro.filter((pedido) => pedido.status === coluna.status)
+            {colunas.map((coluna, indice) => {
+              const cartoes = noQuadro.filter(
+                (pedido) => colunaDoPedido(pedido, colunas).status === coluna.status,
+              )
               const arrastado = pedidos.find((pedido) => pedido._id === arrastandoId)
               const aceita = arrastado ? podeAvancarPara(arrastado, coluna.status) : false
 
@@ -626,7 +681,7 @@ export default function Pedidos() {
                       <p className="prateleira__vazio">Nenhum pedido</p>
                     )}
 
-                    {cartoes.map((pedido) => ficha(pedido, coluna.acao))}
+                    {cartoes.map((pedido) => ficha(pedido, coluna))}
                   </div>
                 </section>
               )
@@ -636,7 +691,7 @@ export default function Pedidos() {
           {/* Celular: uma etapa por vez, escolhida nas abas. */}
           <div className="tabuleiro__movel">
             <div className="tabuleiro__abas" role="tablist" aria-label="Etapas do pedido">
-              {COLUNAS.map((coluna) => {
+              {colunas.map((coluna) => {
                 const total = totalDa(coluna.status)
 
                 return (
@@ -661,7 +716,7 @@ export default function Pedidos() {
               <header className="prateleira__topo">
                 <h2 className="prateleira__nome">
                   <span className="prateleira__passo" aria-hidden="true">
-                    {ORDEM.indexOf(colunaAtiva.status) + 1}
+                    {colunas.indexOf(colunaAtiva) + 1}
                   </span>
                   {colunaAtiva.titulo}
                 </h2>
@@ -676,8 +731,8 @@ export default function Pedidos() {
                 )}
 
                 {noQuadro
-                  .filter((pedido) => pedido.status === colunaAtiva.status)
-                  .map((pedido) => ficha(pedido, colunaAtiva.acao))}
+                  .filter((pedido) => colunaDoPedido(pedido, colunas).status === colunaAtiva.status)
+                  .map((pedido) => ficha(pedido, colunaAtiva))}
               </div>
             </section>
           </div>
