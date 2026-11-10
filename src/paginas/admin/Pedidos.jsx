@@ -159,10 +159,19 @@ function podeAvancarPara(pedido, status) {
   return ORDEM.indexOf(status) > ORDEM.indexOf(pedido.status)
 }
 
+// Voltar é só para etapa anterior de verdade: pedido que já está na frente
+// não pode "voltar" para uma coluna que na prática é a mesma coisa.
+function podeVoltarPara(pedido, status) {
+  const alvo = ORDEM.indexOf(status)
+
+  return alvo >= 0 && alvo < ORDEM.indexOf(pedido.status)
+}
+
 function Ficha({
   pedido,
   tempos,
   acao,
+  anterior,
   confirmando,
   ocupado,
   arrastando,
@@ -258,9 +267,13 @@ function Ficha({
       </footer>
 
       {confirmando ? (
-        <div className="ficha__confirmar">
+        <div className={`ficha__confirmar ${confirmando === 'voltar' ? 'ficha__confirmar--neutro' : ''}`}>
           <span className="ficha__confirmar-texto">
-            {confirmando === 'remover' ? 'Apagar de vez?' : 'Cancelar este pedido?'}
+            {confirmando === 'remover'
+              ? 'Apagar de vez?'
+              : confirmando === 'voltar'
+                ? 'Você realmente quer voltar um status anterior?'
+                : 'Cancelar este pedido?'}
           </span>
           <div className="ficha__confirmar-botoes">
             <button
@@ -277,7 +290,11 @@ function Ficha({
               disabled={ocupado}
               onClick={onConfirmar}
             >
-              {confirmando === 'remover' ? 'Apagar' : 'Cancelar pedido'}
+              {confirmando === 'remover'
+                ? 'Apagar'
+                : confirmando === 'voltar'
+                  ? 'Voltar etapa'
+                  : 'Cancelar pedido'}
             </button>
           </div>
         </div>
@@ -303,6 +320,17 @@ function Ficha({
                 onClick={onArquivar}
               >
                 Arquivar
+              </button>
+            )}
+
+            {anterior && podeVoltarPara(pedido, anterior.status) && (
+              <button
+                className="ficha__link"
+                type="button"
+                disabled={ocupado}
+                onClick={() => onPedirConfirmacao('voltar')}
+              >
+                Voltar etapa
               </button>
             )}
 
@@ -497,7 +525,7 @@ export default function Pedidos() {
   }
 
   /* Arrastar e soltar: leva o pedido para a etapa onde a ficha caiu. Só vale
-     para frente — voltar etapa não existe no atendimento. */
+     para frente — voltar etapa é pelo botão, com confirmação. */
   function soltarNaColuna(evento, status) {
     evento.preventDefault()
 
@@ -522,7 +550,24 @@ export default function Pedidos() {
 
     if (acao === 'remover') {
       executar(pedido._id, () => servicoPedidos.remover(pedido._id))
+      return
     }
+
+    if (acao === 'voltar') {
+      const anterior = anteriorDe(colunaDoPedido(pedido, colunas))
+
+      // A lista mudou entre o clique e a confirmação? Melhor não mexer.
+      if (!anterior || !podeVoltarPara(pedido, anterior.status)) return
+
+      executar(pedido._id, () => servicoPedidos.mudarStatus(pedido._id, anterior.status))
+    }
+  }
+
+  // Coluna imediatamente à esquerda: é até onde o pedido pode voltar.
+  function anteriorDe(coluna) {
+    const indice = colunas.indexOf(coluna)
+
+    return indice > 0 ? colunas[indice - 1] : null
   }
 
   function ficha(pedido, coluna) {
@@ -532,6 +577,7 @@ export default function Pedidos() {
         pedido={pedido}
         tempos={tempos}
         acao={coluna?.acao || null}
+        anterior={anteriorDe(coluna)}
         ocupado={ocupado === pedido._id}
         confirmando={confirmar?.id === pedido._id ? confirmar.acao : null}
         arrastando={arrastandoId === pedido._id}

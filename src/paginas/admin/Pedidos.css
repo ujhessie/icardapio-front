@@ -540,6 +540,21 @@
   color: #fff;
 }
 
+/* Voltar etapa corrige um clique apressado: avisa em âmbar, não em vermelho.
+   Vermelho aqui faria o lojista achar que vai apagar alguma coisa. */
+.ficha__confirmar--neutro {
+  border-color: #f0d9a8;
+  background: #fdf8ec;
+}
+
+.ficha__confirmar--neutro .ficha__confirmar-texto {
+  color: #8a5a00;
+}
+
+.ficha__confirmar--neutro .ficha__confirmar-sim {
+  background: #b45309;
+}
+
 .ficha__confirmar-nao {
   background: #fff;
   border-color: var(--painel-borda);
