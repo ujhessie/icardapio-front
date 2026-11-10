@@ -20,13 +20,20 @@ import './Pedidos.css'
  * consulta, e no histórico (Arquivados) quando é arquivado.
  */
 
+/*
+ * Cores das etapas.
+ *
+ * Servem para o lojista achar a coluna de longe, sem ler: cada etapa tem a sua.
+ * A ordem vai do quente (esperando) ao frio (terminado) de propósito — é a
+ * leitura natural de quem chega no quadro e quer saber onde está o trabalho.
+ */
 const COLUNAS = [
-  { status: 'novo', titulo: 'Novo', acao: 'Aceitar pedido' },
-  { status: 'aceito', titulo: 'Aceito', acao: 'Iniciar preparo' },
-  { status: 'preparando', titulo: 'Preparando', acao: 'Marcar pronto' },
-  { status: 'pronto', titulo: 'Pronto', acao: 'Saiu para entrega' },
-  { status: 'saiu_entrega', titulo: 'Saiu para entrega', acao: 'Marcar entregue' },
-  { status: 'entregue', titulo: 'Entregue', acao: null },
+  { status: 'novo', titulo: 'Novo', acao: 'Aceitar pedido', cor: '#c2410c' },
+  { status: 'aceito', titulo: 'Aceito', acao: 'Iniciar preparo', cor: '#1d4ed8' },
+  { status: 'preparando', titulo: 'Preparando', acao: 'Marcar pronto', cor: '#6d28d9' },
+  { status: 'pronto', titulo: 'Pronto', acao: 'Saiu para entrega', cor: '#047857' },
+  { status: 'saiu_entrega', titulo: 'Saiu para entrega', acao: 'Marcar entregue', cor: '#0369a1' },
+  { status: 'entregue', titulo: 'Entregue', acao: null, cor: '#475569' },
 ]
 
 // Ordem do atendimento: define até onde cada pedido pode ser arrastado.
@@ -81,6 +88,55 @@ const PAGAMENTO = {
   dinheiro: 'Dinheiro',
   pix: 'Pix',
   cartao: 'Cartão',
+}
+
+// Busca sem frescura: "jose" acha "José", "#58" acha o 58.
+function normalizar(texto) {
+  return String(texto ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+/*
+ * O que a busca procura: nome do cliente, número do pedido e código (_id).
+ * O telefone entrou de brinde — é o que o lojista tem na mão quando o cliente
+ * liga perguntando do pedido.
+ */
+function combinaBusca(pedido, termo) {
+  const alvo = normalizar(termo)
+
+  if (!alvo) return true
+
+  const limpo = alvo.replace(/^#/, '')
+  const numero = String(pedido.numero ?? '')
+  const id = String(pedido._id ?? '').toLowerCase()
+  const nome = normalizar(pedido.cliente?.nome)
+  const telefone = String(pedido.cliente?.telefone ?? '').replace(/\D/g, '')
+  const digitos = limpo.replace(/\D/g, '')
+
+  if (nome.includes(alvo)) return true
+  if (numero && numero.startsWith(limpo)) return true
+  // Código só a partir de 4 dígitos: senão "1" chamaria meio banco.
+  if (limpo.length >= 4 && id.endsWith(limpo)) return true
+  if (digitos.length >= 4 && telefone.includes(digitos)) return true
+
+  return false
+}
+
+// Mesa ainda é rara: o filtro só aparece quando existe pedido de mesa na tela.
+const FILTROS_TIPO = [
+  { valor: 'todos', rotulo: 'Todos' },
+  { valor: 'delivery', rotulo: 'Delivery' },
+  { valor: 'mesa', rotulo: 'Mesa' },
+  { valor: 'balcao', rotulo: 'Balcão' },
+]
+
+const NOME_DO_TIPO = {
+  delivery: 'Delivery',
+  mesa: 'Mesa',
+  balcao: 'Balcão',
 }
 
 function horaDoPedido(criadoEm) {
@@ -303,6 +359,11 @@ export default function Pedidos() {
   // Aba só existe no celular. null = segue a fila.
   const [abaEscolhida, setAbaEscolhida] = useState(null)
 
+  // Busca e filtro do quadro. Não vão para a API: a fila já vem inteira na
+  // memória, então filtrar aqui é instantâneo e não perde o tempo real.
+  const [busca, setBusca] = useState('')
+  const [tipo, setTipo] = useState('todos')
+
   const arquivados = visao === 'arquivados'
 
   const carregar = useCallback(async () => {
@@ -389,8 +450,18 @@ export default function Pedidos() {
 
   const colunas = useMemo(() => colunasDa(fluxo.etapas), [fluxo.etapas])
 
+  // Filtro é de tela: o quadro mostra o que o lojista procura, sem esconder
+  // pedido nenhum do banco. "Mesa" só entra quando existe pedido de mesa.
+  const tiposNaTela = new Set(noQuadro.map((pedido) => pedido.tipo))
+
+  const filtrando = busca.trim() !== '' || tipo !== 'todos'
+
+  const visiveis = noQuadro.filter(
+    (pedido) => (tipo === 'todos' || pedido.tipo === tipo) && combinaBusca(pedido, busca),
+  )
+
   function totalDa(status) {
-    return noQuadro.filter((pedido) => colunaDoPedido(pedido, colunas).status === status).length
+    return visiveis.filter((pedido) => colunaDoPedido(pedido, colunas).status === status).length
   }
 
   // No celular abre na primeira etapa que tem pedido esperando.
@@ -557,6 +628,81 @@ export default function Pedidos() {
         </div>
       </div>
 
+      {/* Busca e filtro. A fila já está inteira na memória: filtrar aqui é
+          instantâneo e não atrapalha o tempo real. */}
+      {!arquivados && (
+        <section className="busca" aria-label="Buscar e filtrar pedidos">
+          <label className="busca__campo">
+            <svg
+              className="busca__lupa"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.6-3.6" strokeLinecap="round" />
+            </svg>
+
+            <input
+              type="search"
+              value={busca}
+              onChange={(evento) => setBusca(evento.target.value)}
+              placeholder="Buscar por nome, número ou código"
+              aria-label="Buscar pedido por nome, número ou código"
+            />
+
+            {busca && (
+              <button
+                className="busca__limpar"
+                type="button"
+                onClick={() => setBusca('')}
+                aria-label="Limpar busca"
+              >
+                ✕
+              </button>
+            )}
+          </label>
+
+          <div className="segmento busca__tipos" role="group" aria-label="Tipo de pedido">
+            {FILTROS_TIPO.filter(
+              (opcao) =>
+                opcao.valor === 'todos' || opcao.valor === tipo || tiposNaTela.has(opcao.valor),
+            ).map((opcao) => (
+              <button
+                key={opcao.valor}
+                type="button"
+                className={`segmento__botao ${tipo === opcao.valor ? 'segmento__botao--ativo' : ''}`}
+                onClick={() => setTipo(opcao.valor)}
+              >
+                {opcao.rotulo}
+              </button>
+            ))}
+          </div>
+
+          {filtrando && (
+            <p className="busca__resumo">
+              <span>
+                {visiveis.length} de {noQuadro.length}{' '}
+                {noQuadro.length === 1 ? 'pedido' : 'pedidos'}
+              </span>
+
+              <button
+                className="busca__limpar-tudo"
+                type="button"
+                onClick={() => {
+                  setBusca('')
+                  setTipo('todos')
+                }}
+              >
+                limpar filtro
+              </button>
+            </p>
+          )}
+        </section>
+      )}
+
       {carregando && <p className="tabuleiro__subtitulo">Carregando pedidos…</p>}
 
       {!carregando && arquivados && (
@@ -635,7 +781,7 @@ export default function Pedidos() {
           {/* Desktop: seis prateleiras lado a lado, com arrastar e soltar. */}
           <div className="tabuleiro__quadro">
             {colunas.map((coluna, indice) => {
-              const cartoes = noQuadro.filter(
+              const cartoes = visiveis.filter(
                 (pedido) => colunaDoPedido(pedido, colunas).status === coluna.status,
               )
               const arrastado = pedidos.find((pedido) => pedido._id === arrastandoId)
@@ -653,6 +799,7 @@ export default function Pedidos() {
                   className={`prateleira ${classeAlvo}`}
                   key={coluna.status}
                   data-status={coluna.status}
+                  style={{ '--cor-coluna': coluna.cor }}
                   onDragOver={(e) => {
                     if (!arrastandoId) return
                     e.preventDefault()
@@ -678,7 +825,9 @@ export default function Pedidos() {
 
                   <div className="prateleira__corpo">
                     {cartoes.length === 0 && (
-                      <p className="prateleira__vazio">Nenhum pedido</p>
+                      <p className="prateleira__vazio">
+                        {filtrando ? 'Nenhum pedido com esse filtro' : 'Nenhum pedido'}
+                      </p>
                     )}
 
                     {cartoes.map((pedido) => ficha(pedido, coluna))}
@@ -703,6 +852,7 @@ export default function Pedidos() {
                     className={`tabuleiro__aba ${
                       abaAtiva === coluna.status ? 'tabuleiro__aba--ativa' : ''
                     }`}
+                    style={{ '--cor-coluna': coluna.cor }}
                     onClick={() => setAbaEscolhida(coluna.status)}
                   >
                     {coluna.titulo}
@@ -712,7 +862,7 @@ export default function Pedidos() {
               })}
             </div>
 
-            <section className="prateleira">
+            <section className="prateleira" style={{ '--cor-coluna': colunaAtiva.cor }}>
               <header className="prateleira__topo">
                 <h2 className="prateleira__nome">
                   <span className="prateleira__passo" aria-hidden="true">
@@ -726,11 +876,13 @@ export default function Pedidos() {
               <div className="prateleira__corpo">
                 {totalDa(colunaAtiva.status) === 0 && (
                   <p className="prateleira__vazio">
-                    Nenhum pedido em “{colunaAtiva.titulo.toLowerCase()}”
+                    {filtrando
+                      ? 'Nenhum pedido com esse filtro'
+                      : `Nenhum pedido em “${colunaAtiva.titulo.toLowerCase()}”`}
                   </p>
                 )}
 
-                {noQuadro
+                {visiveis
                   .filter((pedido) => colunaDoPedido(pedido, colunas).status === colunaAtiva.status)
                   .map((pedido) => ficha(pedido, colunaAtiva))}
               </div>

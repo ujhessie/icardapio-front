@@ -864,3 +864,159 @@
     transition: none;
   }
 }
+
+/* ---------- Busca e filtro do quadro ---------- */
+
+.busca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.busca__campo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  max-width: 380px;
+  padding: 0 10px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 10px;
+  background: var(--painel-superficie);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.busca__campo:focus-within {
+  border-color: var(--cor-destaque);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-destaque) 15%, transparent);
+}
+
+.busca__lupa {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--painel-fraco);
+}
+
+.busca__campo input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--fonte);
+  font-size: 13.5px;
+  color: var(--painel-texto);
+}
+
+.busca__campo input:focus {
+  outline: none;
+}
+
+/* O "x" nativo do campo de busca sai de cena: o nosso combina com o painel. */
+.busca__campo input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.busca__limpar {
+  flex-shrink: 0;
+  padding: 2px 5px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--painel-fraco);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.busca__limpar:hover {
+  color: var(--painel-texto);
+  background: #eef0f6;
+}
+
+.busca__resumo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--painel-fraco);
+}
+
+.busca__limpar-tudo {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--cor-destaque);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* ---------- Cor de cada etapa ---------- */
+
+/* A cor vem do JSX em --cor-coluna: cada status tem a sua, do quente ao frio. */
+.prateleira {
+  border-top: 3px solid var(--cor-coluna, var(--painel-borda));
+  background: color-mix(in srgb, var(--cor-coluna, #6f7484) 3%, #fafbfd);
+}
+
+.prateleira__passo {
+  background: color-mix(in srgb, var(--cor-coluna, #6f7484) 15%, #fff);
+  color: color-mix(in srgb, var(--cor-coluna, #6f7484) 88%, #000);
+}
+
+.prateleira__contagem {
+  background: color-mix(in srgb, var(--cor-coluna, #6f7484) 12%, #fff);
+  color: color-mix(in srgb, var(--cor-coluna, #6f7484) 88%, #000);
+}
+
+@media (max-width: 620px) {
+  .busca__campo {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .busca__tipos {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .busca__tipos .segmento__botao {
+    flex: 1;
+    padding: 6px 8px;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busca__campo {
+    transition: none;
+  }
+}
+
+/* Abas do celular seguem a cor da etapa, igual às colunas do desktop. */
+.tabuleiro__aba::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--cor-coluna, var(--painel-fraco));
+}
+
+.tabuleiro__aba--ativa,
+.tabuleiro__aba--ativa:hover {
+  background: color-mix(in srgb, var(--cor-coluna, var(--painel-lateral)) 13%, #fff);
+  border-color: color-mix(in srgb, var(--cor-coluna, var(--painel-lateral)) 55%, #fff);
+  color: color-mix(in srgb, var(--cor-coluna, var(--painel-lateral)) 85%, #000);
+}
+
+.tabuleiro__aba--ativa .tabuleiro__aba-contagem {
+  background: var(--cor-coluna, var(--painel-lateral));
+  color: #fff;
+}
