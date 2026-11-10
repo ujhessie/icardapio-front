@@ -29,6 +29,29 @@ const MENU_LOJA = [
 // mas sem clique — botão morto com cara de pronto é pior que ausência.
 const MENU_EM_BREVE = [{ rotulo: 'Relatórios', icone: 'relatorios' }]
 
+/*
+ * Tela cheia do quadro: a casca (lateral + topo) sai de cena e sobram as
+ * colunas. Fica salvo no navegador porque quem passa o dia no quadro escolhe
+ * isso uma vez e não quer escolher de novo a cada F5.
+ */
+const CHAVE_TELA_CHEIA = 'icardapio:telaCheia'
+
+function lerTelaCheia() {
+  try {
+    return localStorage.getItem(CHAVE_TELA_CHEIA) === '1'
+  } catch {
+    return false
+  }
+}
+
+function guardarTelaCheia(valor) {
+  try {
+    localStorage.setItem(CHAVE_TELA_CHEIA, valor ? '1' : '0')
+  } catch {
+    // Navegador sem storage (aba anônima travada): só não lembra no F5.
+  }
+}
+
 const MENU_PLATAFORMA = [{ para: '/admin', fim: true, rotulo: 'Plataforma', icone: 'painel' }]
 
 // No celular cabem cinco: as ações do dia a dia + os ajustes.
@@ -144,6 +167,8 @@ export default function CascaPainel() {
   // Preferência do sino: fica salva no navegador, não na loja — quem atende de
   // manhã pode querer som e quem atende à noite não.
   const [som, setSom] = useState(() => somLigado())
+  // Tela cheia do quadro: esconde a moldura e deixa só o conteúdo.
+  const [telaCheia, setTelaCheia] = useState(() => lerTelaCheia())
   // Ids já conhecidos. Serve para o sino não tocar de novo a cada consulta:
   // só toca quando aparece um id que não estava na lista anterior.
   const conhecidos = useRef(null)
@@ -165,6 +190,32 @@ export default function CascaPainel() {
     pararSom()
     setPedidoPendente(null)
   }, [estaNaTelaDePedidos])
+
+  // Esc sai da tela cheia: quem entrou sem querer precisa de saída óbvia.
+  useEffect(() => {
+    if (!telaCheia) return undefined
+
+    function aoTeclar(evento) {
+      if (evento.key !== 'Escape') return
+
+      setTelaCheia(false)
+      guardarTelaCheia(false)
+    }
+
+    window.addEventListener('keydown', aoTeclar)
+
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [telaCheia])
+
+  function alterarTelaCheia(valor) {
+    setTelaCheia((atual) => {
+      const novo = typeof valor === 'boolean' ? valor : !atual
+
+      guardarTelaCheia(novo)
+
+      return novo
+    })
+  }
 
   /*
    * Rajada de alerta: 3 toques, um a cada 5 s (0 s, 5 s e 10 s). Terminada a
@@ -305,7 +356,7 @@ export default function CascaPainel() {
   const inicial = (usuario.nome || '?').trim().charAt(0).toUpperCase()
 
   return (
-    <div className="casca">
+    <div className={`casca ${telaCheia ? 'casca--cheia' : ''}`}>
       <aside className="casca__lateral">
         <Link className="casca__marca" to="/admin">
           <span className="casca__marca-icone" aria-hidden="true">
@@ -416,7 +467,7 @@ export default function CascaPainel() {
         </header>
 
         <div className="casca__conteudo">
-          <Outlet />
+          <Outlet context={{ telaCheia, alterarTelaCheia }} />
         </div>
       </div>
 
@@ -470,6 +521,22 @@ export default function CascaPainel() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Saída da tela cheia. Fica flutuando porque, sem a lateral, é o único
+          caminho de volta em telas que não são o quadro. */}
+      {telaCheia && (
+        <button
+          className="casca__sair-cheia"
+          type="button"
+          onClick={() => alterarTelaCheia(false)}
+          title="Sair da tela cheia (Esc)"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M9 4H4v5M15 20h5v-5M20 9V4h-5M4 15v5h5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Sair da tela cheia
+        </button>
       )}
     </div>
   )

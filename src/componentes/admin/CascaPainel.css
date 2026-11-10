@@ -377,12 +377,61 @@
   display: none;
 }
 
+/* ---------- Tela cheia do quadro ---------- */
+
+/* Sem lateral e sem topo, o conteudo ocupa a tela inteira. */
+.casca--cheia {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.casca--cheia .casca__lateral,
+.casca--cheia .casca__topo,
+.casca--cheia .casca__inferior {
+  display: none;
+}
+
+/* Botao de saida: unico caminho de volta quando a casca esta escondida. */
+.casca__sair-cheia {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 999px;
+  background: var(--painel-superficie);
+  color: var(--painel-texto);
+  font-family: var(--fonte);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(20, 22, 31, 0.05), 0 14px 30px -20px rgba(20, 22, 31, 0.6);
+}
+
+.casca__sair-cheia:hover {
+  border-color: var(--cor-destaque);
+  color: var(--cor-destaque);
+}
+
+.casca__sair-cheia svg {
+  width: 15px;
+  height: 15px;
+}
+
 /* ---------- Celular / tablet ---------- */
 
 @media (max-width: 1024px) {
   .casca {
     grid-template-columns: minmax(0, 1fr);
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* Sem barra inferior na tela cheia: o espaco reservado a ela tambem sai. */
+  .casca--cheia {
+    padding-bottom: 0;
   }
 
   .casca__lateral {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { lerToken } from '../../servicos/api.js'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
@@ -126,6 +127,7 @@ function combinaBusca(pedido, termo) {
 }
 
 // Mesa ainda é rara: o filtro só aparece quando existe pedido de mesa na tela.
+// Delivery e Balcão ficam sempre — são os dois tipos que a loja usa todo dia.
 const FILTROS_TIPO = [
   { valor: 'todos', rotulo: 'Todos' },
   { valor: 'delivery', rotulo: 'Delivery' },
@@ -363,6 +365,9 @@ function Ficha({
 }
 
 export default function Pedidos() {
+  // A tela cheia mora na casca — é ela que tem a barra lateral. Aqui só pedimos.
+  const { telaCheia, alterarTelaCheia } = useOutletContext() || {}
+
   const [pedidos, setPedidos] = useState([])
   const [resumo, setResumo] = useState(null)
   const [carregando, setCarregando] = useState(true)
@@ -650,6 +655,43 @@ export default function Pedidos() {
               Arquivados
             </button>
           </div>
+
+          {!arquivados && (
+            <button
+              className={`tabuleiro__cheia ${telaCheia ? 'tabuleiro__cheia--ativa' : ''}`}
+              type="button"
+              onClick={() => alterarTelaCheia?.()}
+              aria-pressed={Boolean(telaCheia)}
+              title={
+                telaCheia
+                  ? 'Sair da tela cheia (Esc)'
+                  : 'Fechar a barra lateral e usar a tela toda'
+              }
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                {telaCheia ? (
+                  <path
+                    d="M9 4H4v5M15 20h5v-5M20 9V4h-5M4 15v5h5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ) : (
+                  <path
+                    d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+              </svg>
+              <span>{telaCheia ? 'Sair' : 'Tela cheia'}</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -714,7 +756,7 @@ export default function Pedidos() {
           <div className="segmento busca__tipos" role="group" aria-label="Tipo de pedido">
             {FILTROS_TIPO.filter(
               (opcao) =>
-                opcao.valor === 'todos' || opcao.valor === tipo || tiposNaTela.has(opcao.valor),
+                opcao.valor !== 'mesa' || tipo === 'mesa' || tiposNaTela.has('mesa'),
             ).map((opcao) => (
               <button
                 key={opcao.valor}
