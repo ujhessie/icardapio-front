@@ -1072,14 +1072,29 @@
   background: color-mix(in srgb, var(--cor-destaque) 6%, #fff);
 }
 
-@media (max-width: 620px) {
-  /* No celular so o icone: o texto empurraria o seletor de visao para fora. */
-  .tabuleiro__cheia span {
-    display: none;
+@media (max-width: 1024px) {
+  /* No celular/tablet o botão sobe para o canto do título: assim ele não
+     empurra os seletores para uma linha só dele. */
+  .tabuleiro__topo {
+    position: relative;
+  }
+
+  .tabuleiro__topo > div:first-child {
+    padding-right: 44px;
   }
 
   .tabuleiro__cheia {
+    position: absolute;
+    top: 0;
+    right: 0;
     padding: 8px;
+  }
+}
+
+@media (max-width: 620px) {
+  /* Só o ícone: o texto empurraria o seletor de visão para fora. */
+  .tabuleiro__cheia span {
+    display: none;
   }
 }
 
