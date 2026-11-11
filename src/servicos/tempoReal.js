@@ -14,6 +14,28 @@ const INTERVALO_PEDIDO_ENCERRADO = 15000
 const INTERVALO_LOJA = 5000
 const STATUS_ENCERRADOS = new Set(['entregue', 'cancelado'])
 
+/*
+ * Pedido que o próprio painel acabou de lançar.
+ *
+ * O sino existe para avisar de pedido que chegou de fora. Quando o lojista
+ * lança o pedido na mão, ele já sabe que ele existe — tocar seria o painel
+ * avisando o lojista dele mesmo. A marca vale uma leitura só.
+ */
+const pedidosLocais = new Set()
+
+export function marcarPedidoLocal(id) {
+  if (id) pedidosLocais.add(String(id))
+}
+
+export function ehPedidoLocal(id) {
+  const chave = String(id || '')
+
+  if (!pedidosLocais.has(chave)) return false
+
+  pedidosLocais.delete(chave)
+  return true
+}
+
 /**
  * Lista de inscritos por evento, no mesmo formato do Socket.io:
  * canal.on('pedido:status', fn).

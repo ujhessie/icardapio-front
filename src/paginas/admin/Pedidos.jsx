@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { lerToken } from '../../servicos/api.js'
+import { bairros as servicoBairros } from '../../servicos/bairros.js'
 import { cardapio as servicoCardapio } from '../../servicos/cardapio.js'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { pedidos as servicoPedidos } from '../../servicos/pedidos.js'
-import { abrirCanalDaLoja } from '../../servicos/tempoReal.js'
-import { formatarDinheiro } from '../../utils/dinheiro.js'
+import { abrirCanalDaLoja, marcarPedidoLocal } from '../../servicos/tempoReal.js'
+import { formatarDinheiro, paraCentavos } from '../../utils/dinheiro.js'
 import { TEMPOS_PADRAO } from '../../utils/tempos.js'
 import './Painel.css'
 import './Pedidos.css'
@@ -212,7 +213,11 @@ function Ficha({
             pedido.tipo === 'delivery' ? 'ficha__origem--entrega' : ''
           }`}
         >
-          {pedido.tipo === 'delivery' ? 'Delivery' : 'Balcão'}
+          {pedido.tipo === 'delivery'
+            ? 'Delivery'
+            : pedido.tipo === 'mesa' && pedido.mesa
+              ? `Mesa ${pedido.mesa}`
+              : 'Balcão'}
         </span>
       </header>
 
@@ -374,6 +379,107 @@ function Ficha({
 }
 
 /*
+ * Lista de itens editável, usada nos dois modais (editar e novo pedido).
+ *
+ * O preço de cada linha já vem resolvido por quem chama: item que estava no
+ * pedido mantém o preço da compra; item novo entra com o preço de hoje.
+ */
+function EditorDeItens({ itens, produtos, aoMudarQuantidade, aoRemover, aoAdicionar, minimo = 1 }) {
+  const [escolhido, setEscolhido] = useState('')
+
+  // Produto que saiu do cardápio continua no pedido, mas não entra novo.
+  const disponiveis = produtos.filter((produto) => produto.disponivel !== false)
+
+  function adicionar() {
+    const produto = disponiveis.find((item) => String(item._id) === escolhido)
+
+    if (!produto) return
+
+    aoAdicionar(produto)
+    setEscolhido('')
+  }
+
+  return (
+    <>
+      {itens.length === 0 && (
+        <p className="editar__fixo">Nenhum item ainda. Escolha no cardápio abaixo.</p>
+      )}
+
+      {itens.length > 0 && (
+        <ul className="editar__itens">
+          {itens.map((item) => (
+            <li className="editar__item" key={item.produtoId}>
+              <div className="editar__item-dados">
+                <strong>{item.nome}</strong>
+                <span>{formatarDinheiro(item.precoUnitario)} cada</span>
+              </div>
+
+              <div className="editar__passo">
+                <button
+                  type="button"
+                  onClick={() => aoMudarQuantidade(item.produtoId, -1)}
+                  disabled={item.quantidade <= 1}
+                  aria-label={`Diminuir ${item.nome}`}
+                >
+                  −
+                </button>
+                <span>{item.quantidade}</span>
+                <button
+                  type="button"
+                  onClick={() => aoMudarQuantidade(item.produtoId, 1)}
+                  disabled={item.quantidade >= 99}
+                  aria-label={`Aumentar ${item.nome}`}
+                >
+                  +
+                </button>
+              </div>
+
+              <span className="editar__item-total">
+                {formatarDinheiro(item.precoUnitario * item.quantidade)}
+              </span>
+
+              <button
+                className="editar__remover"
+                type="button"
+                disabled={itens.length <= minimo}
+                onClick={() => aoRemover(item.produtoId)}
+                aria-label={`Remover ${item.nome}`}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="editar__novo">
+        <select
+          value={escolhido}
+          onChange={(evento) => setEscolhido(evento.target.value)}
+          aria-label="Produto para adicionar"
+        >
+          <option value="">Adicionar item do cardápio…</option>
+          {disponiveis.map((produto) => (
+            <option key={produto._id} value={produto._id}>
+              {produto.nome} — {formatarDinheiro(produto.preco)}
+            </option>
+          ))}
+        </select>
+
+        <button
+          className="editar__adicionar"
+          type="button"
+          onClick={adicionar}
+          disabled={!escolhido}
+        >
+          Adicionar
+        </button>
+      </div>
+    </>
+  )
+}
+
+/*
  * Editar pedido em andamento.
  *
  * O lojista corrige o que o cliente errou — nome, endereço, item trocado —
@@ -402,7 +508,6 @@ function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) 
     })),
   }))
 
-  const [escolhido, setEscolhido] = useState('')
   const [aviso, setAviso] = useState('')
 
   useEffect(() => {
@@ -442,19 +547,15 @@ function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) 
     )
   }
 
-  function adicionarItem() {
-    const produto = produtos.find((item) => String(item._id) === escolhido)
-
-    if (!produto) return
-
+  function adicionarItem(produto) {
     setForm((atual) => {
-      const jaTem = atual.itens.find((item) => item.produtoId === escolhido)
+      const jaTem = atual.itens.find((item) => item.produtoId === String(produto._id))
 
       if (jaTem) {
         return {
           ...atual,
           itens: atual.itens.map((item) =>
-            item.produtoId === escolhido
+            item.produtoId === String(produto._id)
               ? { ...item, quantidade: Math.min(99, item.quantidade + 1) }
               : item,
           ),
@@ -466,7 +567,7 @@ function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) 
         itens: [
           ...atual.itens,
           {
-            produtoId: escolhido,
+            produtoId: String(produto._id),
             nome: produto.nome,
             precoUnitario: produto.preco,
             quantidade: 1,
@@ -474,8 +575,6 @@ function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) 
         ],
       }
     })
-
-    setEscolhido('')
   }
 
   function enviar(evento) {
@@ -511,8 +610,6 @@ function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) 
     onSalvar(corpo)
   }
 
-  // Produto que saiu do cardápio continua no pedido, mas não entra novo.
-  const paraAdicionar = produtos.filter((item) => item.disponivel !== false)
   const mensagem = aviso || erro
 
   return (
@@ -636,74 +733,13 @@ function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) 
           <fieldset className="editar__grupo">
             <legend className="editar__legenda">Itens</legend>
 
-            <ul className="editar__itens">
-              {form.itens.map((item) => (
-                <li className="editar__item" key={item.produtoId}>
-                  <div className="editar__item-dados">
-                    <strong>{item.nome}</strong>
-                    <span>{formatarDinheiro(item.precoUnitario)} cada</span>
-                  </div>
-
-                  <div className="editar__passo">
-                    <button
-                      type="button"
-                      onClick={() => mudarQuantidade(item.produtoId, -1)}
-                      disabled={item.quantidade <= 1}
-                      aria-label={`Diminuir ${item.nome}`}
-                    >
-                      −
-                    </button>
-                    <span>{item.quantidade}</span>
-                    <button
-                      type="button"
-                      onClick={() => mudarQuantidade(item.produtoId, 1)}
-                      disabled={item.quantidade >= 99}
-                      aria-label={`Aumentar ${item.nome}`}
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <span className="editar__item-total">
-                    {formatarDinheiro(item.precoUnitario * item.quantidade)}
-                  </span>
-
-                  <button
-                    className="editar__remover"
-                    type="button"
-                    disabled={form.itens.length === 1}
-                    onClick={() => removerItem(item.produtoId)}
-                    aria-label={`Remover ${item.nome}`}
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            <div className="editar__novo">
-              <select
-                value={escolhido}
-                onChange={(evento) => setEscolhido(evento.target.value)}
-                aria-label="Produto para adicionar"
-              >
-                <option value="">Adicionar item do cardápio…</option>
-                {paraAdicionar.map((produto) => (
-                  <option key={produto._id} value={produto._id}>
-                    {produto.nome} — {formatarDinheiro(produto.preco)}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                className="editar__adicionar"
-                type="button"
-                onClick={adicionarItem}
-                disabled={!escolhido}
-              >
-                Adicionar
-              </button>
-            </div>
+            <EditorDeItens
+              itens={form.itens}
+              produtos={produtos}
+              aoMudarQuantidade={mudarQuantidade}
+              aoRemover={removerItem}
+              aoAdicionar={adicionarItem}
+            />
           </fieldset>
 
           <fieldset className="editar__grupo">
@@ -759,6 +795,424 @@ function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) 
   )
 }
 
+/*
+ * Novo pedido pelo painel.
+ *
+ * O que chegou por telefone, WhatsApp ou na mesa. Antes o lojista anotava no
+ * papel e lançava depois — ou não lançava e o pedido sumia do histórico.
+ *
+ * Aqui ele entra na mesma fila dos pedidos do cardápio: mesmo número, mesmo
+ * quadro, mesma tela de acompanhamento.
+ */
+function CriarPedido({ produtos, bairros, salvando, erro, onFechar, onSalvar }) {
+  const caixa = useRef(null)
+
+  const [form, setForm] = useState({
+    tipo: 'delivery',
+    nome: '',
+    telefone: '',
+    rua: '',
+    numero: '',
+    complemento: '',
+    referencia: '',
+    bairroId: '',
+    mesa: '',
+    itens: [],
+    pagamento: 'dinheiro',
+    troco: '',
+    observacao: '',
+  })
+
+  const [aviso, setAviso] = useState('')
+
+  useEffect(() => {
+    const elemento = caixa.current
+
+    if (elemento && !elemento.open) elemento.showModal()
+  }, [])
+
+  const bairrosAtivos = bairros.filter((bairro) => bairro.ativo !== false)
+  const bairro = bairrosAtivos.find((item) => String(item._id) === form.bairroId)
+  const taxa = form.tipo === 'delivery' && bairro ? bairro.taxaEntrega : 0
+
+  const subtotal = form.itens.reduce(
+    (soma, item) => soma + item.precoUnitario * item.quantidade,
+    0,
+  )
+
+  function alterar(campo, valor) {
+    setForm((atual) => ({ ...atual, [campo]: valor }))
+    setAviso('')
+  }
+
+  function mudarQuantidade(produtoId, delta) {
+    setForm((atual) => ({
+      ...atual,
+      itens: atual.itens.map((item) =>
+        item.produtoId === produtoId
+          ? { ...item, quantidade: Math.min(99, Math.max(1, item.quantidade + delta)) }
+          : item,
+      ),
+    }))
+  }
+
+  function removerItem(produtoId) {
+    setForm((atual) => ({
+      ...atual,
+      itens: atual.itens.filter((item) => item.produtoId !== produtoId),
+    }))
+  }
+
+  function adicionarItem(produto) {
+    setForm((atual) => {
+      const jaTem = atual.itens.find((item) => item.produtoId === String(produto._id))
+
+      if (jaTem) {
+        return {
+          ...atual,
+          itens: atual.itens.map((item) =>
+            item.produtoId === String(produto._id)
+              ? { ...item, quantidade: Math.min(99, item.quantidade + 1) }
+              : item,
+          ),
+        }
+      }
+
+      return {
+        ...atual,
+        itens: [
+          ...atual.itens,
+          {
+            produtoId: String(produto._id),
+            nome: produto.nome,
+            precoUnitario: produto.preco,
+            quantidade: 1,
+          },
+        ],
+      }
+    })
+    setAviso('')
+  }
+
+  function enviar(evento) {
+    evento.preventDefault()
+
+    if (!form.nome.trim()) return setAviso('Informe o nome do cliente')
+    if (form.itens.length === 0) return setAviso('Adicione pelo menos um item')
+
+    if (form.tipo === 'delivery') {
+      if (!form.bairroId) return setAviso('Escolha o bairro da entrega')
+      if (!form.rua.trim() || !form.numero.trim()) {
+        return setAviso('Informe a rua e o número da entrega')
+      }
+    }
+
+    if (form.tipo === 'mesa') {
+      const mesa = Number(form.mesa)
+
+      if (!Number.isInteger(mesa) || mesa < 1) return setAviso('Informe o número da mesa')
+    }
+
+    // Campo de troco é em reais; a API trabalha em centavos.
+    let trocoPara = 0
+
+    if (form.pagamento === 'dinheiro' && form.troco.trim()) {
+      trocoPara = paraCentavos(form.troco)
+
+      if (!Number.isFinite(trocoPara) || trocoPara <= 0) {
+        return setAviso('Valor de troco inválido')
+      }
+
+      if (trocoPara < subtotal + taxa) {
+        return setAviso('O troco é menor que o total do pedido')
+      }
+    }
+
+    const corpo = {
+      tipo: form.tipo,
+      cliente: { nome: form.nome.trim(), telefone: form.telefone.trim() },
+      itens: form.itens.map((item) => ({
+        produtoId: item.produtoId,
+        quantidade: item.quantidade,
+      })),
+      pagamento: form.pagamento,
+      trocoPara,
+      observacao: form.observacao,
+    }
+
+    if (form.tipo === 'delivery') {
+      corpo.bairroId = form.bairroId
+      corpo.endereco = {
+        rua: form.rua.trim(),
+        numero: form.numero.trim(),
+        complemento: form.complemento,
+        referencia: form.referencia,
+      }
+    }
+
+    if (form.tipo === 'mesa') corpo.mesa = Number(form.mesa)
+
+    setAviso('')
+    onSalvar(corpo)
+  }
+
+  const mensagem = aviso || erro
+
+  return (
+    <dialog
+      className="editar"
+      ref={caixa}
+      onClose={onFechar}
+      onCancel={(evento) => {
+        if (salvando) evento.preventDefault()
+      }}
+      onClick={(evento) => {
+        if (evento.target === caixa.current) onFechar()
+      }}
+    >
+      <form className="editar__caixa" onSubmit={enviar}>
+        <header className="editar__topo">
+          <div>
+            <h2 className="editar__titulo">Novo pedido</h2>
+            <p className="editar__subtitulo">
+              Pedido que chegou por telefone, WhatsApp ou na mesa.
+            </p>
+          </div>
+
+          <button className="editar__fechar" type="button" onClick={onFechar} aria-label="Fechar">
+            ✕
+          </button>
+        </header>
+
+        <div className="editar__corpo">
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Tipo do pedido</legend>
+
+            <div className="editar__tipos" role="radiogroup" aria-label="Tipo do pedido">
+              {[
+                { valor: 'delivery', rotulo: 'Entrega' },
+                { valor: 'mesa', rotulo: 'Mesa' },
+                { valor: 'balcao', rotulo: 'Balcão' },
+              ].map((opcao) => (
+                <button
+                  key={opcao.valor}
+                  className={`editar__tipo ${
+                    form.tipo === opcao.valor ? 'editar__tipo--ativo' : ''
+                  }`}
+                  type="button"
+                  role="radio"
+                  aria-checked={form.tipo === opcao.valor}
+                  onClick={() => alterar('tipo', opcao.valor)}
+                >
+                  {opcao.rotulo}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Cliente</legend>
+
+            <div className="editar__linha">
+              <label className="editar__campo">
+                <span className="editar__rotulo">Nome</span>
+                <input
+                  type="text"
+                  value={form.nome}
+                  onChange={(evento) => alterar('nome', evento.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+
+              <label className="editar__campo">
+                <span className="editar__rotulo">Telefone (opcional)</span>
+                <input
+                  type="tel"
+                  value={form.telefone}
+                  onChange={(evento) => alterar('telefone', evento.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+            </div>
+          </fieldset>
+
+          {form.tipo === 'delivery' && (
+            <fieldset className="editar__grupo">
+              <legend className="editar__legenda">Endereço de entrega</legend>
+
+              <div className="editar__linha editar__linha--endereco">
+                <label className="editar__campo editar__campo--largo">
+                  <span className="editar__rotulo">Rua</span>
+                  <input
+                    type="text"
+                    value={form.rua}
+                    onChange={(evento) => alterar('rua', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+
+                <label className="editar__campo editar__campo--curto">
+                  <span className="editar__rotulo">Número</span>
+                  <input
+                    type="text"
+                    value={form.numero}
+                    onChange={(evento) => alterar('numero', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
+
+              <div className="editar__linha">
+                <label className="editar__campo">
+                  <span className="editar__rotulo">Complemento</span>
+                  <input
+                    type="text"
+                    value={form.complemento}
+                    onChange={(evento) => alterar('complemento', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+
+                <label className="editar__campo">
+                  <span className="editar__rotulo">Referência</span>
+                  <input
+                    type="text"
+                    value={form.referencia}
+                    onChange={(evento) => alterar('referencia', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
+
+              <label className="editar__campo">
+                <span className="editar__rotulo">Bairro</span>
+                <select
+                  value={form.bairroId}
+                  onChange={(evento) => alterar('bairroId', evento.target.value)}
+                >
+                  <option value="">Escolha o bairro…</option>
+                  {bairrosAtivos.map((item) => (
+                    <option key={item._id} value={item._id}>
+                      {item.nome} — {formatarDinheiro(item.taxaEntrega)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </fieldset>
+          )}
+
+          {form.tipo === 'mesa' && (
+            <fieldset className="editar__grupo">
+              <legend className="editar__legenda">Mesa</legend>
+
+              <label className="editar__campo editar__campo--curto">
+                <span className="editar__rotulo">Número da mesa</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={form.mesa}
+                  onChange={(evento) => alterar('mesa', evento.target.value)}
+                />
+              </label>
+            </fieldset>
+          )}
+
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Itens</legend>
+
+            <EditorDeItens
+              itens={form.itens}
+              produtos={produtos}
+              aoMudarQuantidade={mudarQuantidade}
+              aoRemover={removerItem}
+              aoAdicionar={adicionarItem}
+              minimo={0}
+            />
+          </fieldset>
+
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Pagamento</legend>
+
+            <div className="editar__linha">
+              <label className="editar__campo">
+                <span className="editar__rotulo">Forma</span>
+                <select
+                  value={form.pagamento}
+                  onChange={(evento) => alterar('pagamento', evento.target.value)}
+                >
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="pix">Pix</option>
+                  <option value="cartao">Cartão</option>
+                </select>
+              </label>
+
+              {form.pagamento === 'dinheiro' && (
+                <label className="editar__campo">
+                  <span className="editar__rotulo">Troco para (opcional)</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Ex.: 50,00"
+                    value={form.troco}
+                    onChange={(evento) => alterar('troco', evento.target.value)}
+                  />
+                </label>
+              )}
+            </div>
+          </fieldset>
+
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Observação</legend>
+
+            <label className="editar__campo">
+              <span className="editar__rotulo">Recado do pedido</span>
+              <textarea
+                rows={2}
+                value={form.observacao}
+                onChange={(evento) => alterar('observacao', evento.target.value)}
+              />
+            </label>
+          </fieldset>
+
+          <div className="editar__totais">
+            <span>
+              Subtotal <strong>{formatarDinheiro(subtotal)}</strong>
+            </span>
+
+            {form.tipo === 'delivery' && (
+              <span>
+                Taxa de entrega <strong>{formatarDinheiro(taxa)}</strong>
+              </span>
+            )}
+
+            <span className="editar__total">
+              Total <strong>{formatarDinheiro(subtotal + taxa)}</strong>
+            </span>
+          </div>
+        </div>
+
+        <footer className="editar__rodape">
+          {mensagem ? (
+            <span className="editar__erro">{mensagem}</span>
+          ) : (
+            <span className="editar__dica">O pedido entra na fila como “Novo”.</span>
+          )}
+
+          <div className="editar__acoes">
+            <button className="editar__cancelar" type="button" onClick={onFechar}>
+              Cancelar
+            </button>
+            <button className="editar__salvar" type="submit" disabled={salvando}>
+              {salvando ? 'Lançando…' : 'Lançar pedido'}
+            </button>
+          </div>
+        </footer>
+      </form>
+    </dialog>
+  )
+}
+
 export default function Pedidos() {
   // A tela cheia mora na casca — é ela que tem a barra lateral. Aqui só pedimos.
   const { telaCheia, alterarTelaCheia } = useOutletContext() || {}
@@ -798,6 +1252,12 @@ export default function Pedidos() {
   const [produtos, setProdutos] = useState(null)
   const [salvandoEdicao, setSalvandoEdicao] = useState(false)
   const [erroEdicao, setErroEdicao] = useState('')
+
+  // Novo pedido lançado no painel.
+  const [criando, setCriando] = useState(false)
+  const [bairros, setBairros] = useState([])
+  const [salvandoCriacao, setSalvandoCriacao] = useState(false)
+  const [erroCriacao, setErroCriacao] = useState('')
 
   const arquivados = visao === 'arquivados'
 
@@ -1011,6 +1471,47 @@ export default function Pedidos() {
     }
   }
 
+  /*
+   * Abrir o "Novo pedido" precisa do cardápio e dos bairros. As duas listas
+   * ficam em cache na tela: o segundo pedido do dia não espera requisição.
+   */
+  async function abrirCriacao() {
+    setCriando(true)
+    setErroCriacao('')
+
+    try {
+      const [listaProdutos, listaBairros] = await Promise.all([
+        produtos !== null ? Promise.resolve({ produtos }) : servicoCardapio.listarProdutos(),
+        servicoBairros.listar(),
+      ])
+
+      if (produtos === null) setProdutos(listaProdutos.produtos || [])
+
+      setBairros(listaBairros.bairros || [])
+    } catch (e) {
+      setErroCriacao(e.message)
+    }
+  }
+
+  async function salvarCriacao(corpo) {
+    setSalvandoCriacao(true)
+    setErroCriacao('')
+
+    try {
+      const resposta = await servicoPedidos.criar(corpo)
+
+      // O sino é para pedido que chega de fora. Este o lojista acabou de lançar.
+      marcarPedidoLocal(resposta?.pedido?._id)
+
+      setCriando(false)
+      await carregar()
+    } catch (e) {
+      setErroCriacao(e.message)
+    } finally {
+      setSalvandoCriacao(false)
+    }
+  }
+
   function ficha(pedido, coluna) {
     return (
       <Ficha
@@ -1092,6 +1593,21 @@ export default function Pedidos() {
               Arquivados
             </button>
           </div>
+
+          {!arquivados && (
+            <button className="tabuleiro__novo" type="button" onClick={abrirCriacao}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+              </svg>
+              <span>Novo pedido</span>
+            </button>
+          )}
 
           {!arquivados && (
             <button
@@ -1452,6 +1968,22 @@ export default function Pedidos() {
             setErroEdicao('')
           }}
           onSalvar={salvarEdicao}
+        />
+      )}
+
+      {criando && (
+        <CriarPedido
+          produtos={produtos || []}
+          bairros={bairros}
+          salvando={salvandoCriacao}
+          erro={erroCriacao}
+          onFechar={() => {
+            if (salvandoCriacao) return
+
+            setCriando(false)
+            setErroCriacao('')
+          }}
+          onSalvar={salvarCriacao}
         />
       )}
     </div>

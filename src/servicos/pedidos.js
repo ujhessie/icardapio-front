@@ -19,6 +19,7 @@ export const pedidos = {
   mudarStatus: (id, status) =>
     requisitar(`/pedidos/${id}/status`, { method: 'PATCH', corpo: { status } }),
   editar: (id, corpo) => requisitar(`/pedidos/${id}`, { method: 'PATCH', corpo }),
+  criar: (corpo) => requisitar('/pedidos', { method: 'POST', corpo }),
   arquivar: (id) =>
     requisitar(`/pedidos/${id}/arquivar`, { method: 'PATCH', corpo: { arquivado: true } }),
   desarquivar: (id) =>

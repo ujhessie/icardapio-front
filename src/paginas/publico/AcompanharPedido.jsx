@@ -126,7 +126,9 @@ export default function AcompanharPedido() {
   const visiveis = (Array.isArray(etapasDaLoja) && etapasDaLoja.length
     ? etapasDaLoja
     : PASSOS.map((passo) => passo.status)
-  ).filter((status) => pedido.tipo !== 'balcao' || status !== 'saiu_entrega')
+  ).filter(
+    (status) => pedido.tipo === 'delivery' || status !== 'saiu_entrega',
+  )
 
   const passos = PASSOS.filter((passo) => visiveis.includes(passo.status))
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contextos/AuthContexto.jsx'
 import { guardarSom, prepararSom, somLigado, tocarAlerta, tocarSino } from '../../servicos/som.js'
-import { abrirCanalDaLoja } from '../../servicos/tempoReal.js'
+import { abrirCanalDaLoja, ehPedidoLocal } from '../../servicos/tempoReal.js'
 import './CascaPainel.css'
 
 /*
@@ -301,7 +301,9 @@ export default function CascaPainel() {
       // Chegou pedido novo = id que não existia antes. Na primeira leitura não
       // existe "antes": tudo que já estava aberto é histórico, não alerta.
       if (podeTocar && anteriores) {
-        const chegou = pendentes.find((pedido) => !anteriores.has(pedido._id))
+        const chegou = pendentes.find(
+          (pedido) => !anteriores.has(pedido._id) && !ehPedidoLocal(pedido._id),
+        )
 
         if (chegou) {
           // O efeito abaixo cuida do sino: basta marcar o pedido pendente.
