@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { lerToken } from '../../servicos/api.js'
+import { cardapio as servicoCardapio } from '../../servicos/cardapio.js'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { pedidos as servicoPedidos } from '../../servicos/pedidos.js'
 import { abrirCanalDaLoja } from '../../servicos/tempoReal.js'
@@ -178,6 +179,8 @@ function Ficha({
   ocupado,
   arrastando,
   onAvancar,
+  onVoltar,
+  onEditar,
   onArquivar,
   onPedirConfirmacao,
   onDesistir,
@@ -347,6 +350,12 @@ function Ficha({
               </button>
             )}
 
+            {pedido.status !== 'entregue' && pedido.status !== 'cancelado' && (
+              <button className="ficha__link" type="button" disabled={ocupado} onClick={onEditar}>
+                Editar pedido
+              </button>
+            )}
+
             {pedido.status === 'cancelado' && (
               <button
                 className="ficha__link ficha__link--perigo"
@@ -361,6 +370,392 @@ function Ficha({
         </>
       )}
     </article>
+  )
+}
+
+/*
+ * Editar pedido em andamento.
+ *
+ * O lojista corrige o que o cliente errou — nome, endereço, item trocado —
+ * sem cancelar e refazer, que perderia o número e a posição na fila.
+ *
+ * Regra do preço: item que já estava no pedido mantém o preço da compra.
+ * Produto novo entra com o preço de hoje. É a mesma regra que a API aplica,
+ * aqui só mostramos a conta antes de salvar.
+ */
+function EditarPedido({ pedido, produtos, salvando, erro, onFechar, onSalvar }) {
+  const caixa = useRef(null)
+
+  const [form, setForm] = useState(() => ({
+    nome: pedido.cliente?.nome || '',
+    telefone: pedido.cliente?.telefone || '',
+    rua: pedido.endereco?.rua || '',
+    numero: pedido.endereco?.numero || '',
+    complemento: pedido.endereco?.complemento || '',
+    referencia: pedido.endereco?.referencia || '',
+    observacao: pedido.observacao || '',
+    itens: pedido.itens.map((item) => ({
+      produtoId: String(item.produtoId),
+      nome: item.nome,
+      precoUnitario: item.precoUnitario,
+      quantidade: item.quantidade,
+    })),
+  }))
+
+  const [escolhido, setEscolhido] = useState('')
+  const [aviso, setAviso] = useState('')
+
+  useEffect(() => {
+    const elemento = caixa.current
+
+    if (elemento && !elemento.open) elemento.showModal()
+  }, [])
+
+  const delivery = pedido.tipo === 'delivery'
+  const taxa = pedido.taxaEntrega || 0
+  const subtotal = form.itens.reduce(
+    (soma, item) => soma + item.precoUnitario * item.quantidade,
+    0,
+  )
+
+  function alterar(campo, valor) {
+    setForm((atual) => ({ ...atual, [campo]: valor }))
+  }
+
+  function mudarQuantidade(produtoId, delta) {
+    setForm((atual) => ({
+      ...atual,
+      itens: atual.itens.map((item) =>
+        item.produtoId === produtoId
+          ? { ...item, quantidade: Math.min(99, Math.max(1, item.quantidade + delta)) }
+          : item,
+      ),
+    }))
+  }
+
+  function removerItem(produtoId) {
+    // Um item é o mínimo: pedido vazio não existe.
+    setForm((atual) =>
+      atual.itens.length === 1
+        ? atual
+        : { ...atual, itens: atual.itens.filter((item) => item.produtoId !== produtoId) },
+    )
+  }
+
+  function adicionarItem() {
+    const produto = produtos.find((item) => String(item._id) === escolhido)
+
+    if (!produto) return
+
+    setForm((atual) => {
+      const jaTem = atual.itens.find((item) => item.produtoId === escolhido)
+
+      if (jaTem) {
+        return {
+          ...atual,
+          itens: atual.itens.map((item) =>
+            item.produtoId === escolhido
+              ? { ...item, quantidade: Math.min(99, item.quantidade + 1) }
+              : item,
+          ),
+        }
+      }
+
+      return {
+        ...atual,
+        itens: [
+          ...atual.itens,
+          {
+            produtoId: escolhido,
+            nome: produto.nome,
+            precoUnitario: produto.preco,
+            quantidade: 1,
+          },
+        ],
+      }
+    })
+
+    setEscolhido('')
+  }
+
+  function enviar(evento) {
+    evento.preventDefault()
+
+    if (!form.nome.trim()) return setAviso('Informe o nome do cliente')
+    if (!form.telefone.trim()) return setAviso('Informe o telefone do cliente')
+
+    if (delivery && (!form.rua.trim() || !form.numero.trim())) {
+      return setAviso('Informe a rua e o número da entrega')
+    }
+
+    setAviso('')
+
+    const corpo = {
+      cliente: { nome: form.nome.trim(), telefone: form.telefone.trim() },
+      observacao: form.observacao,
+      itens: form.itens.map((item) => ({
+        produtoId: item.produtoId,
+        quantidade: item.quantidade,
+      })),
+    }
+
+    if (delivery) {
+      corpo.endereco = {
+        rua: form.rua.trim(),
+        numero: form.numero.trim(),
+        complemento: form.complemento,
+        referencia: form.referencia,
+      }
+    }
+
+    onSalvar(corpo)
+  }
+
+  // Produto que saiu do cardápio continua no pedido, mas não entra novo.
+  const paraAdicionar = produtos.filter((item) => item.disponivel !== false)
+  const mensagem = aviso || erro
+
+  return (
+    <dialog
+      className="editar"
+      ref={caixa}
+      onClose={onFechar}
+      onCancel={(evento) => {
+        // Enquanto salva, Esc não fecha: fecha sozinho quando a API responder.
+        if (salvando) evento.preventDefault()
+      }}
+      onClick={(evento) => {
+        // Clique no fundo (fora da caixa) fecha, como qualquer modal.
+        if (evento.target === caixa.current) onFechar()
+      }}
+    >
+      <form className="editar__caixa" onSubmit={enviar}>
+        <header className="editar__topo">
+          <div>
+            <h2 className="editar__titulo">Editar pedido #{pedido.numero}</h2>
+            <p className="editar__subtitulo">
+              {delivery ? 'Delivery' : pedido.tipo === 'mesa' ? 'Mesa' : 'Balcão'} ·{' '}
+              {form.itens.length} {form.itens.length === 1 ? 'item no pedido' : 'itens no pedido'}
+            </p>
+          </div>
+
+          <button
+            className="editar__fechar"
+            type="button"
+            onClick={onFechar}
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div className="editar__corpo">
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Cliente</legend>
+
+            <div className="editar__linha">
+              <label className="editar__campo">
+                <span className="editar__rotulo">Nome</span>
+                <input
+                  type="text"
+                  value={form.nome}
+                  onChange={(evento) => alterar('nome', evento.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+
+              <label className="editar__campo">
+                <span className="editar__rotulo">Telefone</span>
+                <input
+                  type="tel"
+                  value={form.telefone}
+                  onChange={(evento) => alterar('telefone', evento.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+            </div>
+          </fieldset>
+
+          {delivery && (
+            <fieldset className="editar__grupo">
+              <legend className="editar__legenda">Endereço de entrega</legend>
+
+              <div className="editar__linha editar__linha--endereco">
+                <label className="editar__campo editar__campo--largo">
+                  <span className="editar__rotulo">Rua</span>
+                  <input
+                    type="text"
+                    value={form.rua}
+                    onChange={(evento) => alterar('rua', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+
+                <label className="editar__campo editar__campo--curto">
+                  <span className="editar__rotulo">Número</span>
+                  <input
+                    type="text"
+                    value={form.numero}
+                    onChange={(evento) => alterar('numero', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
+
+              <div className="editar__linha">
+                <label className="editar__campo">
+                  <span className="editar__rotulo">Complemento</span>
+                  <input
+                    type="text"
+                    value={form.complemento}
+                    onChange={(evento) => alterar('complemento', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+
+                <label className="editar__campo">
+                  <span className="editar__rotulo">Referência</span>
+                  <input
+                    type="text"
+                    value={form.referencia}
+                    onChange={(evento) => alterar('referencia', evento.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
+
+              {pedido.bairroNome && (
+                <p className="editar__fixo">
+                  Bairro: <strong>{pedido.bairroNome}</strong> · a taxa de entrega não muda por
+                  aqui.
+                </p>
+              )}
+            </fieldset>
+          )}
+
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Itens</legend>
+
+            <ul className="editar__itens">
+              {form.itens.map((item) => (
+                <li className="editar__item" key={item.produtoId}>
+                  <div className="editar__item-dados">
+                    <strong>{item.nome}</strong>
+                    <span>{formatarDinheiro(item.precoUnitario)} cada</span>
+                  </div>
+
+                  <div className="editar__passo">
+                    <button
+                      type="button"
+                      onClick={() => mudarQuantidade(item.produtoId, -1)}
+                      disabled={item.quantidade <= 1}
+                      aria-label={`Diminuir ${item.nome}`}
+                    >
+                      −
+                    </button>
+                    <span>{item.quantidade}</span>
+                    <button
+                      type="button"
+                      onClick={() => mudarQuantidade(item.produtoId, 1)}
+                      disabled={item.quantidade >= 99}
+                      aria-label={`Aumentar ${item.nome}`}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <span className="editar__item-total">
+                    {formatarDinheiro(item.precoUnitario * item.quantidade)}
+                  </span>
+
+                  <button
+                    className="editar__remover"
+                    type="button"
+                    disabled={form.itens.length === 1}
+                    onClick={() => removerItem(item.produtoId)}
+                    aria-label={`Remover ${item.nome}`}
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="editar__novo">
+              <select
+                value={escolhido}
+                onChange={(evento) => setEscolhido(evento.target.value)}
+                aria-label="Produto para adicionar"
+              >
+                <option value="">Adicionar item do cardápio…</option>
+                {paraAdicionar.map((produto) => (
+                  <option key={produto._id} value={produto._id}>
+                    {produto.nome} — {formatarDinheiro(produto.preco)}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                className="editar__adicionar"
+                type="button"
+                onClick={adicionarItem}
+                disabled={!escolhido}
+              >
+                Adicionar
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset className="editar__grupo">
+            <legend className="editar__legenda">Observação</legend>
+
+            <label className="editar__campo">
+              <span className="editar__rotulo">Recado do pedido</span>
+              <textarea
+                rows={2}
+                value={form.observacao}
+                onChange={(evento) => alterar('observacao', evento.target.value)}
+              />
+            </label>
+          </fieldset>
+
+          <div className="editar__totais">
+            <span>
+              Subtotal <strong>{formatarDinheiro(subtotal)}</strong>
+            </span>
+
+            {delivery && (
+              <span>
+                Taxa de entrega <strong>{formatarDinheiro(taxa)}</strong>
+              </span>
+            )}
+
+            <span className="editar__total">
+              Total <strong>{formatarDinheiro(subtotal + taxa)}</strong>
+            </span>
+          </div>
+        </div>
+
+        <footer className="editar__rodape">
+          {mensagem ? (
+            <span className="editar__erro">{mensagem}</span>
+          ) : (
+            <span className="editar__dica">
+              Item que já estava no pedido mantém o preço da compra.
+            </span>
+          )}
+
+          <div className="editar__acoes">
+            <button className="editar__cancelar" type="button" onClick={onFechar}>
+              Cancelar
+            </button>
+            <button className="editar__salvar" type="submit" disabled={salvando}>
+              {salvando ? 'Salvando…' : 'Salvar alterações'}
+            </button>
+          </div>
+        </footer>
+      </form>
+    </dialog>
   )
 }
 
@@ -396,6 +791,13 @@ export default function Pedidos() {
   // memória, então filtrar aqui é instantâneo e não perde o tempo real.
   const [busca, setBusca] = useState('')
   const [tipo, setTipo] = useState('todos')
+
+  // Edição de pedido. A lista de produtos só é buscada na primeira vez que o
+  // lojista abre o modal — o quadro não precisa dela para abrir.
+  const [editando, setEditando] = useState(null)
+  const [produtos, setProdutos] = useState(null)
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false)
+  const [erroEdicao, setErroEdicao] = useState('')
 
   const arquivados = visao === 'arquivados'
 
@@ -575,6 +977,40 @@ export default function Pedidos() {
     return indice > 0 ? colunas[indice - 1] : null
   }
 
+  async function abrirEdicao(pedido) {
+    setEditando(pedido)
+    setErroEdicao('')
+
+    if (produtos !== null) return
+
+    try {
+      const resposta = await servicoCardapio.listarProdutos()
+
+      setProdutos(resposta.produtos || [])
+    } catch (e) {
+      // Sem a lista de produtos ainda dá para corrigir cliente e endereço.
+      setProdutos([])
+      setErroEdicao(e.message)
+    }
+  }
+
+  async function salvarEdicao(corpo) {
+    if (!editando) return
+
+    setSalvandoEdicao(true)
+    setErroEdicao('')
+
+    try {
+      await servicoPedidos.editar(editando._id, corpo)
+      setEditando(null)
+      await carregar()
+    } catch (e) {
+      setErroEdicao(e.message)
+    } finally {
+      setSalvandoEdicao(false)
+    }
+  }
+
   function ficha(pedido, coluna) {
     return (
       <Ficha
@@ -587,6 +1023,7 @@ export default function Pedidos() {
         confirmando={confirmar?.id === pedido._id ? confirmar.acao : null}
         arrastando={arrastandoId === pedido._id}
         onAvancar={() => coluna && avancar(pedido, coluna)}
+        onEditar={() => abrirEdicao(pedido)}
         onArquivar={() => executar(pedido._id, () => servicoPedidos.arquivar(pedido._id))}
         onPedirConfirmacao={(novaAcao) => setConfirmar({ id: pedido._id, acao: novaAcao })}
         onDesistir={() => setConfirmar(null)}
@@ -1000,6 +1437,22 @@ export default function Pedidos() {
             </details>
           )}
         </>
+      )}
+
+      {editando && (
+        <EditarPedido
+          pedido={editando}
+          produtos={produtos || []}
+          salvando={salvandoEdicao}
+          erro={erroEdicao}
+          onFechar={() => {
+            if (salvandoEdicao) return
+
+            setEditando(null)
+            setErroEdicao('')
+          }}
+          onSalvar={salvarEdicao}
+        />
       )}
     </div>
   )
