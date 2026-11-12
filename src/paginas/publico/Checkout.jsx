@@ -5,6 +5,7 @@ import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { publico } from '../../servicos/publico.js'
 import { guardarDadosCliente, lerDadosCliente } from '../../utils/dadosCliente.js'
 import { formatarDinheiro, paraCentavos } from '../../utils/dinheiro.js'
+import { lerCodigoBalcao } from '../../utils/balcao.js'
 import { guardarMeuPedido } from '../../utils/meusPedidos.js'
 
 const FORMULARIO_VAZIO = {
@@ -38,6 +39,11 @@ export default function Checkout() {
 
   const { loja, bairros } = dados
 
+  // Loja que escolheu "só com o link" ou desligou a retirada não mostra a opção
+  // para quem chegou sem o código. O servidor recusa de novo no envio.
+  const balcaoLiberado = dados.balcaoLiberado !== false
+  const codigoBalcao = lerCodigoBalcao(slug)
+
   // Quem já pediu neste aparelho não digita tudo de novo. Bairro salvo que não
   // existe mais é descartado — o cardápio pode ter mudado desde a última compra.
   const [formulario, setFormulario] = useState(() => {
@@ -50,7 +56,10 @@ export default function Checkout() {
       ...FORMULARIO_VAZIO,
       ...salvos,
       bairroId: bairroSalvo,
-      tipo: bairros.length === 0 ? 'balcao' : salvos.tipo || 'delivery',
+      tipo:
+        balcaoLiberado && (bairros.length === 0 || salvos.tipo === 'balcao')
+          ? 'balcao'
+          : 'delivery',
     }
   })
 
@@ -180,6 +189,8 @@ export default function Checkout() {
       observacao: formulario.observacao,
     }
 
+    if (codigoBalcao) corpo.codigoBalcao = codigoBalcao
+
     if (formulario.tipo === 'delivery') {
       corpo.bairroId = formulario.bairroId
       corpo.endereco = {
@@ -266,25 +277,35 @@ export default function Checkout() {
                 </span>
               </label>
 
-              <label
-                className={`loja__tipo loja__tipo--grande ${
-                  formulario.tipo === 'balcao' ? 'loja__tipo--ativo' : ''
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="tipo"
-                  value="balcao"
-                  checked={formulario.tipo === 'balcao'}
-                  onChange={() => alterarTipo('balcao')}
-                />
+              {balcaoLiberado && (
+                <label
+                  className={`loja__tipo loja__tipo--grande ${
+                    formulario.tipo === 'balcao' ? 'loja__tipo--ativo' : ''
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="tipo"
+                    value="balcao"
+                    checked={formulario.tipo === 'balcao'}
+                    onChange={() => alterarTipo('balcao')}
+                  />
 
-                <span className="loja__tipo-corpo">
-                  <strong>Retirar na loja</strong>
-                  <span>sem taxa de entrega</span>
-                </span>
-              </label>
+                  <span className="loja__tipo-corpo">
+                    <strong>Retirar na loja</strong>
+                    <span>sem taxa de entrega</span>
+                  </span>
+                </label>
+              )}
             </div>
+
+            {!balcaoLiberado && (
+              <p className="loja__aviso">
+                A retirada na loja está indisponível no momento.
+                {bairros.length === 0 &&
+                  ' A loja também não tem área de entrega cadastrada — fale com a loja antes de fechar o pedido.'}
+              </p>
+            )}
           </section>
 
           <section className="loja__bloco">

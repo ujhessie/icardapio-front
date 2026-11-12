@@ -1,7 +1,12 @@
 import { requisitar } from './api.js'
 
 export const publico = {
-  cardapio: (slug) => requisitar(`/publico/${slug}`),
+  cardapio: (slug, codigoBalcao) =>
+    requisitar(
+      `/publico/${slug}${
+        codigoBalcao ? `?balcao=${encodeURIComponent(codigoBalcao)}` : ''
+      }`,
+    ),
   criarPedido: (slug, corpo) =>
     requisitar(`/publico/${slug}/pedidos`, { method: 'POST', corpo }),
   pedido: (slug, id) => requisitar(`/publico/${slug}/pedidos/${id}`),

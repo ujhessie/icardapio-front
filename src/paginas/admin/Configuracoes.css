@@ -409,4 +409,79 @@
   .fluxo__auto {
     align-items: flex-start;
   }
+
+  .balcao__modos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Retirada no balcão ---------- */
+
+.balcao__modos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.balcao__modo {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 11px;
+  background: var(--painel-fundo);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.balcao__modo:hover {
+  border-color: color-mix(in srgb, var(--cor-destaque) 45%, var(--painel-borda));
+}
+
+.balcao__modo--ativo {
+  border-color: color-mix(in srgb, var(--cor-destaque) 55%, var(--painel-borda));
+  background: color-mix(in srgb, var(--cor-destaque) 6%, #fff);
+}
+
+.balcao__modo input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--cor-destaque);
+  cursor: pointer;
+}
+
+.balcao__modo-texto {
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.balcao__link {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.balcao__link .config__campo {
+  flex: 1;
+  min-width: 220px;
+}
+
+.balcao__link input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.balcao__copiar {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .balcao__modo {
+    transition: none;
+  }
 }

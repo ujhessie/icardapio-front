@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { publico } from '../servicos/publico.js'
+import { guardarCodigoBalcao, lerCodigoBalcao } from '../utils/balcao.js'
 import { statusDaLoja } from '../utils/horario.js'
 
 const Contexto = createContext(null)
@@ -30,7 +31,7 @@ export function LojaProvider({ slug, children }) {
   const ultimaReleitura = useRef(0)
 
   const buscar = useCallback(async () => {
-    const resposta = await publico.cardapio(slug)
+    const resposta = await publico.cardapio(slug, lerCodigoBalcao(slug))
     setDados(resposta)
     setErro('')
     ultimaReleitura.current = Date.now()
@@ -58,6 +59,14 @@ export function LojaProvider({ slug, children }) {
       // Rede oscilou: mantém o cardápio que já está na tela.
     }
   }, [buscar])
+
+  // O código do link do balcão chega na URL (?balcao=ABC123). Guardar antes da
+  // primeira carga é o que faz o cardápio já abrir com a retirada liberada.
+  useEffect(() => {
+    const codigo = new URLSearchParams(window.location.search).get('balcao')
+
+    if (codigo) guardarCodigoBalcao(slug, codigo)
+  }, [slug])
 
   useEffect(() => {
     carregar()

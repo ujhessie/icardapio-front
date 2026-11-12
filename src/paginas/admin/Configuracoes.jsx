@@ -44,7 +44,22 @@ const FLUXO_PADRAO = {
   etapas: ETAPAS_DO_FLUXO.map((etapa) => etapa.status),
   autoAceite: false,
   modoBalcao: 'cliente',
+  codigoBalcao: '',
 }
+
+/*
+ * Quem pode pedir para retirar na loja.
+ *
+ * `cliente` é o padrão de sempre: o balcão aparece no checkout para todo mundo.
+ * `link` fecha a retirada para quem tem o endereço exclusivo — serve para loja
+ * que quer atender só quem é de confiança, sem desligar o cardápio.
+ * `off` fecha de vez: o checkout só oferece entrega.
+ */
+const MODOS_DE_BALCAO = [
+  { valor: 'cliente', rotulo: 'Todos os clientes', ajuda: 'O balcão aparece no checkout para qualquer pessoa.' },
+  { valor: 'link', rotulo: 'Só com o link', ajuda: 'Só quem abrir o endereço exclusivo consegue pedir.' },
+  { valor: 'off', rotulo: 'Desativado', ajuda: 'O checkout só oferece entrega.' },
+]
 
 // O input de cor só aceita "#rrggbb": valor antigo ou digitado à mão cai no padrão.
 function corValida(valor) {
@@ -113,6 +128,7 @@ export default function Configuracoes() {
   const [fluxoSalvo, setFluxoSalvo] = useState(false)
   const [salvandoFluxo, setSalvandoFluxo] = useState(false)
   const [erroFluxo, setErroFluxo] = useState('')
+  const [linkCopiado, setLinkCopiado] = useState(false)
 
   async function carregar() {
     setCarregando(true)
@@ -267,6 +283,30 @@ export default function Configuracoes() {
 
   function alternarAutoAceite() {
     alterarFluxo((atual) => ({ ...atual, autoAceite: !atual.autoAceite }))
+  }
+
+  function mudarModoBalcao(modo) {
+    alterarFluxo((atual) => ({ ...atual, modoBalcao: modo }))
+    setLinkCopiado(false)
+  }
+
+  // Link exclusivo do balcão. Só existe depois que o servidor gerou o código
+  // (o primeiro "Salvar fluxo" no modo link).
+  const linkDoBalcao = fluxo.codigoBalcao
+    ? `${window.location.origin}/${loja?.slug || ''}?balcao=${fluxo.codigoBalcao}`
+    : ''
+
+  async function copiarLinkDoBalcao() {
+    if (!linkDoBalcao) return
+
+    try {
+      await navigator.clipboard.writeText(linkDoBalcao)
+      setLinkCopiado(true)
+      setTimeout(() => setLinkCopiado(false), 2500)
+    } catch {
+      // Navegador antigo ou sem permissão: o campo já está selecionável.
+      setErroFluxo('Não deu para copiar sozinho. Selecione o link e copie.')
+    }
   }
 
   const ultimaEtapa = ETAPAS_DO_FLUXO.find(
@@ -480,6 +520,70 @@ export default function Configuracoes() {
                     aria-label="Aceitar pedidos automaticamente"
                   />
                 </label>
+
+                <fieldset className="fluxo__grupo">
+                  <legend className="config__campo-nome">Retirada no balcão</legend>
+
+                  <div className="balcao__modos" role="radiogroup" aria-label="Quem pode pedir no balcão">
+                    {MODOS_DE_BALCAO.map((modo) => (
+                      <label
+                        className={`balcao__modo ${
+                          fluxo.modoBalcao === modo.valor ? 'balcao__modo--ativo' : ''
+                        }`}
+                        key={modo.valor}
+                      >
+                        <input
+                          type="radio"
+                          name="modoBalcao"
+                          value={modo.valor}
+                          checked={fluxo.modoBalcao === modo.valor}
+                          onChange={() => mudarModoBalcao(modo.valor)}
+                        />
+                        <span className="balcao__modo-texto">
+                          <strong>{modo.rotulo}</strong>
+                          <span className="config__campo-ajuda">{modo.ajuda}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {fluxo.modoBalcao === 'link' && (
+                    <div className="balcao__link">
+                      {linkDoBalcao ? (
+                        <>
+                          <label className="config__campo">
+                            <span className="config__campo-nome">Link exclusivo do balcão</span>
+                            <input
+                              type="text"
+                              readOnly
+                              value={linkDoBalcao}
+                              onFocus={(evento) => evento.target.select()}
+                            />
+                          </label>
+
+                          <button
+                            className="botao botao--pequeno balcao__copiar"
+                            type="button"
+                            onClick={copiarLinkDoBalcao}
+                          >
+                            {linkCopiado ? 'Copiado' : 'Copiar link'}
+                          </button>
+                        </>
+                      ) : (
+                        <p className="config__campo-ajuda">
+                          Salve o fluxo para gerar o link exclusivo. Quem abrir esse endereço
+                          consegue pedir para retirar; o resto do cardápio segue só com entrega.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {fluxo.modoBalcao === 'off' && (
+                    <p className="config__campo-ajuda">
+                      O cliente ainda navega no cardápio, mas o checkout só oferece entrega.
+                    </p>
+                  )}
+                </fieldset>
 
                 <div className="config__resumo">
                   <span>
