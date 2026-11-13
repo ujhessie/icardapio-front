@@ -129,6 +129,9 @@ export default function Configuracoes() {
   const [salvandoFluxo, setSalvandoFluxo] = useState(false)
   const [erroFluxo, setErroFluxo] = useState('')
   const [linkCopiado, setLinkCopiado] = useState(false)
+  const [confirmandoNovoLink, setConfirmandoNovoLink] = useState(false)
+  const [gerandoNovoLink, setGerandoNovoLink] = useState(false)
+  const [novoLinkGerado, setNovoLinkGerado] = useState(false)
 
   async function carregar() {
     setCarregando(true)
@@ -288,6 +291,8 @@ export default function Configuracoes() {
   function mudarModoBalcao(modo) {
     alterarFluxo((atual) => ({ ...atual, modoBalcao: modo }))
     setLinkCopiado(false)
+    setConfirmandoNovoLink(false)
+    setNovoLinkGerado(false)
   }
 
   // Link exclusivo do balcão. Só existe depois que o servidor gerou o código
@@ -306,6 +311,36 @@ export default function Configuracoes() {
     } catch {
       // Navegador antigo ou sem permissão: o campo já está selecionável.
       setErroFluxo('Não deu para copiar sozinho. Selecione o link e copie.')
+    }
+  }
+
+  /*
+   * Link vazado não se conserta escondendo: o código antigo continua valendo
+   * para sempre. Aqui o servidor sorteia outro e o endereço anterior morre na
+   * hora. Mando só a flag — o resto do formulário (com edições ainda não
+   * salvas) fica como está.
+   */
+  async function gerarNovoLink() {
+    setErroFluxo('')
+    setGerandoNovoLink(true)
+
+    try {
+      const { loja: dados } = await servicoLojas.atualizarMinha({
+        fluxoPedidos: { renovarCodigoBalcao: true },
+      })
+
+      const codigoNovo = dados.fluxoPedidos?.codigoBalcao || ''
+
+      setLoja(dados)
+      setFluxo((atual) => ({ ...atual, codigoBalcao: codigoNovo }))
+      setConfirmandoNovoLink(false)
+      setLinkCopiado(false)
+      setNovoLinkGerado(true)
+      setTimeout(() => setNovoLinkGerado(false), 10000)
+    } catch (e) {
+      setErroFluxo(e.message)
+    } finally {
+      setGerandoNovoLink(false)
     }
   }
 
@@ -548,26 +583,76 @@ export default function Configuracoes() {
                   </div>
 
                   {fluxo.modoBalcao === 'link' && (
-                    <div className="balcao__link">
+                    <div className="balcao__link-area">
                       {linkDoBalcao ? (
                         <>
-                          <label className="config__campo">
-                            <span className="config__campo-nome">Link exclusivo do balcão</span>
-                            <input
-                              type="text"
-                              readOnly
-                              value={linkDoBalcao}
-                              onFocus={(evento) => evento.target.select()}
-                            />
-                          </label>
+                          <div className="balcao__link">
+                            <label className="config__campo">
+                              <span className="config__campo-nome">Link exclusivo do balcão</span>
+                              <input
+                                type="text"
+                                readOnly
+                                value={linkDoBalcao}
+                                onFocus={(evento) => evento.target.select()}
+                              />
+                            </label>
 
-                          <button
-                            className="botao botao--pequeno balcao__copiar"
-                            type="button"
-                            onClick={copiarLinkDoBalcao}
-                          >
-                            {linkCopiado ? 'Copiado' : 'Copiar link'}
-                          </button>
+                            <div className="balcao__acoes">
+                              <button
+                                className="botao botao--pequeno balcao__copiar"
+                                type="button"
+                                onClick={copiarLinkDoBalcao}
+                              >
+                                {linkCopiado ? 'Copiado' : 'Copiar link'}
+                              </button>
+
+                              <button
+                                className="botao botao--pequeno balcao__renovar"
+                                type="button"
+                                onClick={() => {
+                                  setNovoLinkGerado(false)
+                                  setConfirmandoNovoLink(true)
+                                }}
+                                disabled={gerandoNovoLink}
+                              >
+                                Gerar novo link
+                              </button>
+                            </div>
+                          </div>
+
+                          {confirmandoNovoLink && (
+                            <div className="balcao__confirmar" role="alert">
+                              <p className="balcao__confirmar-texto">
+                                Gerar um link novo? O link atual para de funcionar na hora — quem
+                                estiver com ele não vai mais conseguir pedir para retirar.
+                              </p>
+
+                              <div className="balcao__confirmar-botoes">
+                                <button
+                                  className="balcao__confirmar-nao"
+                                  type="button"
+                                  onClick={() => setConfirmandoNovoLink(false)}
+                                  disabled={gerandoNovoLink}
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  className="balcao__confirmar-sim"
+                                  type="button"
+                                  onClick={gerarNovoLink}
+                                  disabled={gerandoNovoLink}
+                                >
+                                  {gerandoNovoLink ? 'Gerando...' : 'Gerar novo link'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {novoLinkGerado && (
+                            <p className="balcao__novo-aviso" role="status">
+                              Novo link gerado. O antigo não vale mais.
+                            </p>
+                          )}
                         </>
                       ) : (
                         <p className="config__campo-ajuda">
