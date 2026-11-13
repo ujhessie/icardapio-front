@@ -560,6 +560,306 @@
   color: var(--cor-ok);
 }
 
+/* ---------- Contato e localização ---------- */
+
+.contato {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+/* O painel__secao já é um cartão branco. Aqui o bloco desce um degrau para o
+   cinza da tela: separa os assuntos sem empilhar borda em cima de borda. */
+.contato__bloco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  padding: var(--esp-4);
+  border: 1px solid var(--painel-borda);
+  border-radius: 12px;
+  background: var(--painel-fundo);
+}
+
+.contato__titulo {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--painel-texto);
+}
+
+.contato__dica {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--cor-texto-fraco);
+  max-width: 62ch;
+}
+
+/* Endereço em duas linhas: rua/número e complemento/cidade/UF. Áreas nomeadas
+   porque a ordem visual no celular é outra, e mexer em coluna solta vira
+   quebra-cabeça. */
+.contato__endereco {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 96px;
+  grid-template-areas:
+    'rua rua numero'
+    'complemento cidade estado';
+  gap: var(--esp-3);
+}
+
+.contato__rua {
+  grid-area: rua;
+}
+
+.contato__numero {
+  grid-area: numero;
+}
+
+.contato__complemento {
+  grid-area: complemento;
+}
+
+.contato__cidade {
+  grid-area: cidade;
+}
+
+.contato__estado {
+  grid-area: estado;
+}
+
+/* Cabeçalho do bloco de redes: título à esquerda, contador à direita. */
+.contato__cabeca {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+}
+
+.contato__contagem {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 999px;
+  background: #fff;
+  font-family: var(--fonte-mono);
+  font-size: 11.5px;
+  color: var(--cor-texto-fraco);
+  white-space: nowrap;
+}
+
+.contato__redes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Uma rede por linha: tipo, link e a lixeira. A lixeira é vermelha só no
+   hover — em repouso ela é neutra para não pedir clique. */
+.contato__rede {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) 36px;
+  gap: var(--esp-2);
+  align-items: stretch;
+}
+
+.contato__rede-tipo {
+  display: block;
+}
+
+.contato__rede-tipo select,
+.contato__rede-url {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 9px;
+  background: #fff;
+  font-family: var(--fonte);
+  font-size: 13px;
+  color: var(--painel-texto);
+}
+
+.contato__rede-url {
+  font-family: var(--fonte-mono);
+  font-size: 12.5px;
+}
+
+.contato__rede-tipo select:focus,
+.contato__rede-url:focus {
+  outline: 2px solid color-mix(in srgb, var(--cor-destaque) 30%, transparent);
+  outline-offset: 1px;
+}
+
+.contato__rede-remover {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 38px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--cor-neutro);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.contato__rede-remover:hover {
+  color: var(--cor-erro);
+  border-color: color-mix(in srgb, var(--cor-erro) 35%, var(--painel-borda));
+  background: color-mix(in srgb, var(--cor-erro) 6%, #fff);
+}
+
+.contato__rede-remover:focus-visible {
+  outline: 2px solid var(--cor-erro);
+  outline-offset: 1px;
+}
+
+/* Rótulo só para leitor de tela: o select já se explica pelo conteúdo. */
+.contato__oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.contato__vazio {
+  padding: var(--esp-3);
+  border: 1px dashed var(--painel-borda);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--cor-texto-fraco);
+  max-width: 62ch;
+}
+
+.botao.contato__adicionar {
+  align-self: flex-start;
+}
+
+.contato__limite {
+  margin-top: calc(var(--esp-1) * -1);
+}
+
+/* Interruptor de horários: checkbox de verdade escondido, desenhado por
+   .contato__trilho. Teclado continua funcionando pelo focus-visible. */
+.contato__interruptor {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  cursor: pointer;
+}
+
+.contato__interruptor input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.contato__trilho {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: #d3d6e2;
+  transition: background 0.18s ease;
+}
+
+.contato__trilho-bola {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 22, 31, 0.25);
+  transition: transform 0.18s ease;
+}
+
+.contato__interruptor input:checked + .contato__trilho {
+  background: var(--cor-ok);
+}
+
+.contato__interruptor input:checked + .contato__trilho .contato__trilho-bola {
+  transform: translateX(18px);
+}
+
+.contato__interruptor input:focus-visible + .contato__trilho {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+}
+
+.contato__interruptor-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contato__interruptor-texto strong {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.contato__interruptor-texto span {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--cor-texto-fraco);
+  max-width: 62ch;
+}
+
+.contato__acoes {
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+@media (max-width: 720px) {
+  .contato__endereco {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'rua rua'
+      'numero numero'
+      'complemento complemento'
+      'cidade estado';
+  }
+
+  .contato__rede {
+    grid-template-columns: 116px minmax(0, 1fr) 36px;
+  }
+}
+
+@media (max-width: 520px) {
+  .contato__rede {
+    grid-template-columns: minmax(0, 1fr) 36px;
+  }
+
+  .contato__rede-tipo {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contato__trilho,
+  .contato__trilho-bola,
+  .contato__rede-remover {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .balcao__modo {
     transition: none;

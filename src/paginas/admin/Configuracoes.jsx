@@ -61,6 +61,80 @@ const MODOS_DE_BALCAO = [
   { valor: 'off', rotulo: 'Desativado', ajuda: 'O checkout só oferece entrega.' },
 ]
 
+/*
+ * Redes sociais do rodapé do cardápio.
+ *
+ * Lista livre: a loja adiciona só as que usa. O tipo decide ícone e rótulo no
+ * site; "outro" segura qualquer link que não seja de rede conhecida — melhor um
+ * botão genérico do que obrigar a loja a mentir sobre a rede.
+ */
+const REDES = [
+  { valor: 'instagram', rotulo: 'Instagram' },
+  { valor: 'facebook', rotulo: 'Facebook' },
+  { valor: 'tiktok', rotulo: 'TikTok' },
+  { valor: 'youtube', rotulo: 'YouTube' },
+  { valor: 'whatsapp', rotulo: 'WhatsApp' },
+  { valor: 'site', rotulo: 'Site' },
+  { valor: 'outro', rotulo: 'Outro' },
+]
+
+const LIMITE_REDES = 6
+
+const CONTATO_VAZIO = {
+  endereco: { rua: '', numero: '', complemento: '', cidade: '', estado: '' },
+  redesSociais: [],
+  mostrarHorarios: true,
+}
+
+// Chave só da tela: o React precisa de uma identidade estável por linha, e o
+// servidor não guarda esse campo.
+let contadorDeRedes = 0
+
+function novaChaveDeRede() {
+  contadorDeRedes += 1
+  return `rede-${contadorDeRedes}`
+}
+
+function contatoDaLoja(dados) {
+  return {
+    endereco: {
+      rua: dados.endereco?.rua || '',
+      numero: dados.endereco?.numero || '',
+      complemento: dados.endereco?.complemento || '',
+      cidade: dados.endereco?.cidade || '',
+      estado: dados.endereco?.estado || '',
+    },
+    redesSociais: (dados.redesSociais || []).map((rede) => ({
+      chave: novaChaveDeRede(),
+      tipo: rede.tipo || 'outro',
+      url: rede.url || '',
+    })),
+    // Loja antiga, sem o campo gravado: o padrão é mostrar.
+    mostrarHorarios: dados.mostrarHorarios !== false,
+  }
+}
+
+function IconeLixeira() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7h16" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  )
+}
+
 // O input de cor só aceita "#rrggbb": valor antigo ou digitado à mão cai no padrão.
 function corValida(valor) {
   return /^#[0-9a-f]{6}$/i.test(valor || '') ? valor : COR_PADRAO
@@ -133,6 +207,12 @@ export default function Configuracoes() {
   const [gerandoNovoLink, setGerandoNovoLink] = useState(false)
   const [novoLinkGerado, setNovoLinkGerado] = useState(false)
 
+  const [contato, setContato] = useState(CONTATO_VAZIO)
+  const [contatoSujo, setContatoSujo] = useState(false)
+  const [contatoSalvo, setContatoSalvo] = useState(false)
+  const [salvandoContato, setSalvandoContato] = useState(false)
+  const [erroContato, setErroContato] = useState('')
+
   async function carregar() {
     setCarregando(true)
 
@@ -148,12 +228,15 @@ export default function Configuracoes() {
         corPrimaria: corValida(dados.corPrimaria),
       })
       setFluxo({ ...FLUXO_PADRAO, ...(dados.fluxoPedidos || {}) })
+      setContato(contatoDaLoja(dados))
       setSujo(false)
       setIdentidadeSuja(false)
       setFluxoSujo(false)
+      setContatoSujo(false)
       setErro('')
       setErroIdentidade('')
       setErroFluxo('')
+      setErroContato('')
     } catch (e) {
       setErro(e.message)
     } finally {
@@ -189,6 +272,14 @@ export default function Configuracoes() {
 
     return () => clearTimeout(timer)
   }, [fluxoSalvo])
+
+  useEffect(() => {
+    if (!contatoSalvo) return undefined
+
+    const timer = setTimeout(() => setContatoSalvo(false), 1800)
+
+    return () => clearTimeout(timer)
+  }, [contatoSalvo])
 
   function alterar(chave, valor) {
     setValores((atual) => ({ ...atual, [chave]: valor }))
@@ -416,6 +507,97 @@ export default function Configuracoes() {
       setErroIdentidade(e.message)
     } finally {
       setSalvandoIdentidade(false)
+    }
+  }
+
+  /* ---------------- Contato e localização ---------------- */
+
+  function alterarEndereco(campo, valor) {
+    setContato((atual) => ({
+      ...atual,
+      endereco: { ...atual.endereco, [campo]: valor },
+    }))
+    setContatoSujo(true)
+    setContatoSalvo(false)
+    setErroContato('')
+  }
+
+  function alterarRede(chave, campo, valor) {
+    setContato((atual) => ({
+      ...atual,
+      redesSociais: atual.redesSociais.map((rede) =>
+        rede.chave === chave ? { ...rede, [campo]: valor } : rede,
+      ),
+    }))
+    setContatoSujo(true)
+    setContatoSalvo(false)
+    setErroContato('')
+  }
+
+  function adicionarRede() {
+    setContato((atual) => {
+      if (atual.redesSociais.length >= LIMITE_REDES) return atual
+
+      return {
+        ...atual,
+        redesSociais: [
+          ...atual.redesSociais,
+          { chave: novaChaveDeRede(), tipo: 'instagram', url: '' },
+        ],
+      }
+    })
+    setContatoSujo(true)
+    setContatoSalvo(false)
+    setErroContato('')
+  }
+
+  function removerRede(chave) {
+    setContato((atual) => ({
+      ...atual,
+      redesSociais: atual.redesSociais.filter((rede) => rede.chave !== chave),
+    }))
+    setContatoSujo(true)
+    setContatoSalvo(false)
+    setErroContato('')
+  }
+
+  function alternarMostrarHorarios() {
+    setContato((atual) => ({ ...atual, mostrarHorarios: !atual.mostrarHorarios }))
+    setContatoSujo(true)
+    setContatoSalvo(false)
+    setErroContato('')
+  }
+
+  async function salvarContato(evento) {
+    evento.preventDefault()
+    setErroContato('')
+
+    const { endereco } = contato
+
+    // Endereço pela metade não abre mapa nenhum: número sem rua não é lugar.
+    if (!endereco.rua.trim() && endereco.numero.trim()) {
+      setErroContato('Informe a rua junto com o número do endereço.')
+      return
+    }
+
+    setSalvandoContato(true)
+
+    try {
+      const { loja: dados } = await servicoLojas.atualizarMinha({
+        endereco,
+        // A chave da linha é só da tela — não vai para o servidor.
+        redesSociais: contato.redesSociais.map(({ tipo, url }) => ({ tipo, url })),
+        mostrarHorarios: contato.mostrarHorarios,
+      })
+
+      setLoja(dados)
+      setContato(contatoDaLoja(dados))
+      setContatoSujo(false)
+      setContatoSalvo(true)
+    } catch (e) {
+      setErroContato(e.message)
+    } finally {
+      setSalvandoContato(false)
     }
   }
 
@@ -829,6 +1011,200 @@ export default function Configuracoes() {
                   </div>
                 </form>
               </div>
+            </section>
+
+            <section className="painel__secao">
+              <h2 className="painel__subtitulo">Contato e localização</h2>
+              <p className="painel__ajuda">
+                É o rodapé do cardápio: endereço com botão de mapa, redes sociais e a grade de
+                horários. Tudo opcional — o que ficar vazio simplesmente não aparece.
+              </p>
+
+              {erroContato && <p className="painel__aviso painel__aviso--erro">{erroContato}</p>}
+
+              <form className="contato" onSubmit={salvarContato}>
+                <div className="contato__bloco">
+                  <h3 className="contato__titulo">Endereço</h3>
+                  <p className="contato__dica">
+                    Rua e número bastam para o botão "Abrir no mapa" acertar o lugar.
+                  </p>
+
+                  <div className="contato__endereco">
+                    <label className="campo contato__rua">
+                      <span>Rua</span>
+                      <input
+                        value={contato.endereco.rua}
+                        onChange={(evento) => alterarEndereco('rua', evento.target.value)}
+                        placeholder="Ex: Rua das Flores"
+                        maxLength={120}
+                      />
+                    </label>
+
+                    <label className="campo contato__numero">
+                      <span>Número</span>
+                      <input
+                        value={contato.endereco.numero}
+                        onChange={(evento) => alterarEndereco('numero', evento.target.value)}
+                        placeholder="123"
+                        maxLength={20}
+                      />
+                    </label>
+
+                    <label className="campo contato__complemento">
+                      <span>Complemento</span>
+                      <input
+                        value={contato.endereco.complemento}
+                        onChange={(evento) => alterarEndereco('complemento', evento.target.value)}
+                        placeholder="Loja 2, fundos…"
+                        maxLength={80}
+                      />
+                    </label>
+
+                    <label className="campo contato__cidade">
+                      <span>Cidade</span>
+                      <input
+                        value={contato.endereco.cidade}
+                        onChange={(evento) => alterarEndereco('cidade', evento.target.value)}
+                        placeholder="São Paulo"
+                        maxLength={80}
+                      />
+                    </label>
+
+                    <label className="campo contato__estado">
+                      <span>UF</span>
+                      <input
+                        value={contato.endereco.estado}
+                        onChange={(evento) =>
+                          alterarEndereco('estado', evento.target.value.toUpperCase().slice(0, 2))
+                        }
+                        placeholder="SP"
+                        maxLength={2}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="contato__bloco">
+                  <div className="contato__cabeca">
+                    <div>
+                      <h3 className="contato__titulo">Redes sociais</h3>
+                      <p className="contato__dica">
+                        Só as que você usa. Cada uma vira um botão no rodapé.
+                      </p>
+                    </div>
+
+                    <span className="contato__contagem">
+                      {contato.redesSociais.length} de {LIMITE_REDES}
+                    </span>
+                  </div>
+
+                  {contato.redesSociais.length === 0 ? (
+                    <p className="contato__vazio">
+                      Nenhuma rede cadastrada. O rodapé mostra só endereço, horário e o botão de
+                      WhatsApp — esse vem do telefone da loja.
+                    </p>
+                  ) : (
+                    <ul className="contato__redes">
+                      {contato.redesSociais.map((rede, indice) => (
+                        <li className="contato__rede" key={rede.chave}>
+                          <label className="contato__rede-tipo">
+                            <span className="contato__oculto">Rede</span>
+                            <select
+                              value={rede.tipo}
+                              onChange={(evento) =>
+                                alterarRede(rede.chave, 'tipo', evento.target.value)
+                              }
+                              aria-label={`Rede ${indice + 1}`}
+                            >
+                              {REDES.map((opcao) => (
+                                <option key={opcao.valor} value={opcao.valor}>
+                                  {opcao.rotulo}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <input
+                            className="contato__rede-url"
+                            value={rede.url}
+                            onChange={(evento) =>
+                              alterarRede(rede.chave, 'url', evento.target.value)
+                            }
+                            placeholder="instagram.com/sualoja"
+                            inputMode="url"
+                            maxLength={200}
+                            aria-label={`Link da rede ${indice + 1}`}
+                          />
+
+                          <button
+                            className="contato__rede-remover"
+                            type="button"
+                            onClick={() => removerRede(rede.chave)}
+                            aria-label={`Remover rede ${indice + 1}`}
+                            title="Remover rede"
+                          >
+                            <IconeLixeira />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <button
+                    className="botao botao--secundario botao--pequeno contato__adicionar"
+                    type="button"
+                    onClick={adicionarRede}
+                    disabled={contato.redesSociais.length >= LIMITE_REDES}
+                  >
+                    Adicionar rede
+                  </button>
+
+                  {contato.redesSociais.length >= LIMITE_REDES && (
+                    <p className="contato__dica contato__limite">
+                      Chegou no limite de {LIMITE_REDES}. Remova uma para adicionar outra.
+                    </p>
+                  )}
+                </div>
+
+                <div className="contato__bloco">
+                  <h3 className="contato__titulo">Horário no rodapé</h3>
+
+                  <label className="contato__interruptor">
+                    <input
+                      type="checkbox"
+                      checked={contato.mostrarHorarios}
+                      onChange={alternarMostrarHorarios}
+                    />
+
+                    <span className="contato__trilho" aria-hidden="true">
+                      <span className="contato__trilho-bola" />
+                    </span>
+
+                    <span className="contato__interruptor-texto">
+                      <strong>
+                        {contato.mostrarHorarios ? 'Mostrar os horários' : 'Esconder os horários'}
+                      </strong>
+                      <span>
+                        Os 7 dias da semana, com hoje destacado. Desligado, o rodapé fica sem a
+                        grade — o status de aberto/fechado continua no topo.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="painel__acoes contato__acoes">
+                  {contatoSujo && (
+                    <span className="horarios__pendente">alterações não salvas</span>
+                  )}
+                  {contatoSalvo && !contatoSujo && (
+                    <span className="horarios__salvo">salvo</span>
+                  )}
+
+                  <button className="botao" type="submit" disabled={salvandoContato}>
+                    {salvandoContato ? 'Salvando…' : 'Salvar contato'}
+                  </button>
+                </div>
+              </form>
             </section>
 
             <section className="painel__secao">
