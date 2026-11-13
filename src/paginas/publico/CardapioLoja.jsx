@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import CapaLoja from '../../componentes/publico/CapaLoja.jsx'
 import GavetaCarrinho from '../../componentes/publico/GavetaCarrinho.jsx'
 import ModalProduto from '../../componentes/publico/ModalProduto.jsx'
 import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
+import { linkWhatsApp } from '../../utils/vitrine.js'
 
 /*
  * Card do produto.
@@ -67,7 +68,6 @@ function CartaoProduto({ produto, podePedir, onAbrir, onAdicionar }) {
 
 export default function CardapioLoja() {
   const { dados, status } = useLoja()
-  const { slug } = useParams()
   const [parametros, setParametros] = useSearchParams()
 
   const { adicionar, adicionarVarios, quantidadeTotal, subtotal } = useCarrinho()
@@ -77,10 +77,20 @@ export default function CardapioLoja() {
   )
   const [produtoAberto, setProdutoAberto] = useState(null)
   const [categoriaAtiva, setCategoriaAtiva] = useState(null)
+  // A barra de categorias ganha a marca e o carrinho quando encosta no topo.
+  const [compacta, setCompacta] = useState(false)
 
   const listaRef = useRef(null)
+  const navRef = useRef(null)
 
   const { loja, categorias, bairros } = dados
+
+  const [tituloStatus] = status.texto.split(' · ')
+
+  const whatsapp = linkWhatsApp(
+    loja.telefone,
+    `Olá! Vi o cardápio de ${loja.nome} e quero fazer um pedido.`,
+  )
 
   // "Repetir pedido" manda o cliente para cá com ?carrinho=1: abre o carrinho
   // uma vez e limpa a URL, para o F5 não reabrir em cima do cliente.
@@ -134,6 +144,11 @@ export default function CardapioLoja() {
       }
 
       setCategoriaAtiva((anterior) => (anterior === atual ? anterior : atual))
+
+      // A barra gruda no topo (top: 0). Quando o topo dela chega a zero, ela
+      // está presa — é aí que entra a versão compacta com marca e carrinho.
+      const presa = navRef.current ? navRef.current.getBoundingClientRect().top <= 0.5 : false
+      setCompacta((anterior) => (anterior === presa ? anterior : presa))
     }
 
     function aoRolar() {
@@ -152,12 +167,44 @@ export default function CardapioLoja() {
     }
   }, [categorias.length])
 
+  /*
+   * Rola até uma seção descontando a altura da barra fixa.
+   *
+   * `scrollIntoView` com scroll-margin-top chutaria uma altura só — mas a barra
+   * cresce quando fica presa (ganha marca e carrinho). Medindo na hora, o
+   * título nunca para atrás dela.
+   */
+  function rolarParaSecao(categoriaId) {
+    const secao = document.getElementById(`categoria-${categoriaId}`)
+
+    if (!secao) return
+
+    const alturaDaBarra = navRef.current?.offsetHeight ?? 0
+    const topo = secao.getBoundingClientRect().top + window.scrollY - alturaDaBarra - 16
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    window.scrollTo({ top: Math.max(topo, 0), behavior: suave ? 'smooth' : 'auto' })
+  }
+
   function irParaCategoria(evento, categoriaId) {
     evento.preventDefault()
     setCategoriaAtiva(categoriaId)
-    document
-      .getElementById(`categoria-${categoriaId}`)
-      ?.scrollIntoView({ block: 'start' })
+    rolarParaSecao(categoriaId)
+  }
+
+  function irParaCardapio() {
+    const primeira = categorias[0]
+
+    if (!primeira) return
+
+    setCategoriaAtiva(primeira._id)
+    rolarParaSecao(primeira._id)
+  }
+
+  function voltarAoTopo() {
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    window.scrollTo({ top: 0, behavior: suave ? 'smooth' : 'auto' })
   }
 
   function adicionarDoModal({ quantidade, observacao }) {
@@ -167,7 +214,13 @@ export default function CardapioLoja() {
 
   return (
     <>
-      <CapaLoja loja={loja} status={status} bairros={bairros} />
+      <CapaLoja
+        loja={loja}
+        status={status}
+        bairros={bairros}
+        onVerCardapio={categorias.length > 0 ? irParaCardapio : undefined}
+        linkWhatsApp={whatsapp || undefined}
+      />
 
       <main className="loja__conteudo" ref={listaRef}>
         {!status.aberto && (
@@ -182,25 +235,83 @@ export default function CardapioLoja() {
 
         {categorias.length > 0 && (
           <>
-            <nav className="loja__categorias" aria-label="Categorias do cardápio">
-              <div className="loja__categorias-lista">
-                {categorias.map((categoria) => {
-                  const ativa = categoriaAtiva === categoria._id
+            <nav
+              ref={navRef}
+              className={`loja__categorias ${compacta ? 'loja__categorias--compacta' : ''}`}
+              aria-label="Categorias do cardápio"
+            >
+              <div className="loja__categorias-conteudo">
+                {/*
+                  Versão compacta: quando a barra gruda no topo, o nome da loja
+                  e o carrinho voltam junto — sem isso o cliente rola a lista
+                  inteira sem lembrar em que loja está.
+                */}
+                <div className="loja__categorias-marca">
+                  <button
+                    className="loja__categorias-identidade"
+                    type="button"
+                    onClick={voltarAoTopo}
+                    aria-label={`Voltar ao topo do cardápio de ${loja.nome}`}
+                  >
+                    {loja.logo ? (
+                      <img className="loja__categorias-logo" src={loja.logo} alt="" />
+                    ) : (
+                      <span className="loja__categorias-monograma" aria-hidden="true">
+                        {loja.nome.charAt(0).toUpperCase()}
+                      </span>
+                    )}
 
-                  return (
-                    <a
-                      key={categoria._id}
-                      className={`loja__categoria-link ${
-                        ativa ? 'loja__categoria-link--ativa' : ''
+                    <span className="loja__categorias-identidade-texto">
+                      <span className="loja__categorias-nome">{loja.nome}</span>
+
+                      <span
+                        className={`loja__categorias-status ${
+                          status.aberto ? '' : 'loja__categorias-status--fechada'
+                        }`}
+                      >
+                        {tituloStatus}
+                      </span>
+                    </span>
+                  </button>
+
+                  {quantidadeTotal > 0 && (
+                    <button
+                      className="loja__categorias-carrinho"
+                      type="button"
+                      onClick={() => setCarrinhoAberto(true)}
+                      aria-label={`Abrir carrinho com ${quantidadeTotal} ${
+                        quantidadeTotal === 1 ? 'item' : 'itens'
                       }`}
-                      href={`#categoria-${categoria._id}`}
-                      aria-current={ativa ? 'true' : undefined}
-                      onClick={(evento) => irParaCategoria(evento, categoria._id)}
                     >
-                      {categoria.nome}
-                    </a>
-                  )
-                })}
+                      <span className="loja__categorias-carrinho-quantidade">
+                        {quantidadeTotal}
+                      </span>
+                      <span className="loja__categorias-carrinho-total">
+                        {formatarDinheiro(subtotal)}
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="loja__categorias-lista">
+                  {categorias.map((categoria) => {
+                    const ativa = categoriaAtiva === categoria._id
+
+                    return (
+                      <a
+                        key={categoria._id}
+                        className={`loja__categoria-link ${
+                          ativa ? 'loja__categoria-link--ativa' : ''
+                        }`}
+                        href={`#categoria-${categoria._id}`}
+                        aria-current={ativa ? 'true' : undefined}
+                        onClick={(evento) => irParaCategoria(evento, categoria._id)}
+                      >
+                        {categoria.nome}
+                      </a>
+                    )
+                  })}
+                </div>
               </div>
             </nav>
 

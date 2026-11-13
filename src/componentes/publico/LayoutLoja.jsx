@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom'
 import { CarrinhoProvider } from '../../contextos/CarrinhoContexto.jsx'
 import { LojaProvider, useLoja } from '../../contextos/LojaContexto.jsx'
+import RodapeLoja from './RodapeLoja.jsx'
 import './Loja.css'
 
 export default function LayoutLoja() {
@@ -92,10 +93,7 @@ function ConteudoLoja() {
 
       <Outlet />
 
-      <footer className="loja__rodape">
-        <span>{loja.nome}</span>
-        <span className="loja__rodape-selo">Cardápio digital por iCardápio</span>
-      </footer>
+      <RodapeLoja loja={loja} status={status} />
     </div>
   )
 }

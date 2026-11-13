@@ -381,6 +381,58 @@
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+/* Chamada para ação da capa: um botão claro (a ação principal) e um discreto. */
+.loja__capa-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.loja__capa-cta-principal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 22px;
+  background: #fff;
+  color: #241f1a;
+  font-size: 14.5px;
+  font-weight: 650;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.loja__capa-cta-principal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.26);
+}
+
+.loja__capa-cta-principal:active {
+  transform: translateY(0);
+}
+
+.loja__capa-cta-whats {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.24);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 550;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.loja__capa-cta-whats:hover {
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.36);
+  border-color: #fff;
+}
+
 .loja__capa-chips {
   display: flex;
   gap: 8px;
@@ -452,11 +504,150 @@
   background: var(--loja-superficie);
   border-bottom: 1px solid var(--loja-borda);
   margin: -20px -24px 8px;
+  transition: box-shadow 0.18s ease;
+}
+
+/* Presa no topo: a sombra dá profundidade e separa do conteúdo que passa por baixo. */
+.loja__categorias--compacta {
+  box-shadow: 0 10px 24px rgba(36, 31, 26, 0.1);
+}
+
+.loja__categorias-conteudo {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/*
+ * Linha da marca: só existe na versão compacta. Fica com altura fixa para a
+ * barra não "pular" a cada pixel de rolagem — o conteúdo da página desce uma
+ * vez, quando ela aparece, e para.
+ */
+.loja__categorias-marca {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px 0;
+}
+
+.loja__categorias--compacta .loja__categorias-marca {
+  display: flex;
+  animation: loja-barra-surge 0.18s ease-out;
+}
+
+@keyframes loja-barra-surge {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Voltar ao topo pelo logo: o botão tem cara de link, mas é botão de verdade. */
+.loja__categorias-identidade {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+.loja__categorias-logo,
+.loja__categorias-monograma {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+.loja__categorias-logo {
+  object-fit: cover;
+  display: block;
+}
+
+.loja__categorias-monograma {
+  display: grid;
+  place-items: center;
+  background: var(--loja-cor);
+  color: #fff;
+  font-family: var(--loja-serif);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.loja__categorias-identidade-texto {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.loja__categorias-nome {
+  font-family: var(--loja-serif);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loja__categorias-status {
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--loja-ok);
+  white-space: nowrap;
+}
+
+.loja__categorias-status--fechada {
+  color: var(--loja-erro);
+}
+
+/* Carrinho da barra compacta: só aparece com item dentro. */
+.loja__categorias-carrinho {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 5px 12px 5px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #221d18;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.loja__categorias-carrinho:hover {
+  background: #2e2721;
+}
+
+.loja__categorias-carrinho-quantidade {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 999px;
+  background: var(--loja-cor);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.loja__categorias-carrinho-total {
+  font-family: var(--fonte-mono);
 }
 
 .loja__categorias-lista {
-  max-width: 1080px;
-  margin: 0 auto;
   padding: 10px 24px;
   display: flex;
   gap: 8px;
@@ -2023,28 +2214,286 @@
 
 /* ---------- Rodapé ---------- */
 
+/*
+ * O rodapé encosta no fim da página: `margin-bottom` negativo ocupa o respiro
+ * que a raiz reservava para a barra do carrinho (.loja). Sem ele, sobraria uma
+ * faixa bege embaixo de um rodapé branco — cara de layout quebrado.
+ */
 .loja__rodape {
+  margin-bottom: -96px;
+  padding: 44px 24px 0;
+  border-top: 1px solid var(--loja-borda);
+  background: var(--loja-superficie);
+  color: var(--loja-texto);
+}
+
+.loja__rodape-grade {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 24px;
-  border-top: 1px solid var(--loja-borda);
+  padding-bottom: 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+}
+
+.loja__rodape-coluna {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.loja__rodape-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.loja__rodape-logo,
+.loja__rodape-monograma {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+}
+
+.loja__rodape-logo {
+  object-fit: cover;
+  display: block;
+}
+
+.loja__rodape-monograma {
+  display: grid;
+  place-items: center;
+  background: var(--loja-cor);
+  color: #fff;
+  font-family: var(--loja-serif);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.loja__rodape-marca-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.loja__rodape-marca-texto strong {
+  font-family: var(--loja-serif);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.loja__rodape-marca-texto span {
   font-size: 12px;
   color: var(--loja-fraco);
 }
 
+/* Redes: cada uma é um botão com ícone de linha e o nome ao lado. */
+.loja__redes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.loja__rede {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid var(--loja-borda);
+  border-radius: 999px;
+  background: var(--loja-fundo);
+  color: var(--loja-texto);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.loja__rede svg {
+  color: var(--loja-fraco);
+}
+
+.loja__rede:hover {
+  text-decoration: none;
+  border-color: var(--loja-cor);
+}
+
+.loja__rede:hover svg {
+  color: var(--loja-cor);
+}
+
+.loja__rodape-titulo {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--loja-fraco);
+}
+
+.loja__endereco {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-style: normal;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Botão de contorno: mesma linguagem dos atalhos da capa, sem competir com eles. */
+.loja__rodape-acao {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--loja-borda);
+  border-radius: 999px;
+  background: var(--loja-fundo);
+  color: var(--loja-texto);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: border-color 0.15s ease;
+}
+
+.loja__rodape-acao:hover {
+  text-decoration: none;
+  border-color: var(--loja-cor);
+}
+
+.loja__rodape-vazio {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--loja-fraco);
+  max-width: 32ch;
+}
+
+.loja__rodape-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.loja__horarios {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.loja__horario {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+/* Hoje ganha fundo leve: o cliente acha o dia atual sem ler a lista inteira. */
+.loja__horario--hoje {
+  background: color-mix(in srgb, var(--loja-cor) 11%, #fff);
+}
+
+.loja__horario--fechado {
+  color: var(--loja-fraco);
+}
+
+.loja__horario-dia {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.loja__horario-hoje {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--loja-cor);
+  color: #fff;
+  font-family: var(--fonte-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.loja__horario-hora {
+  font-family: var(--fonte-mono);
+  font-size: 11.5px;
+  color: var(--loja-fraco);
+  white-space: nowrap;
+}
+
+.loja__horario--hoje .loja__horario-hora {
+  color: var(--loja-texto);
+  font-weight: 600;
+}
+
+.loja__rodape-base {
+  max-width: 1080px;
+  margin: 0 auto;
+  /* Sobra para a barra do carrinho, que flutua sobre o pé da página. */
+  padding: 16px 0 88px;
+  border-top: 1px solid var(--loja-borda);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .loja__rodape-selo {
   font-family: var(--fonte-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  color: var(--loja-fraco);
+}
+
+.loja__voltar-topo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--loja-borda);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--loja-fraco);
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.loja__voltar-topo:hover {
+  border-color: var(--loja-cor);
+  color: var(--loja-texto);
 }
 
 /* ---------- Responsivo ---------- */
 
 @media (max-width: 900px) {
+  /* Duas colunas: marca ocupa a linha de cima, endereço e horário dividem a de baixo. */
+  .loja__rodape-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+  }
+
+  .loja__rodape-coluna--loja {
+    grid-column: 1 / -1;
+  }
+
   .loja__checkout {
     grid-template-columns: 1fr;
     padding-bottom: 120px;
@@ -2123,6 +2572,10 @@
     margin: -16px -16px 4px;
   }
 
+  .loja__categorias-marca {
+    padding: 7px 16px 0;
+  }
+
   .loja__categorias-lista {
     padding: 8px 16px;
   }
@@ -2198,9 +2651,24 @@
   }
 
   .loja__rodape {
-    flex-direction: column;
-    gap: 4px;
-    padding: 20px 16px;
+    padding: 32px 16px 0;
+  }
+
+  .loja__rodape-grade {
+    gap: 24px;
+    padding-bottom: 28px;
+  }
+
+  .loja__rodape-base {
+    padding: 14px 0 84px;
+  }
+
+  .loja__capa-cta-principal,
+  .loja__capa-cta-whats {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 12px 16px;
+    font-size: 14px;
   }
 
   .loja__telefone {
@@ -2209,6 +2677,32 @@
 }
 
 @media (max-width: 480px) {
+  /* Uma coluna: no celular o rodapé é leitura de cima para baixo. */
+  .loja__rodape-grade {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .loja__rodape-coluna--loja {
+    grid-column: auto;
+  }
+
+  .loja__categorias-identidade-texto {
+    gap: 6px;
+  }
+
+  .loja__categorias-nome {
+    font-size: 14px;
+  }
+
+  .loja__categorias-carrinho-total {
+    display: none;
+  }
+
+  .loja__categorias-carrinho {
+    padding: 4px;
+  }
+
   .loja__produto {
     padding: 10px;
     gap: 10px;
@@ -2321,12 +2815,25 @@
   .loja__botao,
   .loja__barra-carrinho,
   .loja__categoria-link,
-  .loja__tipo--grande {
+  .loja__tipo--grande,
+  .loja__capa-cta-principal,
+  .loja__capa-cta-whats,
+  .loja__rede,
+  .loja__rodape-acao,
+  .loja__voltar-topo,
+  .loja__categorias,
+  .loja__categorias-carrinho {
     transition: none;
   }
 
   .loja__carrinho,
-  .loja__modal-fundo {
+  .loja__modal-fundo,
+  .loja__categorias--compacta .loja__categorias-marca {
     animation: none;
+  }
+
+  /* Sem animação, a marca aparece de uma vez — mas o deslocamento também sai. */
+  .loja__capa-cta-principal:hover {
+    transform: none;
   }
 }
