@@ -10,11 +10,25 @@
   --loja-erro: #b4372c;
   --loja-ok: #2f7d4f;
   --loja-alerta: #8a6100;
-  --loja-serif: var(--fonte-titulo);
+
+  /*
+   * Tipografia própria do cardápio público (o painel segue Inter/Fraunces).
+   * - Anton: nome da loja, título de tela/seção e número de pedido. Peso único.
+   * - Roboto Condensed: corpo, preço, botão, campo e rótulo.
+   * Redefinir os tokens da casa aqui troca a fonte de todos os descendentes
+   * de uma vez — sem mono e sem serifada no meio do cardápio.
+   */
+  --loja-display: 'Anton', 'Arial Narrow', Impact, sans-serif;
+  --loja-condensada: 'Roboto Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --fonte: var(--loja-condensada);
+  --fonte-titulo: var(--loja-condensada);
+  --fonte-mono: var(--loja-condensada);
+  --loja-serif: var(--loja-condensada);
 
   min-height: 100%;
   background: var(--loja-fundo);
   color: var(--loja-texto);
+  font-family: var(--loja-condensada);
   padding-bottom: 96px;
 }
 
@@ -40,9 +54,11 @@
 }
 
 .loja__indisponivel h1 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 28px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0;
 }
 
 .loja__indisponivel p {
@@ -102,9 +118,10 @@
   place-items: center;
   background: var(--loja-cor);
   color: #fff;
-  font-family: var(--loja-serif);
-  font-size: 24px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .loja__marca-texto {
@@ -115,21 +132,21 @@
 }
 
 .loja__nome {
-  font-family: var(--loja-serif);
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+  font-family: var(--loja-display);
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .loja__status {
-  font-family: var(--fonte-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .loja__status--aberta {
@@ -149,7 +166,7 @@
 }
 
 .loja__status-detalhe {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--loja-fraco);
 }
 
@@ -177,8 +194,9 @@
 }
 
 .loja__telefone {
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
   color: var(--loja-fraco);
   border: 1px solid var(--loja-borda);
   border-radius: 999px;
@@ -276,9 +294,10 @@
   place-items: center;
   background: #fff;
   color: var(--loja-cor);
-  font-family: var(--loja-serif);
-  font-size: 28px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
@@ -294,11 +313,11 @@
 }
 
 .loja__capa-nome {
-  font-family: var(--loja-serif);
-  font-size: 34px;
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.015em;
+  font-family: var(--loja-display);
+  font-size: 31px;
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: 0;
 }
 
 .loja__capa--foto .loja__capa-nome {
@@ -317,10 +336,10 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-family: var(--fonte-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(8px);
@@ -376,8 +395,9 @@
 }
 
 .loja__capa-atalho--discreto {
-  font-family: var(--fonte-mono);
-  font-weight: 400;
+  font-family: var(--fonte);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   border-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -433,34 +453,21 @@
   border-color: #fff;
 }
 
-.loja__capa-chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+/*
+ * Entrega e taxa em uma frase só. Antes eram dois cartões de vidro com rótulo
+ * em caixa alta ("ENTREGA" / "TAXA") e valor embaixo — o tique de template que
+ * mais pesava na capa. Agora a informação se lê como texto.
+ */
+.loja__capa-info {
+  align-self: flex-start;
+  margin-top: -8px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
 }
 
-.loja__capa-chip {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: rgba(0, 0, 0, 0.36);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(8px);
-  border-radius: 12px;
-  padding: 8px 14px;
-}
-
-.loja__capa-chip-rotulo {
-  font-family: var(--fonte-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.loja__capa-chip-valor {
-  font-size: 14px;
-  font-weight: 550;
+.loja__capa--foto .loja__capa-info {
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.55);
 }
 
 /* ---------- Cardápio ---------- */
@@ -577,9 +584,10 @@
   place-items: center;
   background: var(--loja-cor);
   color: #fff;
-  font-family: var(--loja-serif);
+  font-family: var(--loja-display);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .loja__categorias-identidade-texto {
@@ -590,20 +598,20 @@
 }
 
 .loja__categorias-nome {
-  font-family: var(--loja-serif);
+  font-family: var(--fonte);
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .loja__categorias-status {
-  font-family: var(--fonte-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--fonte);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--loja-ok);
   white-space: nowrap;
 }
@@ -644,7 +652,8 @@
 }
 
 .loja__categorias-carrinho-total {
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
+  font-variant-numeric: tabular-nums;
 }
 
 .loja__categorias-lista {
@@ -692,11 +701,12 @@
 }
 
 .loja__secao-titulo {
-  font-family: var(--loja-serif);
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  padding-bottom: 10px;
+  font-family: var(--loja-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0;
+  padding-bottom: 8px;
   margin-bottom: 18px;
   border-bottom: 1px solid var(--loja-borda);
 }
@@ -751,9 +761,10 @@
   place-items: center;
   background: color-mix(in srgb, var(--loja-cor) 12%, #fff);
   color: var(--loja-cor);
-  font-family: var(--loja-serif);
-  font-size: 36px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 /* Foto real ganha um leve anel interno: separa do fundo branco sem borda dura. */
@@ -779,16 +790,16 @@
 }
 
 .loja__produto-nome {
-  font-size: 16px;
-  font-weight: 650;
-  line-height: 1.28;
-  letter-spacing: -0.005em;
+  font-size: 16.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0;
 }
 
 .loja__produto-desc {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--loja-fraco);
-  line-height: 1.45;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -796,9 +807,10 @@
 }
 
 .loja__produto-preco {
-  font-family: var(--fonte-mono);
-  font-size: 15px;
+  font-family: var(--fonte);
+  font-size: 15.5px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -813,9 +825,10 @@
 }
 
 .loja__preco {
-  font-family: var(--fonte-mono);
-  font-size: 14px;
+  font-family: var(--fonte);
+  font-size: 14.5px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -915,17 +928,17 @@
 }
 
 .loja__barra-detalhe {
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
+  font-family: var(--fonte);
+  font-size: 11.5px;
   font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   color: rgba(255, 255, 255, 0.62);
 }
 
 .loja__barra-total {
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -980,18 +993,17 @@
 }
 
 .loja__carrinho-topo h2 {
-  font-family: var(--loja-serif);
-  font-size: 23px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 21px;
+  font-weight: 400;
   line-height: 1.15;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .loja__carrinho-sub {
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--fonte);
+  font-size: 12px;
+  letter-spacing: 0;
   color: var(--loja-fraco);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1027,9 +1039,9 @@
 }
 
 .loja__carrinho-vazio-titulo {
-  font-family: var(--loja-serif);
-  font-size: 21px;
-  font-weight: 600;
+  font-family: var(--fonte);
+  font-size: 19px;
+  font-weight: 700;
 }
 
 .loja__carrinho-itens {
@@ -1072,9 +1084,10 @@
   place-items: center;
   background: color-mix(in srgb, var(--loja-cor) 10%, #fff);
   color: var(--loja-cor);
-  font-family: var(--loja-serif);
+  font-family: var(--loja-display);
   font-size: 19px;
-  font-weight: 600;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .loja__carrinho-item-foto img {
@@ -1099,8 +1112,9 @@
 }
 
 .loja__carrinho-item-unit {
-  font-family: var(--fonte-mono);
-  font-size: 11px;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: var(--loja-fraco);
 }
 
@@ -1135,8 +1149,9 @@
 .loja__contador span {
   min-width: 28px;
   text-align: center;
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .loja__remover {
@@ -1190,17 +1205,17 @@
 }
 
 .loja__carrinho-total-nota {
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--fonte);
+  font-size: 11.5px;
+  letter-spacing: 0;
   color: var(--loja-fraco);
 }
 
 .loja__carrinho-total strong {
-  font-family: var(--fonte-mono);
-  font-size: 21px;
-  font-weight: 600;
+  font-family: var(--fonte);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .loja__carrinho-nota {
@@ -1306,9 +1321,10 @@
   overflow: hidden;
   background: color-mix(in srgb, var(--loja-cor) 12%, #fff);
   color: var(--loja-cor);
-  font-family: var(--loja-serif);
-  font-size: 72px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 64px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .loja__modal-foto img {
@@ -1326,17 +1342,17 @@
 }
 
 .loja__modal-titulo {
-  font-family: var(--loja-serif);
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-family: var(--loja-display);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0;
 }
 
 .loja__modal-desc {
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--loja-fraco);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .loja__modal-compra {
@@ -1350,9 +1366,10 @@
 }
 
 .loja__modal-total {
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .loja__modal-campo {
@@ -1384,8 +1401,9 @@
   position: absolute;
   right: 10px;
   bottom: 8px;
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--loja-fraco);
 }
 
@@ -1419,11 +1437,11 @@
 }
 
 .loja__checkout-titulo {
-  font-family: var(--loja-serif);
-  font-size: 30px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 27px;
+  font-weight: 400;
   line-height: 1.15;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
 }
 
 .loja__checkout-sub {
@@ -1471,9 +1489,9 @@
 }
 
 .loja__bloco-titulo {
-  font-family: var(--loja-serif);
-  font-size: 20px;
-  font-weight: 600;
+  font-family: var(--fonte);
+  font-size: 17px;
+  font-weight: 700;
 }
 
 .loja__campos {
@@ -1647,9 +1665,9 @@
 }
 
 .loja__resumo-titulo {
-  font-family: var(--loja-serif);
-  font-size: 20px;
-  font-weight: 600;
+  font-family: var(--fonte);
+  font-size: 17px;
+  font-weight: 700;
 }
 
 .loja__resumo-itens {
@@ -1691,7 +1709,8 @@
 }
 
 .loja__resumo-linha--total strong {
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
+  font-variant-numeric: tabular-nums;
 }
 
 /* No desktop o envio fica no resumo; no celular, na barra fixa (ver @media). */
@@ -1707,17 +1726,17 @@
 }
 
 .loja__checkout-barra-total span {
-  font-family: var(--fonte-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--fonte);
+  font-size: 11px;
+  letter-spacing: 0;
   color: var(--loja-fraco);
 }
 
 .loja__checkout-barra-total strong {
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
   font-size: 19px;
-  font-weight: 600;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -1739,18 +1758,19 @@
 }
 
 .loja__pedido-etiqueta {
-  font-family: var(--fonte-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--loja-fraco);
 }
 
 .loja__pedido-numero {
-  font-family: var(--loja-serif);
-  font-size: 38px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 32px;
+  font-weight: 400;
   line-height: 1.1;
+  letter-spacing: 0;
 }
 
 .loja__pedido-meta {
@@ -1778,11 +1798,11 @@
 }
 
 .loja__status-titulo {
-  font-family: var(--loja-serif);
-  font-size: 32px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 28px;
+  font-weight: 400;
   line-height: 1.15;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
 }
 
 .loja__status-texto {
@@ -1910,9 +1930,10 @@
   place-items: center;
   background: color-mix(in srgb, var(--loja-cor) 12%, #fff);
   color: var(--loja-cor);
-  font-family: var(--loja-serif);
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .loja__contato-mark img {
@@ -1960,18 +1981,17 @@
 }
 
 .loja__meus-titulo {
-  font-family: var(--loja-serif);
-  font-size: 34px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 30px;
+  font-weight: 400;
   line-height: 1.1;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
 }
 
 .loja__meus-contagem {
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--fonte);
+  font-size: 12px;
+  letter-spacing: 0;
   color: var(--loja-fraco);
   padding-bottom: 3px;
 }
@@ -1983,11 +2003,10 @@
 }
 
 .loja__meus-secao-titulo {
-  font-family: var(--fonte-mono);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--fonte);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
   color: var(--loja-fraco);
 }
 
@@ -2027,23 +2046,25 @@
 }
 
 .loja__cartao-numero {
-  font-family: var(--loja-serif);
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 19px;
+  font-weight: 400;
   line-height: 1.15;
+  letter-spacing: 0;
 }
 
 .loja__cartao-quando {
-  font-family: var(--fonte-mono);
-  font-size: 11px;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: var(--loja-fraco);
 }
 
 .loja__cartao-status {
-  font-family: var(--fonte-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--fonte);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
   border: 1px solid currentColor;
   border-radius: 999px;
   padding: 3px 9px;
@@ -2114,10 +2135,9 @@
 }
 
 .loja__cartao-tipo {
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--fonte);
+  font-size: 12px;
+  letter-spacing: 0;
   color: var(--loja-fraco);
 }
 
@@ -2130,9 +2150,10 @@
 }
 
 .loja__cartao-total strong {
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--loja-texto);
 }
 
@@ -2268,9 +2289,10 @@
   place-items: center;
   background: var(--loja-cor);
   color: #fff;
-  font-family: var(--loja-serif);
-  font-size: 18px;
-  font-weight: 600;
+  font-family: var(--loja-display);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .loja__rodape-marca-texto {
@@ -2281,10 +2303,10 @@
 }
 
 .loja__rodape-marca-texto strong {
-  font-family: var(--loja-serif);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: var(--fonte);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .loja__rodape-marca-texto span {
@@ -2330,12 +2352,11 @@
 }
 
 .loja__rodape-titulo {
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--loja-fraco);
+  font-family: var(--fonte);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--loja-texto);
 }
 
 .loja__endereco {
@@ -2417,19 +2438,20 @@
 }
 
 .loja__horario-hoje {
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 999px;
   background: var(--loja-cor);
   color: #fff;
-  font-family: var(--fonte-mono);
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--fonte);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .loja__horario-hora {
-  font-family: var(--fonte-mono);
-  font-size: 11.5px;
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: var(--loja-fraco);
   white-space: nowrap;
 }
@@ -2453,10 +2475,9 @@
 }
 
 .loja__rodape-selo {
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--fonte);
+  font-size: 11.5px;
+  letter-spacing: 0;
   color: var(--loja-fraco);
 }
 
@@ -2469,10 +2490,9 @@
   border-radius: 999px;
   background: transparent;
   color: var(--loja-fraco);
-  font-family: var(--fonte-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--fonte);
+  font-size: 12px;
+  letter-spacing: 0;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
@@ -2553,11 +2573,11 @@
     width: 52px;
     height: 52px;
     border-radius: 15px;
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .loja__capa-nome {
-    font-size: 27px;
+    font-size: 25px;
   }
 
   .loja__capa-atalho--discreto {
@@ -2602,7 +2622,7 @@
   }
 
   .loja__meus-titulo {
-    font-size: 28px;
+    font-size: 25px;
   }
 
   .loja__meus-contagem {
@@ -2614,7 +2634,7 @@
   }
 
   .loja__checkout-titulo {
-    font-size: 26px;
+    font-size: 23px;
   }
 
   .loja__status-hero {
@@ -2622,7 +2642,7 @@
   }
 
   .loja__status-titulo {
-    font-size: 27px;
+    font-size: 24px;
   }
 
   .loja__tipos--grande {
@@ -2643,11 +2663,11 @@
   }
 
   .loja__nome {
-    font-size: 19px;
+    font-size: 17px;
   }
 
   .loja__pedido-numero {
-    font-size: 32px;
+    font-size: 27px;
   }
 
   .loja__rodape {
@@ -2685,6 +2705,15 @@
 
   .loja__rodape-coluna--loja {
     grid-column: auto;
+  }
+
+  /*
+   * Capa: no celular o atalho "Meus pedidos" sai de cena (ele está no rodapé).
+   * Sem ele, o nome e o status ganham a linha inteira e o status para de
+   * quebrar em duas linhas antes da chamada para o cardápio.
+   */
+  .loja__capa-acoes {
+    display: none;
   }
 
   .loja__categorias-identidade-texto {
@@ -2746,15 +2775,15 @@
   .loja__produto-foto {
     width: 84px;
     height: 84px;
-    font-size: 30px;
+    font-size: 27px;
   }
 
   .loja__produto-nome {
-    font-size: 15px;
+    font-size: 15.5px;
   }
 
   .loja__produto-preco {
-    font-size: 14px;
+    font-size: 14.5px;
   }
 
   .loja__adicionar {
@@ -2764,7 +2793,7 @@
   }
 
   .loja__secao-titulo {
-    font-size: 22px;
+    font-size: 19px;
   }
 
   .loja__barra-carrinho {
@@ -2785,7 +2814,7 @@
 
   .loja__modal-foto {
     height: 170px;
-    font-size: 56px;
+    font-size: 48px;
   }
 
   .loja__modal-corpo {

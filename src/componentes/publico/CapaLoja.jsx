@@ -6,7 +6,7 @@ import { formatarDinheiro } from '../../utils/dinheiro.js'
  * Topo do cardápio: a "fachada" da loja.
  *
  * Só mostra informação que existe de verdade. Se a loja não tiver bairro
- * cadastrado, o chip de entrega simplesmente não aparece — nada de "30-45 min"
+ * cadastrado, a linha de entrega simplesmente não aparece — nada de "30-45 min"
  * inventado. Se não tiver foto de capa, a cor da marca segura o topo sozinha.
  */
 
@@ -84,24 +84,19 @@ export default function CapaLoja({ loja, status, bairros = [], onVerCardapio, li
           </div>
         </div>
 
+        {/*
+          Entrega e taxa em uma frase só. Só aparece o que a loja cadastrou:
+          sem bairro com tempo estimado, a frase fala só da taxa (e vice-versa).
+        */}
         {(tempo !== null || taxa !== null) && (
-          <div className="loja__capa-chips">
-            {tempo !== null && (
-              <div className="loja__capa-chip">
-                <span className="loja__capa-chip-rotulo">Entrega</span>
-                <span className="loja__capa-chip-valor">cerca de {tempo} min</span>
-              </div>
-            )}
-
-            {taxa !== null && (
-              <div className="loja__capa-chip">
-                <span className="loja__capa-chip-rotulo">Taxa</span>
-                <span className="loja__capa-chip-valor">
-                  {taxa === 0 ? 'grátis' : `a partir de ${formatarDinheiro(taxa)}`}
-                </span>
-              </div>
-            )}
-          </div>
+          <p className="loja__capa-info">
+            {tempo !== null && <>Entrega em cerca de {tempo} min</>}
+            {tempo !== null && taxa !== null && <span aria-hidden="true"> · </span>}
+            {taxa !== null &&
+              (taxa === 0
+                ? 'Taxa de entrega grátis'
+                : `Taxa a partir de ${formatarDinheiro(taxa)}`)}
+          </p>
         )}
 
         {/*
