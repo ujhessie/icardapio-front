@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import CampoUrl from '../../componentes/comuns/CampoUrl.jsx'
 import { useAuth } from '../../contextos/AuthContexto.jsx'
 import '../../estilos/acesso.css'
@@ -14,11 +14,29 @@ const FORMULARIO_VAZIO = {
   senha: '',
 }
 
+/*
+ * Quem chega pela landing já digitou o nome da loja no formulário do CTA, que
+ * manda `?nome=`. O cadastro aproveita o que já foi digitado e já mostra o
+ * endereço do cardápio — sem obrigar a pessoa a escrever o nome duas vezes.
+ */
+function estadoInicial(nome) {
+  if (!nome) return FORMULARIO_VAZIO
+
+  return {
+    ...FORMULARIO_VAZIO,
+    nome,
+    slug: gerarSlug(nome).replace(/^-+|-+$/g, ''),
+  }
+}
+
 export default function Cadastro() {
   const { usuario, registrar } = useAuth()
   const navegar = useNavigate()
+  const [parametros] = useSearchParams()
 
-  const [formulario, setFormulario] = useState(FORMULARIO_VAZIO)
+  const [formulario, setFormulario] = useState(() =>
+    estadoInicial((parametros.get('nome') || '').trim().slice(0, 60)),
+  )
   const [slugManual, setSlugManual] = useState(false)
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)

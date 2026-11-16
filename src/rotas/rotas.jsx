@@ -9,6 +9,7 @@ import Delivery from '../paginas/admin/Delivery.jsx'
 import Configuracoes from '../paginas/admin/Configuracoes.jsx'
 import LayoutLoja from '../componentes/publico/LayoutLoja.jsx'
 import Cadastro from '../paginas/publico/Cadastro.jsx'
+import Landing from '../paginas/publico/Landing.jsx'
 import CardapioLoja from '../paginas/publico/CardapioLoja.jsx'
 import Checkout from '../paginas/publico/Checkout.jsx'
 import AcompanharPedido from '../paginas/publico/AcompanharPedido.jsx'
@@ -29,7 +30,8 @@ import RotaProtegida from './RotaProtegida.jsx'
 export default function Rotas() {
   return (
     <Routes>
-      <Route path="/" element={<StatusSistema />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/status" element={<StatusSistema />} />
       <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/admin/login" element={<Login />} />
 

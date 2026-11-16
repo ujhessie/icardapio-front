@@ -1,0 +1,1464 @@
+/*
+ * Landing do iCardápio.
+ *
+ * Direção de arte: cartaz de rua (skill design-taste-frontend, seed 1126071203).
+ * A página é um cardápio de balcão colado na parede: campos de cor chapada,
+ * Anton no que precisa ser lido de longe, foto recortada em círculo por cima do
+ * tipo. Cada seção é um capítulo de cor e a barra fixa pega a tinta do capítulo
+ * que está passando por baixo dela.
+ *
+ * Regras da casa respeitadas: sem gradiente, sem sombra em repouso, sem filete,
+ * sem mono, sem rótulo em caixa alta espaçado, cantos retos (a pílula do status
+ * e a foto circular são a exceção — são fragmentos da interface do produto).
+ */
+
+.lp {
+  /* Paleta do cardápio público (ver Loja.css): laranja da marca, creme do
+     papel, tinta da impressão e branco. Nada fora disso. */
+  --lp-laranja: #e85d04;
+  --lp-laranja-fundo: #d95603;
+  --lp-creme: #faf7f2;
+  --lp-creme-2: #efe8dd;
+  --lp-tinta: #1b1410;
+  --lp-branco: #ffffff;
+
+  /* A tinta fraca da casa: 7:1 sobre o creme e 6,9:1 sobre o branco. Legenda e
+     nota ficam nela — texto que se lê, só que em segundo plano. */
+  --lp-fraco: #5b5349;
+
+  /*
+   * Tipografia: as mesmas duas famílias do cardápio. Redefinir os tokens da
+   * casa aqui faz todo descendente que ainda usa --fonte/--fonte-mono cair na
+   * condensada — sem mono e sem serifada no meio da landing.
+   */
+  --lp-display: 'Anton', 'Arial Narrow', Impact, sans-serif;
+  --lp-corpo: 'Roboto Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --fonte: var(--lp-corpo);
+  --fonte-titulo: var(--lp-display);
+  --fonte-mono: var(--lp-corpo);
+
+  --lp-margem: clamp(16px, 3.4vw, 48px);
+  --lp-espaco: clamp(64px, 9vw, 132px);
+  --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  background: var(--lp-creme);
+  color: var(--lp-tinta);
+  font-family: var(--lp-corpo);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.lp figure,
+.lp ul,
+.lp ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * Reset de botão sem especificidade: `.lp button` (0,1,1) vencia `.lp-botao`
+ * (0,1,0) e o botão de enviar perdia o preenchimento. Com :where a regra de
+ * reset vale o mesmo que uma classe só e o botão da casa ganha.
+ */
+.lp :where(button) {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.lp a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/*
+ * O link-botão precisa vencer `.lp a { color: inherit }` (que tem um elemento a
+ * mais na especificidade). Sem isso o texto do botão herdava a tinta do capítulo
+ * e sumia no preenchimento escuro.
+ */
+.lp a.lp-botao {
+  color: var(--lp-creme);
+}
+
+.lp a.lp-botao--claro {
+  color: var(--lp-tinta);
+}
+
+.lp a:hover {
+  text-decoration: none;
+}
+
+.lp a:focus-visible,
+.lp button:focus-visible,
+.lp input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+/* ---------------------------------- botões --------------------------------- */
+
+.lp-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 0;
+  background: var(--lp-tinta);
+  color: var(--lp-creme);
+  font-family: var(--lp-corpo);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color 180ms ease, color 300ms ease, transform 140ms var(--lp-ease);
+}
+
+.lp-botao:hover {
+  background: #2d221a;
+}
+
+.lp-botao:active {
+  transform: scale(0.97);
+}
+
+.lp-botao--largo {
+  width: 100%;
+  min-height: 56px;
+  font-size: 18px;
+}
+
+.lp-botao--claro {
+  background: var(--lp-creme);
+  color: var(--lp-tinta);
+}
+
+.lp-botao--claro:hover {
+  background: var(--lp-creme-2);
+}
+
+/* ----------------------------------- topo ---------------------------------- */
+
+/*
+ * Barra fixa. O fundo e a tinta são do capítulo que está embaixo dela: o JS
+ * escreve data-fundo a cada rolagem e o CSS troca a cor em 300ms. Sem sombra —
+ * a cor chapada já separa a barra do conteúdo.
+ */
+.lp-topo {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px var(--lp-margem);
+  background: var(--lp-laranja);
+  color: var(--lp-tinta);
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+.lp-topo[data-fundo='creme'] {
+  background: var(--lp-creme);
+}
+
+.lp-topo[data-fundo='branco'] {
+  background: var(--lp-branco);
+}
+
+.lp-topo[data-fundo='tinta'] {
+  background: var(--lp-tinta);
+  color: var(--lp-creme);
+}
+
+.lp-topo__marca {
+  font-family: var(--lp-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.lp-topo__acoes {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 28px);
+}
+
+.lp-topo__entrar {
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.lp-topo__entrar:hover {
+  text-decoration-thickness: 2px;
+}
+
+.lp-topo[data-fundo='tinta'] .lp-botao {
+  background: var(--lp-laranja);
+  color: var(--lp-tinta);
+}
+
+/* ----------------------------------- capa ---------------------------------- */
+
+.lp-capa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  padding: 96px var(--lp-margem) clamp(28px, 4vh, 48px);
+  overflow: clip;
+  background: var(--lp-laranja);
+  color: var(--lp-tinta);
+}
+
+.lp-capa__palco {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-top: clamp(16px, 5vh, 64px);
+}
+
+.lp-capa__frase {
+  position: relative;
+  z-index: 2;
+  font-family: var(--lp-display);
+  font-size: clamp(64px, 18vw, 236px);
+  font-weight: 400;
+  line-height: 0.84;
+  letter-spacing: 0;
+}
+
+.lp-capa__linha {
+  display: block;
+}
+
+/* As duas tintas do cartaz: uma clara, uma escura, sobre o laranja. */
+.lp-capa__linha--clara {
+  color: var(--lp-creme);
+}
+
+.lp-capa__linha--escura {
+  color: var(--lp-tinta);
+}
+
+.lp-capa__foto {
+  position: absolute;
+  top: clamp(150px, 24vh, 250px);
+  right: calc(var(--lp-margem) * -1);
+  z-index: 1;
+  width: clamp(180px, 27vw, 420px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  transform: rotate(-5deg);
+}
+
+.lp-capa__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lp-capa__foto--bebida {
+  top: auto;
+  right: clamp(150px, 25vw, 380px);
+  bottom: clamp(30px, 9vh, 120px);
+  width: clamp(96px, 13vw, 190px);
+  transform: rotate(4deg);
+}
+
+.lp-capa__nota {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: flex-start;
+  max-width: 46ch;
+  margin-top: auto;
+  padding-top: clamp(24px, 6vh, 72px);
+}
+
+.lp-capa__nota p {
+  font-size: clamp(18px, 1.5vw, 20px);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.lp-capa__link {
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.lp-capa__link:hover {
+  text-decoration-thickness: 3px;
+}
+
+/* ---------------------------------- mosaico -------------------------------- */
+
+/*
+ * O quadro de ladrilhos: 12 colunas por 8 linhas de 104px, 8px de junta e 8px
+ * de margem. Cada ladrilho é uma cor chapada com um pedaço real da interface
+ * (marcado data-ui) e a legenda no canto de baixo.
+ */
+.lp-pronto {
+  padding: 8px;
+  background: var(--lp-creme);
+}
+
+.lp-mosaico {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: 104px;
+  gap: 8px;
+}
+
+.lp-ladrilho {
+  --tile-fundo: var(--lp-branco);
+  --tile-nota: var(--lp-fraco);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--tile-fundo);
+  color: var(--lp-tinta);
+}
+
+.lp-ladrilho--laranja {
+  --tile-fundo: var(--lp-laranja);
+  --tile-nota: var(--lp-tinta);
+}
+
+.lp-ladrilho--creme-escuro {
+  --tile-fundo: var(--lp-creme-2);
+}
+
+.lp-ladrilho--tinta {
+  --tile-fundo: var(--lp-tinta);
+  --tile-nota: rgba(250, 247, 242, 0.78);
+
+  color: var(--lp-creme);
+}
+
+/* Posições fixas: o quadro fecha sem buraco e sem ladrilho fora do lugar. */
+.lp-ladrilho--titulo {
+  grid-area: 1 / 1 / 3 / 7;
+}
+
+.lp-ladrilho--status {
+  grid-area: 1 / 7 / 3 / 10;
+}
+
+.lp-ladrilho--item {
+  grid-area: 1 / 10 / 3 / 13;
+}
+
+.lp-ladrilho--print {
+  grid-area: 3 / 1 / 7 / 4;
+}
+
+.lp-ladrilho--pedido {
+  grid-area: 3 / 4 / 5 / 7;
+}
+
+.lp-ladrilho--bairros {
+  grid-area: 5 / 4 / 7 / 7;
+}
+
+.lp-ladrilho--pg {
+  grid-area: 3 / 7 / 5 / 10;
+}
+
+.lp-ladrilho--horas {
+  grid-area: 5 / 7 / 7 / 10;
+}
+
+.lp-ladrilho--gaveta {
+  grid-area: 3 / 10 / 7 / 13;
+}
+
+.lp-ladrilho--link {
+  grid-area: 7 / 1 / 9 / 13;
+}
+
+.lp-ladrilho--titulo {
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.lp-titulo-mosaico {
+  font-family: var(--lp-display);
+  font-size: clamp(34px, 4vw, 60px);
+  font-weight: 400;
+  line-height: 0.96;
+  letter-spacing: 0;
+}
+
+.lp-ladrilho__nome {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.lp-ladrilho__nota {
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--tile-nota);
+}
+
+/* Print: a imagem ocupa o ladrilho e a legenda mora embaixo, em cor chapada. */
+.lp-ladrilho--print {
+  padding: 0;
+  gap: 0;
+}
+
+.lp-ladrilho--print .lp-print {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.lp-ladrilho--print figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 18px 18px;
+}
+
+/* ------------------------- pedaços reais da interface ---------------------- */
+
+.lp-peca {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lp-pilula {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--lp-laranja);
+  color: var(--lp-tinta);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.lp-pilula i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lp-tinta);
+}
+
+.lp-pilula--vazia {
+  background: transparent;
+  color: rgba(250, 247, 242, 0.75);
+  font-weight: 500;
+}
+
+.lp-peca--item {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.lp-peca--item img {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.lp-peca--item div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lp-peca--item strong {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.lp-peca--item span {
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--lp-fraco);
+}
+
+.lp-peca--item b {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-peca--pg {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+}
+
+.lp-opcao {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--lp-branco);
+  color: var(--lp-tinta);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.lp-opcao--marcada {
+  background: var(--lp-tinta);
+  color: var(--lp-creme);
+}
+
+.lp-peca--pedido {
+  justify-content: center;
+  gap: 16px;
+}
+
+.lp-peca--pedido p {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lp-peca--pedido strong {
+  font-family: var(--lp-display);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.lp-peca--pedido span {
+  font-size: 14px;
+  color: rgba(250, 247, 242, 0.78);
+}
+
+.lp-trilha {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.lp-trilha__ponto {
+  flex: 1;
+  height: 6px;
+  background: rgba(250, 247, 242, 0.2);
+}
+
+.lp-trilha__ponto--feito {
+  background: var(--lp-laranja);
+}
+
+.lp-trilha__ponto--atual {
+  background: var(--lp-creme);
+}
+
+.lp-peca--bairros {
+  gap: 9px;
+}
+
+.lp-peca--bairros li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.lp-peca--bairros li span:first-child {
+  font-weight: 600;
+}
+
+.lp-peca--bairros li span:nth-child(2) {
+  margin-left: auto;
+  font-weight: 400;
+}
+
+.lp-peca--bairros b {
+  min-width: 4.6em;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-peca--horas {
+  gap: 9px;
+}
+
+.lp-peca--horas li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--lp-fraco);
+}
+
+.lp-peca--horas b {
+  font-weight: 700;
+  color: var(--lp-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-peca__hoje {
+  color: var(--lp-tinta) !important;
+  font-weight: 700;
+}
+
+.lp-ladrilho--link {
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lp-peca--link {
+  flex: 0 1 auto;
+  font-size: clamp(20px, 3.2vw, 44px);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--lp-creme);
+  overflow-wrap: anywhere;
+}
+
+.lp-peca--link b {
+  color: var(--lp-laranja);
+  font-weight: 700;
+}
+
+/* ---------------------------------- etapas --------------------------------- */
+
+.lp-etapas {
+  padding: var(--lp-espaco) var(--lp-margem);
+  background: var(--lp-tinta);
+  color: var(--lp-creme);
+}
+
+.lp-etapas__conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(40px, 7vw, 80px);
+}
+
+.lp-etapas__titulo {
+  max-width: 16ch;
+  font-family: var(--lp-display);
+  font-size: clamp(38px, 6vw, 96px);
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: 0;
+}
+
+/*
+ * A barra de progresso do produto, ampliada até virar o diagrama da página.
+ * Cada trecho tem a largura do tempo que aquela etapa leva de verdade.
+ */
+.lp-barra {
+  display: flex;
+  gap: 6px;
+  height: clamp(200px, 24vh, 262px);
+}
+
+.lp-barra__trecho {
+  display: flex;
+  flex-basis: 0;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 14px;
+  min-width: 110px;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--lp-creme);
+  color: var(--lp-tinta);
+}
+
+.lp-barra__trecho:nth-child(1) {
+  flex-grow: 1.3;
+  background: var(--lp-laranja);
+}
+
+.lp-barra__trecho:nth-child(2) {
+  flex-grow: 3.6;
+}
+
+.lp-barra__trecho:nth-child(3) {
+  flex-grow: 2.1;
+  background: var(--lp-creme-2);
+}
+
+.lp-barra__trecho:nth-child(4) {
+  flex-grow: 3;
+  background: var(--lp-laranja);
+}
+
+.lp-barra__trecho span {
+  display: block;
+  font-size: clamp(20px, 2vw, 32px);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.lp-barra__trecho p {
+  max-width: 24ch;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+/* -------------------------------- comparação ------------------------------- */
+
+.lp-comparacao {
+  padding: var(--lp-espaco) var(--lp-margem) 0;
+  overflow: clip;
+  background: var(--lp-branco);
+}
+
+.lp-comparacao__cabeca {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 8px 20px;
+  align-items: start;
+}
+
+.lp-comparacao__titulo {
+  grid-column: 1 / 6;
+  font-family: var(--lp-display);
+  font-size: clamp(30px, 3.6vw, 52px);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.lp-comparacao__texto {
+  grid-column: 7 / 12;
+  max-width: 56ch;
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--lp-tinta);
+}
+
+.lp-comparacao__par {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: clamp(48px, 9vh, 110px);
+}
+
+.lp-especime {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lp-especime__legenda {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--lp-fraco);
+}
+
+.lp-especime__caixa {
+  display: flex;
+  align-items: flex-end;
+  height: clamp(140px, 18vw, 240px);
+  overflow: hidden;
+  background: var(--lp-creme);
+}
+
+.lp-especime__letra {
+  display: block;
+  font-family: var(--lp-display);
+  font-size: clamp(160px, 21vw, 300px);
+  font-weight: 400;
+  line-height: 0.75;
+  letter-spacing: 0;
+  color: var(--lp-tinta);
+}
+
+.lp-especime--inverso .lp-especime__caixa {
+  background: var(--lp-laranja);
+}
+
+.lp-especime--inverso .lp-especime__letra {
+  color: var(--lp-tinta);
+}
+
+/* -------------------------------- perguntas -------------------------------- */
+
+.lp-perguntas {
+  padding: var(--lp-espaco) var(--lp-margem);
+  background: var(--lp-creme);
+}
+
+.lp-perguntas__conteudo {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 8px 20px;
+}
+
+.lp-perguntas__titulo {
+  grid-column: 3 / 11;
+  margin-bottom: clamp(32px, 5vw, 64px);
+  font-family: var(--lp-display);
+  font-size: clamp(38px, 5vw, 76px);
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: 0;
+}
+
+/* Fichário: as perguntas são fichas de um arquivo de balcão. */
+.lp-fichario {
+  grid-column: 3 / 11;
+  padding-top: 12px;
+}
+
+.lp-ficha {
+  --aba: calc(var(--i) * clamp(44px, 9vw, 120px));
+  --aba-largura: clamp(120px, 17vw, 200px);
+
+  position: relative;
+  padding: 42px clamp(16px, 2vw, 28px) 18px;
+  background: var(--lp-branco);
+  color: var(--lp-tinta);
+  clip-path: polygon(
+    0 30px,
+    var(--aba) 30px,
+    var(--aba) 0,
+    calc(var(--aba) + var(--aba-largura)) 0,
+    calc(var(--aba) + var(--aba-largura)) 30px,
+    100% 30px,
+    100% 100%,
+    0 100%
+  );
+  transition: background-color 180ms ease;
+}
+
+.lp-ficha + .lp-ficha {
+  margin-top: -14px;
+}
+
+/* Com uma ficha aberta, a de baixo desce o suficiente para a aba inteira aparecer. */
+.lp-ficha--aberta + .lp-ficha {
+  margin-top: 16px;
+}
+
+.lp-ficha:nth-child(3n + 1) {
+  background: var(--lp-laranja);
+}
+
+.lp-ficha:nth-child(3n + 2) {
+  background: var(--lp-branco);
+}
+
+.lp-ficha:nth-child(3n + 3) {
+  background: var(--lp-creme-2);
+}
+
+.lp-ficha:hover {
+  background: var(--lp-creme-2);
+}
+
+.lp-ficha:nth-child(3n + 1):hover {
+  background: var(--lp-laranja-fundo);
+}
+
+.lp-ficha__botao {
+  display: block;
+  width: 100%;
+}
+
+.lp-ficha__aba {
+  position: absolute;
+  top: 0;
+  left: var(--aba);
+  display: flex;
+  align-items: center;
+  width: var(--aba-largura);
+  height: 30px;
+  padding-left: 16px;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.lp-ficha__pergunta {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.lp-ficha--aberta .lp-ficha__pergunta {
+  font-weight: 700;
+}
+
+.lp-ficha__resposta {
+  max-width: 56ch;
+  margin: 12px 0 14px;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+/* ---------------------------------- criar ---------------------------------- */
+
+.lp-criar {
+  display: flex;
+  align-items: center;
+  min-height: 90svh;
+  padding: var(--lp-espaco) var(--lp-margem);
+  background: var(--lp-laranja);
+  color: var(--lp-tinta);
+}
+
+.lp-criar__conteudo {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 24px 20px;
+  align-items: end;
+  width: 100%;
+}
+
+.lp-criar__chamada {
+  grid-column: 1 / 7;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 8px;
+}
+
+.lp-criar__titulo {
+  font-family: var(--lp-display);
+  font-size: clamp(46px, 7vw, 112px);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: 0;
+}
+
+.lp-criar__texto {
+  max-width: 36ch;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+/* O diálogo de criação do produto, em tamanho real, sobre o campo laranja. */
+.lp-form {
+  grid-column: 7 / 12;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: clamp(20px, 2.4vw, 32px);
+  background: var(--lp-branco);
+}
+
+.lp-form__titulo {
+  font-family: var(--lp-display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.lp-form__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lp-form__campo span {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.lp-form__campo input {
+  width: 100%;
+  height: 52px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  background: var(--lp-creme);
+  color: var(--lp-tinta);
+  font-family: var(--lp-corpo);
+  font-size: 18px;
+}
+
+.lp-form__campo input::placeholder {
+  color: #8a8075;
+}
+
+.lp-form__campo input:focus-visible {
+  outline: 2px solid var(--lp-tinta);
+  outline-offset: 0;
+}
+
+.lp-form__endereco {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--lp-fraco);
+  overflow-wrap: anywhere;
+}
+
+.lp-form__endereco b {
+  font-weight: 700;
+  color: var(--lp-tinta);
+}
+
+.lp-form__pe {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--lp-fraco);
+}
+
+/* ---------------------------------- rodapé --------------------------------- */
+
+.lp-rodape {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(40px, 6vw, 76px);
+  padding: clamp(56px, 8vw, 110px) var(--lp-margem) 0;
+  overflow: hidden;
+  background: var(--lp-tinta);
+  color: var(--lp-creme);
+}
+
+.lp-rodape__topo {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 24px 20px;
+  align-items: start;
+}
+
+.lp-rodape__convite {
+  grid-column: 1 / 8;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.lp-rodape__titulo {
+  font-family: var(--lp-display);
+  font-size: clamp(44px, 5.4vw, 88px);
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: 0;
+}
+
+.lp-rodape__links {
+  grid-column: 10 / 13;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 16px;
+}
+
+.lp-rodape__links a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.lp-rodape__links a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.lp-rodape__creditos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  font-size: 13.5px;
+  color: rgba(250, 247, 242, 0.66);
+}
+
+/*
+ * A marca gigante, cortada pela borda de baixo e pela direita. O overflow
+ * escondido do rodapé é o que faz o corte.
+ */
+.lp-rodape__marca {
+  margin: 0 0 -0.06em;
+  font-family: var(--lp-display);
+  font-size: clamp(84px, 23vw, 370px);
+  font-weight: 400;
+  line-height: 0.78;
+  letter-spacing: 0;
+  white-space: nowrap;
+  color: var(--lp-laranja);
+  transform: translateY(18%);
+}
+
+/* ---------------------------------- entrada -------------------------------- */
+
+/*
+ * A cascata só liga quando o JS marcou a raiz com .lp-vivo — se o script
+ * falhar, o conteúdo aparece inteiro em vez de ficar invisível.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .lp-vivo [data-anima] {
+    transition: opacity 700ms var(--lp-ease), transform 900ms var(--lp-ease);
+  }
+
+  .lp-vivo [data-anima]:not(.lp-entrou) {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-topo {
+    transition: none;
+  }
+}
+
+/* ---------------------------------- largo ---------------------------------- */
+
+@media (max-width: 1100px) {
+  .lp-mosaico {
+    grid-auto-rows: 92px;
+  }
+
+  .lp-ladrilho {
+    padding: 16px;
+  }
+
+  .lp-ladrilho--print {
+    padding: 0;
+  }
+
+  .lp-ladrilho__nome {
+    font-size: 16.5px;
+  }
+
+  .lp-ladrilho__nota {
+    font-size: 14.5px;
+  }
+
+  .lp-capa__foto {
+    width: clamp(180px, 25vw, 300px);
+  }
+}
+
+/* --------------------------------- estreito -------------------------------- */
+
+@media (max-width: 900px) {
+  /*
+   * O quadro vira duas colunas: título e link de largura inteira, os dois
+   * prints lado a lado e o resto em pares.
+   */
+  .lp-pronto {
+    padding: 6px;
+  }
+
+  .lp-mosaico {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 96px;
+    gap: 6px;
+  }
+
+  .lp-ladrilho--titulo {
+    grid-area: 1 / 1 / 3 / 3;
+  }
+
+  .lp-ladrilho--status {
+    grid-area: 3 / 1 / 5 / 2;
+  }
+
+  .lp-ladrilho--item {
+    grid-area: 3 / 2 / 5 / 3;
+  }
+
+  .lp-ladrilho--print {
+    grid-area: 5 / 1 / 10 / 2;
+  }
+
+  .lp-ladrilho--gaveta {
+    grid-area: 5 / 2 / 10 / 3;
+  }
+
+  .lp-ladrilho--pedido {
+    grid-area: 10 / 1 / 12 / 2;
+  }
+
+  .lp-ladrilho--pg {
+    grid-area: 10 / 2 / 12 / 3;
+  }
+
+  .lp-ladrilho--bairros {
+    grid-area: 12 / 1 / 14 / 2;
+  }
+
+  .lp-ladrilho--horas {
+    grid-area: 12 / 2 / 14 / 3;
+  }
+
+  .lp-ladrilho--link {
+    grid-area: 14 / 1 / 16 / 3;
+  }
+
+  .lp-titulo-mosaico {
+    font-size: clamp(34px, 7vw, 54px);
+  }
+
+  .lp-comparacao__titulo,
+  .lp-comparacao__texto {
+    grid-column: 1 / -1;
+  }
+
+  .lp-comparacao__texto {
+    margin-top: 12px;
+  }
+
+  /*
+   * A barra do passo a passo em duas colunas: em 768 quatro trechos ficam com
+   * 120px cada e o texto quebra em quatro linhas. Duas colunas mantêm o bloco
+   * de cor e a frase legível.
+   */
+  .lp-barra {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    height: auto;
+  }
+
+  .lp-barra__trecho {
+    min-height: 132px;
+  }
+
+  .lp-criar__chamada {
+    grid-column: 1 / -1;
+  }
+
+  .lp-form {
+    grid-column: 1 / -1;
+    max-width: 520px;
+  }
+
+  .lp-rodape__convite {
+    grid-column: 1 / -1;
+  }
+
+  .lp-rodape__links {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+  }
+}
+
+@media (max-width: 720px) {
+  /*
+   * No celular a capa não força a tela inteira: ela fecha logo depois do link,
+   * e o começo do mosaico aparece embaixo — sinal de que a página continua.
+   */
+  .lp-capa {
+    min-height: 0;
+    padding-top: 88px;
+  }
+
+  /*
+   * O quadro vira uma coluna. Numa tela de 390px, duas colunas deixam 185px por
+   * ladrilho: o pedaço de interface vira miniatura ilegível e o nome do prato
+   * colide com o preço. Ficam os quatro ladrilhos que se leem sozinhos — o
+   * título, o print do cardápio (que já mostra item, foto e preço), o pedido e
+   * o link. Os outros são fragmentos da mesma história e voltam no tablet.
+   */
+  .lp-mosaico {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+  }
+
+  .lp-ladrilho--titulo,
+  .lp-ladrilho--print,
+  .lp-ladrilho--pedido,
+  .lp-ladrilho--link {
+    grid-area: auto;
+  }
+
+  .lp-ladrilho--status,
+  .lp-ladrilho--item,
+  .lp-ladrilho--gaveta,
+  .lp-ladrilho--pg,
+  .lp-ladrilho--bairros,
+  .lp-ladrilho--horas {
+    display: none;
+  }
+
+  .lp-ladrilho--titulo {
+    min-height: 148px;
+  }
+
+  .lp-ladrilho--print {
+    height: clamp(540px, 152vw, 640px);
+  }
+
+  .lp-ladrilho--print .lp-print {
+    object-position: top center;
+  }
+
+  .lp-ladrilho--pedido {
+    min-height: 168px;
+  }
+
+  .lp-titulo-mosaico {
+    font-size: clamp(34px, 9vw, 46px);
+  }
+
+  /* No celular a foto entra no fluxo, logo abaixo do título. */
+  .lp-capa__foto {
+    position: static;
+    align-self: flex-end;
+    width: clamp(170px, 56vw, 280px);
+    margin: clamp(20px, 5vh, 40px) 0 0 auto;
+    transform: rotate(-4deg);
+  }
+
+  .lp-capa__foto--bebida {
+    display: none;
+  }
+
+  .lp-capa__nota {
+    margin-top: clamp(24px, 6vh, 48px);
+    padding-top: 0;
+  }
+
+  .lp-capa__link {
+    font-size: 16px;
+  }
+
+  /* A barra do passo a passo vira coluna. */
+  .lp-barra {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+
+  .lp-barra__trecho {
+    flex-grow: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 16px;
+    min-width: 0;
+    min-height: 96px;
+    padding: 18px;
+  }
+
+  .lp-barra__trecho p {
+    max-width: none;
+    font-size: 16px;
+  }
+
+  .lp-comparacao__par {
+    grid-template-columns: 1fr;
+    gap: clamp(28px, 6vw, 48px);
+    margin-top: clamp(36px, 7vh, 64px);
+  }
+
+  .lp-especime__caixa {
+    height: clamp(150px, 22vw, 190px);
+  }
+
+  .lp-perguntas__titulo,
+  .lp-fichario {
+    grid-column: 1 / -1;
+  }
+
+  .lp-ficha {
+    --aba: calc(var(--i) * 44px);
+    --aba-largura: 116px;
+
+    padding: 38px 16px 14px;
+  }
+
+  .lp-ficha__aba {
+    height: 26px;
+    padding-left: 12px;
+    font-size: 14px;
+  }
+
+  .lp-ficha__pergunta {
+    font-size: 18px;
+  }
+
+  .lp-ficha__resposta {
+    font-size: 17px;
+  }
+
+  .lp-criar {
+    min-height: 0;
+  }
+
+  .lp-criar__titulo {
+    font-size: clamp(44px, 12vw, 72px);
+  }
+
+  .lp-rodape__titulo {
+    font-size: clamp(42px, 11vw, 64px);
+  }
+
+  .lp-form__titulo {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 420px) {
+  .lp-topo__marca {
+    font-size: 21px;
+  }
+
+  .lp-botao {
+    min-height: 44px;
+    padding: 0 15px;
+    font-size: 16px;
+  }
+
+  .lp-topo__entrar {
+    font-size: 15px;
+  }
+
+  .lp-etapas__titulo {
+    font-size: 38px;
+  }
+
+  .lp-form {
+    padding: 20px;
+  }
+}
