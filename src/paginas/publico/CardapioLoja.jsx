@@ -9,6 +9,39 @@ import { formatarDinheiro } from '../../utils/dinheiro.js'
 import { linkWhatsApp } from '../../utils/vitrine.js'
 
 /*
+ * Busca do cardápio.
+ *
+ * Filtra o que a API já entregou, no próprio navegador: nenhuma requisição e
+ * nada no banco. "Pizza" acha "Pizza", "pizza" acha "PIZZA" e "calabresa" acha
+ * "Calabresa" — por isso o texto é normalizado antes de comparar.
+ */
+function normalizar(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function filtrarCategorias(categorias, termo) {
+  if (!termo) return categorias
+
+  return categorias
+    .map((categoria) => {
+      // "bebidas" traz a seção inteira; os outros termos filtram item por item.
+      if (normalizar(categoria.nome).includes(termo)) return categoria
+
+      return {
+        ...categoria,
+        produtos: categoria.produtos.filter((produto) =>
+          normalizar(`${produto.nome} ${produto.descricao || ''}`).includes(termo),
+        ),
+      }
+    })
+    .filter((categoria) => categoria.produtos.length > 0)
+}
+
+/*
  * Card do produto.
  *
  * A foto é externa (URL do painel) e pode sair do ar: `fotoFalhou` troca a
@@ -79,6 +112,7 @@ export default function CardapioLoja() {
   const [categoriaAtiva, setCategoriaAtiva] = useState(null)
   // A barra de categorias ganha a marca e o carrinho quando encosta no topo.
   const [compacta, setCompacta] = useState(false)
+  const [busca, setBusca] = useState('')
 
   const listaRef = useRef(null)
   const navRef = useRef(null)
@@ -90,6 +124,14 @@ export default function CardapioLoja() {
   const whatsapp = linkWhatsApp(
     loja.telefone,
     `Olá! Vi o cardápio de ${loja.nome} e quero fazer um pedido.`,
+  )
+
+  const temBanner = Boolean(loja.capa)
+  const termo = normalizar(busca)
+  const categoriasVisiveis = filtrarCategorias(categorias, termo)
+  const totalEncontrado = categoriasVisiveis.reduce(
+    (soma, categoria) => soma + categoria.produtos.length,
+    0,
   )
 
   // "Repetir pedido" manda o cliente para cá com ?carrinho=1: abre o carrinho
@@ -192,15 +234,6 @@ export default function CardapioLoja() {
     rolarParaSecao(categoriaId)
   }
 
-  function irParaCardapio() {
-    const primeira = categorias[0]
-
-    if (!primeira) return
-
-    setCategoriaAtiva(primeira._id)
-    rolarParaSecao(primeira._id)
-  }
-
   function voltarAoTopo() {
     const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -218,9 +251,15 @@ export default function CardapioLoja() {
         loja={loja}
         status={status}
         bairros={bairros}
-        onVerCardapio={categorias.length > 0 ? irParaCardapio : undefined}
         linkWhatsApp={whatsapp || undefined}
       />
+
+      {/* Faixa de aviso da loja: recado curto que o lojista escreve em Configurações. */}
+      {loja.aviso && (
+        <p className="loja__faixa-aviso" role="status">
+          {loja.aviso}
+        </p>
+      )}
 
       <main className="loja__conteudo" ref={listaRef}>
         {!status.aberto && (
@@ -235,9 +274,47 @@ export default function CardapioLoja() {
 
         {categorias.length > 0 && (
           <>
+            <div className="loja__busca">
+              <svg
+                className="loja__busca-icone"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.6-3.6" />
+              </svg>
+
+              <input
+                type="search"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Busque no cardápio…"
+                aria-label="Buscar no cardápio"
+              />
+
+              {busca && (
+                <button
+                  className="loja__busca-limpar"
+                  type="button"
+                  onClick={() => setBusca('')}
+                  aria-label="Limpar a busca"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
             <nav
               ref={navRef}
-              className={`loja__categorias ${compacta ? 'loja__categorias--compacta' : ''}`}
+              className={`loja__categorias ${compacta ? 'loja__categorias--compacta' : ''} ${
+                temBanner ? 'loja__categorias--com-banner' : ''
+              }`}
               aria-label="Categorias do cardápio"
             >
               <div className="loja__categorias-conteudo">
@@ -245,6 +322,9 @@ export default function CardapioLoja() {
                   Versão compacta: quando a barra gruda no topo, o nome da loja
                   e o carrinho voltam junto — sem isso o cliente rola a lista
                   inteira sem lembrar em que loja está.
+
+                  Loja com banner mostra essa linha sempre: o nome fica aqui,
+                  já que o banner é só a arte.
                 */}
                 <div className="loja__categorias-marca">
                   <button
@@ -293,29 +373,53 @@ export default function CardapioLoja() {
                   )}
                 </div>
 
-                <div className="loja__categorias-lista">
-                  {categorias.map((categoria) => {
-                    const ativa = categoriaAtiva === categoria._id
+                {/* Buscando, as pílulas saem de cena: elas levariam a seções escondidas. */}
+                {termo ? (
+                  <p className="loja__categorias-resultado" aria-live="polite">
+                    {totalEncontrado === 0
+                      ? `Nada encontrado para “${busca.trim()}”`
+                      : `${totalEncontrado} ${
+                          totalEncontrado === 1 ? 'item' : 'itens'
+                        } para “${busca.trim()}”`}
+                    <button
+                      className="loja__categorias-limpar"
+                      type="button"
+                      onClick={() => setBusca('')}
+                    >
+                      limpar
+                    </button>
+                  </p>
+                ) : (
+                  <div className="loja__categorias-lista">
+                    {categorias.map((categoria) => {
+                      const ativa = categoriaAtiva === categoria._id
 
-                    return (
-                      <a
-                        key={categoria._id}
-                        className={`loja__categoria-link ${
-                          ativa ? 'loja__categoria-link--ativa' : ''
-                        }`}
-                        href={`#categoria-${categoria._id}`}
-                        aria-current={ativa ? 'true' : undefined}
-                        onClick={(evento) => irParaCategoria(evento, categoria._id)}
-                      >
-                        {categoria.nome}
-                      </a>
-                    )
-                  })}
-                </div>
+                      return (
+                        <a
+                          key={categoria._id}
+                          className={`loja__categoria-link ${
+                            ativa ? 'loja__categoria-link--ativa' : ''
+                          }`}
+                          href={`#categoria-${categoria._id}`}
+                          aria-current={ativa ? 'true' : undefined}
+                          onClick={(evento) => irParaCategoria(evento, categoria._id)}
+                        >
+                          {categoria.nome}
+                        </a>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </nav>
 
-            {categorias.map((categoria) => (
+            {termo && totalEncontrado === 0 && (
+              <p className="loja__vazio">
+                Confira a escrita ou limpe a busca para ver o cardápio inteiro.
+              </p>
+            )}
+
+            {categoriasVisiveis.map((categoria) => (
               <section
                 key={categoria._id}
                 id={`categoria-${categoria._id}`}

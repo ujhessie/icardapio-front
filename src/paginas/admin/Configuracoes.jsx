@@ -26,6 +26,7 @@ const IDENTIDADE_VAZIA = {
   nome: '',
   logo: '',
   capa: '',
+  aviso: '',
   corPrimaria: COR_PADRAO,
 }
 
@@ -225,6 +226,7 @@ export default function Configuracoes() {
         nome: dados.nome || '',
         logo: dados.logo || '',
         capa: dados.capa || '',
+        aviso: dados.aviso || '',
         corPrimaria: corValida(dados.corPrimaria),
       })
       setFluxo({ ...FLUXO_PADRAO, ...(dados.fluxoPedidos || {}) })
@@ -491,6 +493,7 @@ export default function Configuracoes() {
         nome,
         logo: identidade.logo,
         capa: identidade.capa,
+        aviso: identidade.aviso.trim(),
         corPrimaria: corValida(identidade.corPrimaria),
       })
 
@@ -499,6 +502,7 @@ export default function Configuracoes() {
         nome: dados.nome,
         logo: dados.logo || '',
         capa: dados.capa || '',
+        aviso: dados.aviso || '',
         corPrimaria: corValida(dados.corPrimaria),
       })
       setIdentidadeSuja(false)
@@ -883,8 +887,8 @@ export default function Configuracoes() {
             <section className="painel__secao">
               <h2 className="painel__subtitulo">Identidade da loja</h2>
               <p className="painel__ajuda">
-                Nome, logo, foto do topo e cor. É a primeira coisa que o cliente vê quando abre o
-                cardápio.
+                Nome, logo, banner, aviso do topo e cor. É a primeira coisa que o cliente vê quando
+                abre o cardápio.
               </p>
 
               {erroIdentidade && <p className="painel__aviso painel__aviso--erro">{erroIdentidade}</p>}
@@ -903,7 +907,7 @@ export default function Configuracoes() {
                   >
                     {!identidade.capa && (
                       <span className="identidade__previa-dica">
-                        sem foto de capa — o topo fica na cor da loja
+                        sem banner — o topo fica na cor da loja
                       </span>
                     )}
                   </div>
@@ -979,8 +983,8 @@ export default function Configuracoes() {
                   />
 
                   <CampoImagem
-                    rotulo="Foto de capa"
-                    ajuda="A faixa do topo do cardápio. Foto larga (deitada) funciona melhor; o corte é automático."
+                    rotulo="Banner do cardápio"
+                    ajuda="A arte do topo. Pode trazer o nome da loja escrito dentro: com banner, o sistema não escreve nada por cima e a imagem aparece inteira, sem corte. Largura ideal: 1600px."
                     tipo="capa"
                     formato="larga"
                     valor={identidade.capa}
@@ -988,6 +992,21 @@ export default function Configuracoes() {
                     aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, capa: ativo }))}
                     desabilitado={salvandoIdentidade}
                   />
+
+                  <label className="campo">
+                    <span>Aviso no cardápio (opcional)</span>
+                    <textarea
+                      value={identidade.aviso}
+                      onChange={(evento) => alterarIdentidade('aviso', evento.target.value)}
+                      placeholder="Ex: Hoje não abrimos por causa do feriado."
+                      maxLength={160}
+                      rows={2}
+                    />
+                    <span className="identidade__dica">
+                      Aparece numa faixa vermelha no topo do cardápio, abaixo do banner.{' '}
+                      {160 - identidade.aviso.length} caracteres restantes.
+                    </span>
+                  </label>
 
                   <div className="painel__acoes identidade__acoes">
                     {identidadeSuja && (

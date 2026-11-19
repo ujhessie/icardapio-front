@@ -12,6 +12,14 @@
   --loja-alerta: #8a6100;
 
   /*
+   * A cor da loja escurecida para texto sobre papel: em 13px o laranja puro
+   * não passa contraste no branco. É a mesma cor, só que legível.
+   */
+  --loja-cor-texto: color-mix(in srgb, var(--loja-cor) 70%, #241f1a);
+  /* Margem lateral do cardápio: cresce com a tela, some no celular. */
+  --loja-lateral: clamp(16px, 2.6vw, 48px);
+
+  /*
    * Tipografia própria do cardápio público (o painel segue Inter/Fraunces).
    * - Anton: nome da loja, título de tela/seção e número de pedido. Peso único.
    * - Roboto Condensed: corpo, preço, botão, campo e rótulo.
@@ -213,72 +221,58 @@
 /* ---------- Capa do cardápio ---------- */
 
 /*
- * A capa tem dois estados: com foto e sem foto (cor da loja segurando o topo).
- * O degradê escuro é o que garante texto branco legível em qualquer imagem —
- * sem ele, uma foto clara engole o nome da loja.
+ * Loja com banner: a arte manda. O topo é só a imagem, em sangria, sem nome,
+ * logo ou degradê por cima — muita arte já traz o nome escrito dentro, e
+ * escrever por cima duplicava o nome e apagava a imagem.
+ *
+ * A mesma arte aparece borrada atrás: numa tela larga ela não preenche a faixa
+ * sozinha e cortar comeria o nome escrito dentro. O borrão preenche as
+ * laterais e a arte fica inteira.
  */
 .loja__capa {
   position: relative;
-  background: var(--loja-cor);
-  color: #fff;
-  overflow: hidden;
   isolation: isolate;
+  color: #fff;
 }
 
-.loja__capa--foto {
+.loja__capa--banner {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   background: #191410;
 }
 
-.loja__capa-foto {
+.loja__capa-fundo {
   position: absolute;
-  inset: 0;
-  z-index: -2;
-  width: 100%;
-  height: 100%;
+  inset: -10%;
+  z-index: 0;
+  width: 120%;
+  height: 120%;
   object-fit: cover;
-  display: block;
-}
-
-.loja__capa::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.24));
+  filter: blur(30px) saturate(1.15);
+  opacity: 0.55;
   pointer-events: none;
 }
 
-/* Com foto o degradê precisa ser mais forte: escurece o topo (a foto é o
-   assunto) e fecha em quase preto embaixo, onde mora o texto. */
-.loja__capa--foto::after {
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.34) 0%,
-    rgba(0, 0, 0, 0.1) 30%,
-    rgba(0, 0, 0, 0.58) 74%,
-    rgba(0, 0, 0, 0.82) 100%
-  );
-}
-
-.loja__capa-conteudo {
+.loja__capa-foto {
   position: relative;
   z-index: 1;
-  max-width: 1080px;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 64vh;
+  object-fit: contain;
+}
+
+/* Loja sem banner: a cor da marca segura o topo, com logo, nome e status. */
+.loja__capa--cor {
+  background: var(--loja-cor);
+}
+
+.loja__capa--cor .loja__capa-conteudo {
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 26px 24px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-/* Com foto, o conteúdo senta no pé da imagem: a foto é a estrela. */
-.loja__capa--foto .loja__capa-conteudo {
-  min-height: 330px;
-  justify-content: flex-end;
-  padding-top: 96px;
-}
-
-.loja__capa-topo {
+  padding: 26px var(--loja-lateral) 24px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -320,26 +314,14 @@
   letter-spacing: 0;
 }
 
-.loja__capa--foto .loja__capa-nome {
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.5);
-}
-
-.loja__capa-linha {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 7px;
-}
-
 .loja__capa-status {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  margin-top: 8px;
   font-family: var(--fonte);
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(8px);
@@ -365,117 +347,148 @@
   border: 1.5px solid #fff;
 }
 
-.loja__capa-status-detalhe {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.loja__capa-acoes {
+/*
+ * Faixa discreta embaixo do topo: pílula de status (quando tem banner),
+ * entrega/taxa e os atalhos. É o que "sai" da fachada para a arte ser o
+ * assunto — sem botão flutuante.
+ */
+.loja__faixa {
+  position: relative;
+  z-index: 2;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px var(--loja-lateral) 12px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.loja__capa-atalho {
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 550;
-  color: #fff;
-  white-space: nowrap;
-}
-
-.loja__capa-atalho:hover {
-  text-decoration: none;
-  background: rgba(255, 255, 255, 0.16);
-  border-color: #fff;
-}
-
-.loja__capa-atalho--discreto {
-  font-family: var(--fonte);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-/* Chamada para ação da capa: um botão claro (a ação principal) e um discreto. */
-.loja__capa-cta {
-  display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
 }
 
-.loja__capa-cta-principal {
+/* Com banner a faixa começa no zero: a pílula sobe para dentro da arte. */
+.loja__faixa--banner {
+  padding-top: 0;
+}
+
+.loja__pilula {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 0;
+  margin-top: -18px;
   border-radius: 999px;
-  padding: 12px 22px;
+  padding: 8px 16px;
   background: #fff;
-  color: #241f1a;
-  font-size: 14.5px;
-  font-weight: 650;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  color: var(--loja-texto);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(25, 20, 16, 0.18), inset 0 0 0 1px rgba(36, 31, 26, 0.06);
 }
 
-.loja__capa-cta-principal:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.26);
-}
-
-.loja__capa-cta-principal:active {
-  transform: translateY(0);
-}
-
-.loja__capa-cta-whats {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+.loja__pilula::before {
+  content: '';
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.24);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 550;
-  backdrop-filter: blur(6px);
-  transition: background 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+  background: var(--loja-ok);
 }
 
-.loja__capa-cta-whats:hover {
-  text-decoration: none;
-  background: rgba(0, 0, 0, 0.36);
-  border-color: #fff;
+.loja__pilula--fechada::before {
+  background: var(--loja-erro);
+}
+
+.loja__pilula-detalhe {
+  font-weight: 500;
+  color: var(--loja-fraco);
+}
+
+.loja__faixa-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+}
+
+.loja__faixa-info {
+  font-size: 13.5px;
+  color: var(--loja-fraco);
+}
+
+.loja__faixa-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  margin-left: auto;
+}
+
+.loja__faixa-atalho {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--loja-texto);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--loja-cor) 55%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.loja__faixa-atalho:hover {
+  color: var(--loja-cor-texto);
+  text-decoration-color: currentColor;
+}
+
+/* Aviso da loja: faixa vermelha de ponta a ponta, abaixo do banner. */
+.loja__faixa-aviso {
+  background: var(--loja-erro);
+  color: #fff;
+  padding: 11px var(--loja-lateral);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
 }
 
 /*
- * Entrega e taxa em uma frase só. Antes eram dois cartões de vidro com rótulo
- * em caixa alta ("ENTREGA" / "TAXA") e valor embaixo — o tique de template que
- * mais pesava na capa. Agora a informação se lê como texto.
+ * Tela larga: a faixa do banner ganha altura própria e a arte é encaixada
+ * inteira dentro dela. Antes o banner esticava a largura toda e o corte comia
+ * o nome escrito na imagem.
  */
-.loja__capa-info {
-  align-self: flex-start;
-  margin-top: -8px;
-  font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.88);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
-}
+@media (min-width: 900px) {
+  .loja__capa--banner {
+    height: clamp(320px, 54vh, 560px);
+  }
 
-.loja__capa--foto .loja__capa-info {
-  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.55);
+  /*
+   * `height: 100%` não serve aqui: a linha do grid é dimensionada pela própria
+   * imagem, e a porcentagem cai no automático (a arte voltava a ter 1050px e
+   * era cortada pelo overflow). Com max-height na mesma medida do banner, a
+   * arte encolhe inteira.
+   */
+  /*
+   * A arte não termina numa borda dura no meio do borrão: as pontas se
+   * dissolvem. No celular ela ocupa a largura toda, então a máscara só vale
+   * aqui.
+   */
+  .loja__capa-foto {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: clamp(320px, 54vh, 560px);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent);
+    mask-image: linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent);
+  }
+
+  .loja__faixa-aviso {
+    padding-inline: max(var(--loja-lateral), calc((100vw - 1100px) / 2));
+  }
 }
 
 /* ---------- Cardápio ---------- */
 
 .loja__conteudo {
-  max-width: 1080px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 20px 24px 48px;
+  padding: 18px var(--loja-lateral) 48px;
 }
 
 .loja__aviso {
@@ -504,13 +517,78 @@
   padding: 24px 0;
 }
 
+/* ---------- Busca ---------- */
+
+.loja__busca {
+  position: relative;
+  max-width: 560px;
+  margin-bottom: 14px;
+}
+
+.loja__busca input {
+  width: 100%;
+  padding: 12px 44px 12px 42px;
+  border: 1px solid var(--loja-borda);
+  border-radius: 12px;
+  background: var(--loja-superficie);
+  color: var(--loja-texto);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.loja__busca input::placeholder {
+  color: var(--loja-fraco);
+}
+
+.loja__busca input:focus-visible {
+  outline: 2px solid var(--loja-cor);
+  outline-offset: 1px;
+}
+
+/* O "x" nativo do campo de busca some: a limpeza é botão redondo à direita. */
+.loja__busca input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.loja__busca-icone {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--loja-fraco);
+  pointer-events: none;
+}
+
+.loja__busca-limpar {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 999px;
+  background: #f1ece4;
+  color: var(--loja-fraco);
+  font-size: 19px;
+  line-height: 1;
+}
+
+.loja__busca-limpar:hover {
+  background: var(--loja-borda);
+  color: var(--loja-texto);
+}
+
 .loja__categorias {
   position: sticky;
   top: 0;
   z-index: 20;
   background: var(--loja-superficie);
   border-bottom: 1px solid var(--loja-borda);
-  margin: -20px -24px 8px;
+  margin: 0 calc(var(--loja-lateral) * -1) 10px;
   transition: box-shadow 0.18s ease;
 }
 
@@ -520,8 +598,9 @@
 }
 
 .loja__categorias-conteudo {
-  max-width: 1080px;
+  max-width: 1600px;
   margin: 0 auto;
+  padding: 0 var(--loja-lateral);
 }
 
 /*
@@ -534,12 +613,42 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 24px 0;
+  padding: 10px 0 0;
 }
 
 .loja__categorias--compacta .loja__categorias-marca {
   display: flex;
   animation: loja-barra-surge 0.18s ease-out;
+}
+
+/*
+ * Loja com banner: o nome não está na arte, então a linha da marca aparece
+ * sempre — é ela que diz ao cliente em que loja ele está.
+ */
+.loja__categorias--com-banner .loja__categorias-marca {
+  display: flex;
+}
+
+/* Buscando: as pílulas saem e entra a contagem, com o botão de limpar. */
+.loja__categorias-resultado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 12px;
+  font-size: 13.5px;
+  color: var(--loja-fraco);
+}
+
+.loja__categorias-limpar {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--loja-cor-texto);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 @keyframes loja-barra-surge {
@@ -657,7 +766,7 @@
 }
 
 .loja__categorias-lista {
-  padding: 10px 24px;
+  padding: 10px 0;
   display: flex;
   gap: 8px;
   overflow-x: auto;
@@ -670,20 +779,21 @@
 
 .loja__categoria-link {
   flex-shrink: 0;
-  border: 1px solid var(--loja-borda);
-  background: var(--loja-superficie);
-  color: var(--loja-fraco);
+  border: 1px solid transparent;
+  background: #f1ece4;
+  color: var(--loja-texto);
   border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 7px 15px;
+  font-size: 13.5px;
+  font-weight: 600;
   white-space: nowrap;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .loja__categoria-link:hover {
   text-decoration: none;
+  background: #e6ded3;
   color: var(--loja-texto);
-  border-color: var(--loja-cor);
 }
 
 /* Categoria que está na tela agora. */
@@ -694,27 +804,72 @@
   color: #fff;
 }
 
+/*
+ * Tela larga com banner: nome à esquerda, pílulas à direita, tudo numa linha
+ * só — a barra fica baixa e não rouba altura do cardápio.
+ */
+@media (min-width: 900px) {
+  .loja__categorias--com-banner .loja__categorias-conteudo {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .loja__categorias--com-banner .loja__categorias-marca {
+    flex-shrink: 0;
+    padding: 10px 0;
+  }
+
+  .loja__categorias--com-banner .loja__categorias-lista,
+  .loja__categorias--com-banner .loja__categorias-resultado {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 0;
+  }
+}
+
 .loja__secao {
   margin-top: 34px;
   /* Âncora não pode esconder o título atrás da barra fixa. */
   scroll-margin-top: 84px;
 }
 
+/*
+ * Título de seção: barrinha na cor da loja, nome e a régua até o fim da
+ * coluna — o mesmo desenho da referência, sem caixa em volta.
+ */
 .loja__secao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--loja-display);
-  font-size: 22px;
+  font-size: 23px;
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: 0;
-  padding-bottom: 8px;
   margin-bottom: 18px;
-  border-bottom: 1px solid var(--loja-borda);
 }
 
-/* Duas colunas no desktop; uma no celular (ver @media). */
+.loja__secao-titulo::before {
+  content: '';
+  width: 5px;
+  height: 21px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: var(--loja-cor);
+}
+
+.loja__secao-titulo::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--loja-borda);
+}
+
+/* Três colunas na tela larga, duas no meio, uma no celular (ver @media). */
 .loja__produtos {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -808,10 +963,11 @@
 
 .loja__produto-preco {
   font-family: var(--fonte);
-  font-size: 15.5px;
+  font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  color: var(--loja-cor-texto);
 }
 
 .loja__produto-acoes {
@@ -2503,6 +2659,13 @@
 
 /* ---------- Responsivo ---------- */
 
+@media (max-width: 1180px) {
+  /* Três colunas só quando há largura: com 900px cada cartão fica apertado. */
+  .loja__produtos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   /* Duas colunas: marca ocupa a linha de cima, endereço e horário dividem a de baixo. */
   .loja__rodape-grade {
@@ -2547,11 +2710,6 @@
   .loja__checkout-barra .loja__botao {
     flex-shrink: 0;
   }
-
-  /* Duas colunas só quando sobra largura de verdade. */
-  .loja__produtos {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 760px) {
@@ -2559,14 +2717,9 @@
     padding: 12px 16px;
   }
 
-  .loja__capa-conteudo {
-    padding: 20px 16px 18px;
+  .loja__capa--cor .loja__capa-conteudo {
+    padding: 20px var(--loja-lateral) 18px;
     gap: 14px;
-  }
-
-  .loja__capa--foto .loja__capa-conteudo {
-    min-height: 260px;
-    padding-top: 84px;
   }
 
   .loja__capa-mark {
@@ -2580,24 +2733,8 @@
     font-size: 25px;
   }
 
-  .loja__capa-atalho--discreto {
-    display: none;
-  }
-
   .loja__conteudo {
-    padding: 16px 16px 40px;
-  }
-
-  .loja__categorias {
-    margin: -16px -16px 4px;
-  }
-
-  .loja__categorias-marca {
-    padding: 7px 16px 0;
-  }
-
-  .loja__categorias-lista {
-    padding: 8px 16px;
+    padding: 14px var(--loja-lateral) 40px;
   }
 
   .loja__secao {
@@ -2683,14 +2820,6 @@
     padding: 14px 0 84px;
   }
 
-  .loja__capa-cta-principal,
-  .loja__capa-cta-whats {
-    flex: 1 1 auto;
-    justify-content: center;
-    padding: 12px 16px;
-    font-size: 14px;
-  }
-
   .loja__telefone {
     display: none;
   }
@@ -2705,15 +2834,6 @@
 
   .loja__rodape-coluna--loja {
     grid-column: auto;
-  }
-
-  /*
-   * Capa: no celular o atalho "Meus pedidos" sai de cena (ele está no rodapé).
-   * Sem ele, o nome e o status ganham a linha inteira e o status para de
-   * quebrar em duas linhas antes da chamada para o cardápio.
-   */
-  .loja__capa-acoes {
-    display: none;
   }
 
   .loja__categorias-identidade-texto {
@@ -2845,8 +2965,6 @@
   .loja__barra-carrinho,
   .loja__categoria-link,
   .loja__tipo--grande,
-  .loja__capa-cta-principal,
-  .loja__capa-cta-whats,
   .loja__rede,
   .loja__rodape-acao,
   .loja__voltar-topo,
@@ -2859,10 +2977,5 @@
   .loja__modal-fundo,
   .loja__categorias--compacta .loja__categorias-marca {
     animation: none;
-  }
-
-  /* Sem animação, a marca aparece de uma vez — mas o deslocamento também sai. */
-  .loja__capa-cta-principal:hover {
-    transform: none;
   }
 }

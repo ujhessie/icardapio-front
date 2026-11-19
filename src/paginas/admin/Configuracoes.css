@@ -130,8 +130,11 @@
   place-items: center;
   height: 104px;
   padding: 0 16px;
-  background-size: cover;
+  /* Mesmo tratamento do cardápio: a arte inteira, sem corte. */
+  background-color: #191410;
+  background-size: contain;
   background-position: center;
+  background-repeat: no-repeat;
 }
 
 .identidade__previa-dica {
