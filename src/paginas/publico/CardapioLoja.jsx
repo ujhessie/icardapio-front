@@ -6,7 +6,6 @@ import ModalProduto from '../../componentes/publico/ModalProduto.jsx'
 import { useCarrinho } from '../../contextos/CarrinhoContexto.jsx'
 import { useLoja } from '../../contextos/LojaContexto.jsx'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
-import { linkWhatsApp } from '../../utils/vitrine.js'
 
 /*
  * Busca do cardápio.
@@ -110,23 +109,13 @@ export default function CardapioLoja() {
   )
   const [produtoAberto, setProdutoAberto] = useState(null)
   const [categoriaAtiva, setCategoriaAtiva] = useState(null)
-  // A barra de categorias ganha a marca e o carrinho quando encosta no topo.
-  const [compacta, setCompacta] = useState(false)
   const [busca, setBusca] = useState('')
 
   const listaRef = useRef(null)
   const navRef = useRef(null)
 
-  const { loja, categorias, bairros } = dados
+  const { loja, categorias } = dados
 
-  const [tituloStatus] = status.texto.split(' · ')
-
-  const whatsapp = linkWhatsApp(
-    loja.telefone,
-    `Olá! Vi o cardápio de ${loja.nome} e quero fazer um pedido.`,
-  )
-
-  const temBanner = Boolean(loja.capa)
   const termo = normalizar(busca)
   const categoriasVisiveis = filtrarCategorias(categorias, termo)
   const totalEncontrado = categoriasVisiveis.reduce(
@@ -186,11 +175,6 @@ export default function CardapioLoja() {
       }
 
       setCategoriaAtiva((anterior) => (anterior === atual ? anterior : atual))
-
-      // A barra gruda no topo (top: 0). Quando o topo dela chega a zero, ela
-      // está presa — é aí que entra a versão compacta com marca e carrinho.
-      const presa = navRef.current ? navRef.current.getBoundingClientRect().top <= 0.5 : false
-      setCompacta((anterior) => (anterior === presa ? anterior : presa))
     }
 
     function aoRolar() {
@@ -212,9 +196,8 @@ export default function CardapioLoja() {
   /*
    * Rola até uma seção descontando a altura da barra fixa.
    *
-   * `scrollIntoView` com scroll-margin-top chutaria uma altura só — mas a barra
-   * cresce quando fica presa (ganha marca e carrinho). Medindo na hora, o
-   * título nunca para atrás dela.
+   * `scrollIntoView` com scroll-margin-top chutaria uma altura só; medindo na
+   * hora, o título nunca para atrás da barra.
    */
   function rolarParaSecao(categoriaId) {
     const secao = document.getElementById(`categoria-${categoriaId}`)
@@ -234,12 +217,6 @@ export default function CardapioLoja() {
     rolarParaSecao(categoriaId)
   }
 
-  function voltarAoTopo() {
-    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    window.scrollTo({ top: 0, behavior: suave ? 'smooth' : 'auto' })
-  }
-
   function adicionarDoModal({ quantidade, observacao }) {
     adicionarVarios([{ produto: produtoAberto, quantidade, observacao }])
     setProdutoAberto(null)
@@ -247,12 +224,7 @@ export default function CardapioLoja() {
 
   return (
     <>
-      <CapaLoja
-        loja={loja}
-        status={status}
-        bairros={bairros}
-        linkWhatsApp={whatsapp || undefined}
-      />
+      <CapaLoja loja={loja} />
 
       {/* Faixa de aviso da loja: recado curto que o lojista escreve em Configurações. */}
       {loja.aviso && (
@@ -310,69 +282,8 @@ export default function CardapioLoja() {
               )}
             </div>
 
-            <nav
-              ref={navRef}
-              className={`loja__categorias ${compacta ? 'loja__categorias--compacta' : ''} ${
-                temBanner ? 'loja__categorias--com-banner' : ''
-              }`}
-              aria-label="Categorias do cardápio"
-            >
+            <nav ref={navRef} className="loja__categorias" aria-label="Categorias do cardápio">
               <div className="loja__categorias-conteudo">
-                {/*
-                  Versão compacta: quando a barra gruda no topo, o nome da loja
-                  e o carrinho voltam junto — sem isso o cliente rola a lista
-                  inteira sem lembrar em que loja está.
-
-                  Loja com banner mostra essa linha sempre: o nome fica aqui,
-                  já que o banner é só a arte.
-                */}
-                <div className="loja__categorias-marca">
-                  <button
-                    className="loja__categorias-identidade"
-                    type="button"
-                    onClick={voltarAoTopo}
-                    aria-label={`Voltar ao topo do cardápio de ${loja.nome}`}
-                  >
-                    {loja.logo ? (
-                      <img className="loja__categorias-logo" src={loja.logo} alt="" />
-                    ) : (
-                      <span className="loja__categorias-monograma" aria-hidden="true">
-                        {loja.nome.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-
-                    <span className="loja__categorias-identidade-texto">
-                      <span className="loja__categorias-nome">{loja.nome}</span>
-
-                      <span
-                        className={`loja__categorias-status ${
-                          status.aberto ? '' : 'loja__categorias-status--fechada'
-                        }`}
-                      >
-                        {tituloStatus}
-                      </span>
-                    </span>
-                  </button>
-
-                  {quantidadeTotal > 0 && (
-                    <button
-                      className="loja__categorias-carrinho"
-                      type="button"
-                      onClick={() => setCarrinhoAberto(true)}
-                      aria-label={`Abrir carrinho com ${quantidadeTotal} ${
-                        quantidadeTotal === 1 ? 'item' : 'itens'
-                      }`}
-                    >
-                      <span className="loja__categorias-carrinho-quantidade">
-                        {quantidadeTotal}
-                      </span>
-                      <span className="loja__categorias-carrinho-total">
-                        {formatarDinheiro(subtotal)}
-                      </span>
-                    </button>
-                  )}
-                </div>
-
                 {/* Buscando, as pílulas saem de cena: elas levariam a seções escondidas. */}
                 {termo ? (
                   <p className="loja__categorias-resultado" aria-live="polite">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import CampoImagem from '../../componentes/admin/CampoImagem.jsx'
+import GaleriaBanners from '../../componentes/admin/GaleriaBanners.jsx'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { TEMPO_MAX, TEMPO_MIN, TEMPOS_PADRAO, tempoTotal } from '../../utils/tempos.js'
 import './Configuracoes.css'
@@ -25,9 +26,15 @@ const COR_PADRAO = '#e85d04'
 const IDENTIDADE_VAZIA = {
   nome: '',
   logo: '',
-  capa: '',
+  capas: [],
   aviso: '',
   corPrimaria: COR_PADRAO,
+}
+
+// Loja antiga guarda uma arte só em `capa`; a nova guarda a lista em `capas`.
+function capasDaLoja(loja) {
+  if (Array.isArray(loja.capas) && loja.capas.length > 0) return loja.capas
+  return loja.capa ? [loja.capa] : []
 }
 
 // Etapas que a loja pode mostrar ou esconder. A ordem aqui é a do atendimento —
@@ -225,7 +232,7 @@ export default function Configuracoes() {
       setIdentidade({
         nome: dados.nome || '',
         logo: dados.logo || '',
-        capa: dados.capa || '',
+        capas: capasDaLoja(dados),
         aviso: dados.aviso || '',
         corPrimaria: corValida(dados.corPrimaria),
       })
@@ -492,7 +499,9 @@ export default function Configuracoes() {
       const { loja: dados } = await servicoLojas.atualizarMinha({
         nome,
         logo: identidade.logo,
-        capa: identidade.capa,
+        // `capas` manda; `capa` vai junto para o campo antigo continuar certo.
+        capas: identidade.capas,
+        capa: identidade.capas[0] || '',
         aviso: identidade.aviso.trim(),
         corPrimaria: corValida(identidade.corPrimaria),
       })
@@ -501,7 +510,7 @@ export default function Configuracoes() {
       setIdentidade({
         nome: dados.nome,
         logo: dados.logo || '',
-        capa: dados.capa || '',
+        capas: capasDaLoja(dados),
         aviso: dados.aviso || '',
         corPrimaria: corValida(dados.corPrimaria),
       })
@@ -900,12 +909,12 @@ export default function Configuracoes() {
                   <div
                     className="identidade__previa-capa"
                     style={
-                      identidade.capa
-                        ? { backgroundImage: `url("${identidade.capa}")` }
+                      identidade.capas[0]
+                        ? { backgroundImage: `url("${identidade.capas[0]}")` }
                         : { backgroundColor: corValida(identidade.corPrimaria) }
                     }
                   >
-                    {!identidade.capa && (
+                    {!identidade.capas[0] && (
                       <span className="identidade__previa-dica">
                         sem banner — o topo fica na cor da loja
                       </span>
@@ -982,13 +991,10 @@ export default function Configuracoes() {
                     desabilitado={salvandoIdentidade}
                   />
 
-                  <CampoImagem
-                    rotulo="Banner do cardápio"
-                    ajuda="A arte do topo. Pode trazer o nome da loja escrito dentro: com banner, o sistema não escreve nada por cima e a imagem aparece inteira, sem corte. Largura ideal: 1600px."
-                    tipo="capa"
-                    formato="larga"
-                    valor={identidade.capa}
-                    onMudar={(url) => alterarIdentidade('capa', url)}
+                  <GaleriaBanners
+                    capas={identidade.capas}
+                    limite={5}
+                    onMudar={(lista) => alterarIdentidade('capas', lista)}
                     aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, capa: ativo }))}
                     desabilitado={salvandoIdentidade}
                   />

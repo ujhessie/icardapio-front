@@ -79,17 +79,22 @@
   font-weight: 600;
 }
 
-/* ---------- Topo ---------- */
+/* ---------- Header ---------- */
 
+/*
+ * Mesmo header em todas as telas da loja: logo, nome, status e menu. No
+ * cardápio ele fica acima da arte do banner; nas telas internas, acima do
+ * conteúdo.
+ */
 .loja__topo {
   background: var(--loja-superficie);
   border-bottom: 1px solid var(--loja-borda);
 }
 
 .loja__topo-conteudo {
-  max-width: 1080px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 14px 24px;
+  padding: 12px var(--loja-lateral);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -150,11 +155,24 @@
   text-overflow: ellipsis;
 }
 
+/* Status com bolinha: a cor sozinha não pode ser a única pista. */
 .loja__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--fonte);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0;
+}
+
+.loja__status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: currentColor;
 }
 
 .loja__status--aberta {
@@ -165,7 +183,7 @@
   color: var(--loja-erro);
 }
 
-/* Selo curto + detalhe do horário: "ABERTO AGORA · fecha às 23h". */
+/* Selo curto + detalhe do horário: "Aberto agora · fecha às 23h". */
 .loja__estado {
   display: flex;
   align-items: baseline;
@@ -186,6 +204,9 @@
 }
 
 .loja__atalho {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 13px;
   font-weight: 550;
   color: var(--loja-fraco);
@@ -201,21 +222,54 @@
   text-decoration: none;
 }
 
-.loja__telefone {
-  font-family: var(--fonte);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  color: var(--loja-fraco);
-  border: 1px solid var(--loja-borda);
+/* Mesma gota do menu: o atalho e o hamburguer contam a mesma história. */
+.loja__atalho-gota {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
-  padding: 6px 12px;
-  white-space: nowrap;
+  background: var(--loja-erro);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.loja__telefone:hover {
-  text-decoration: none;
-  border-color: var(--loja-cor);
+/* ---------- Menu hamburguer ---------- */
+
+/*
+ * Botão do menu no header. Traço escuro sobre papel branco: contraste garantido
+ * independente da arte do banner (era o motivo do quadrado branco flutuante
+ * antigo).
+ */
+.loja__menu-botao {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--loja-borda);
+  border-radius: 12px;
+  background: var(--loja-superficie);
   color: var(--loja-texto);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.loja__menu-botao:hover {
+  background: #f7f2ea;
+  border-color: var(--loja-cor);
+}
+
+.loja__menu-botao:active {
+  transform: scale(0.96);
+}
+
+.loja__menu-botao:focus-visible {
+  outline: 2px solid var(--loja-cor-texto);
+  outline-offset: 2px;
 }
 
 /* ---------- Capa do cardápio ---------- */
@@ -225,9 +279,9 @@
  * logo ou degradê por cima — muita arte já traz o nome escrito dentro, e
  * escrever por cima duplicava o nome e apagava a imagem.
  *
- * A mesma arte aparece borrada atrás: numa tela larga ela não preenche a faixa
- * sozinha e cortar comeria o nome escrito dentro. O borrão preenche as
- * laterais e a arte fica inteira.
+ * Várias artes viram carrossel: elas empilham na mesma célula do grid e trocam
+ * em fade. A mais alta dimensiona a faixa, então o topo não pula de tamanho
+ * quando troca o slide.
  */
 .loja__capa {
   position: relative;
@@ -252,189 +306,78 @@
   filter: blur(30px) saturate(1.15);
   opacity: 0.55;
   pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.loja__capa-slides {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
 }
 
 .loja__capa-foto {
-  position: relative;
-  z-index: 1;
+  grid-area: 1 / 1;
   display: block;
   width: 100%;
   height: auto;
   max-height: 64vh;
   object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
-/* Loja sem banner: a cor da marca segura o topo, com logo, nome e status. */
-.loja__capa--cor {
-  background: var(--loja-cor);
+.loja__capa-foto--ativa {
+  opacity: 1;
 }
 
-.loja__capa--cor .loja__capa-conteudo {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 26px var(--loja-lateral) 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.loja__capa-mark {
-  width: 60px;
-  height: 60px;
-  border-radius: 18px;
-  flex-shrink: 0;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: #fff;
-  color: var(--loja-cor);
-  font-family: var(--loja-display);
-  font-size: 26px;
-  font-weight: 400;
-  line-height: 1;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-}
-
-.loja__capa-mark img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.loja__capa-texto {
-  min-width: 0;
-}
-
-.loja__capa-nome {
-  font-family: var(--loja-display);
-  font-size: 31px;
-  font-weight: 400;
-  line-height: 1.08;
-  letter-spacing: 0;
-}
-
-.loja__capa-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 8px;
-  font-family: var(--fonte);
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(8px);
-  border-radius: 999px;
-  padding: 4px 11px;
-}
-
-.loja__capa-status::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: #fff;
-}
-
-/* Fechada: bolinha vazada. A cor sozinha não pode ser a única pista. */
-.loja__capa-status--fechada {
-  background: rgba(0, 0, 0, 0.28);
-}
-
-.loja__capa-status--fechada::before {
-  background: transparent;
-  border: 1.5px solid #fff;
-}
+/* ---------- Tracinhos do carrossel ---------- */
 
 /*
- * Faixa discreta embaixo do topo: pílula de status (quando tem banner),
- * entrega/taxa e os atalhos. É o que "sai" da fachada para a arte ser o
- * assunto — sem botão flutuante.
+ * Sobre a arte, no canto inferior esquerdo. Absolutos porque não dividem mais
+ * uma linha com a pílula de status — o status agora vive no header.
  */
-.loja__faixa {
-  position: relative;
-  z-index: 2;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 16px var(--loja-lateral) 12px;
+.loja__hero-pontos {
+  position: absolute;
+  left: var(--loja-lateral);
+  bottom: 14px;
+  z-index: 3;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Com banner a faixa começa no zero: a pílula sobe para dentro da arte. */
-.loja__faixa--banner {
-  padding-top: 0;
-}
-
-.loja__pilula {
-  align-self: flex-start;
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: -18px;
+  gap: 6px;
+}
+
+/* Alvo de toque maior que a barra: 28x18 em volta de um traço de 4px. */
+.loja__hero-ponto {
+  width: 28px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.loja__hero-ponto-barra {
+  display: block;
+  width: 20px;
+  height: 4px;
   border-radius: 999px;
-  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: background 0.2s ease, width 0.2s ease;
+}
+
+.loja__hero-ponto--ativo .loja__hero-ponto-barra {
+  width: 30px;
   background: #fff;
-  color: var(--loja-texto);
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 10px 24px rgba(25, 20, 16, 0.18), inset 0 0 0 1px rgba(36, 31, 26, 0.06);
 }
 
-.loja__pilula::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  flex-shrink: 0;
-  background: var(--loja-ok);
-}
-
-.loja__pilula--fechada::before {
-  background: var(--loja-erro);
-}
-
-.loja__pilula-detalhe {
-  font-weight: 500;
-  color: var(--loja-fraco);
-}
-
-.loja__faixa-linha {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 20px;
-}
-
-.loja__faixa-info {
-  font-size: 13.5px;
-  color: var(--loja-fraco);
-}
-
-.loja__faixa-acoes {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 18px;
-  margin-left: auto;
-}
-
-.loja__faixa-atalho {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--loja-texto);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--loja-cor) 55%, transparent);
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
-}
-
-.loja__faixa-atalho:hover {
-  color: var(--loja-cor-texto);
-  text-decoration-color: currentColor;
+.loja__hero-ponto:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* Aviso da loja: faixa vermelha de ponta a ponta, abaixo do banner. */
@@ -459,28 +402,231 @@
   }
 
   /*
-   * `height: 100%` não serve aqui: a linha do grid é dimensionada pela própria
-   * imagem, e a porcentagem cai no automático (a arte voltava a ter 1050px e
-   * era cortada pelo overflow). Com max-height na mesma medida do banner, a
-   * arte encolhe inteira.
+   * No desktop a faixa tem altura fixa, então os slides podem preencher a
+   * caixa: a arte encolhe inteira dentro dela em vez de manter o tamanho
+   * natural e ser recortada pelo overflow.
    */
+  .loja__capa-slides {
+    position: absolute;
+    inset: 0;
+    display: block;
+  }
+
   /*
    * A arte não termina numa borda dura no meio do borrão: as pontas se
    * dissolvem. No celular ela ocupa a largura toda, então a máscara só vale
    * aqui.
    */
   .loja__capa-foto {
+    position: absolute;
+    inset: 0;
+    margin: auto;
     width: auto;
     height: auto;
     max-width: 100%;
-    max-height: clamp(320px, 54vh, 560px);
+    max-height: 100%;
+    object-fit: contain;
     -webkit-mask-image: linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent);
     mask-image: linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent);
+  }
+
+  .loja__hero-pontos {
+    bottom: 20px;
   }
 
   .loja__faixa-aviso {
     padding-inline: max(var(--loja-lateral), calc((100vw - 1100px) / 2));
   }
+}
+
+/* ---------- Gaveta do menu ---------- */
+
+.loja__menu {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loja__menu-fundo {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(18, 14, 10, 0.55);
+  animation: loja-menu-fundo 0.2s ease-out;
+}
+
+.loja__menu-painel {
+  position: relative;
+  z-index: 1;
+  width: min(340px, 86vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--loja-superficie);
+  color: var(--loja-texto);
+  box-shadow: -14px 0 36px rgba(20, 15, 10, 0.24);
+  animation: loja-menu-entra 0.24s cubic-bezier(0.2, 0.8, 0.3, 1);
+  overflow-y: auto;
+}
+
+@keyframes loja-menu-fundo {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes loja-menu-entra {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.loja__menu-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 16px;
+  border-bottom: 1px solid var(--loja-borda);
+}
+
+.loja__menu-marca {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.loja__menu-logo,
+.loja__menu-monograma {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.loja__menu-logo {
+  object-fit: cover;
+  display: block;
+}
+
+.loja__menu-monograma {
+  display: grid;
+  place-items: center;
+  background: var(--loja-cor);
+  color: #fff;
+  font-family: var(--loja-display);
+  font-size: 19px;
+  font-weight: 400;
+}
+
+.loja__menu-texto {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.loja__menu-nome {
+  font-family: var(--loja-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.loja__menu-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--loja-fraco);
+}
+
+.loja__menu-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--loja-ok);
+}
+
+.loja__menu-status--fechada::before {
+  background: var(--loja-erro);
+}
+
+.loja__menu-fechar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 0 3px;
+  border: 1px solid var(--loja-borda);
+  border-radius: 999px;
+  background: none;
+  color: var(--loja-fraco);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.loja__menu-fechar:hover {
+  color: var(--loja-texto);
+  border-color: var(--loja-fraco);
+}
+
+.loja__menu-lista {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+}
+
+.loja__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 10px;
+  border-radius: 10px;
+  color: var(--loja-texto);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.loja__menu-item:hover {
+  background: #f4efe7;
+  text-decoration: none;
+}
+
+.loja__menu-item-icone {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--loja-cor-texto);
+}
+
+/* Etiqueta de pedido em andamento dentro da gaveta. */
+.loja__menu-item-gota {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--loja-erro);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ---------- Cardápio ---------- */
@@ -592,177 +738,10 @@
   transition: box-shadow 0.18s ease;
 }
 
-/* Presa no topo: a sombra dá profundidade e separa do conteúdo que passa por baixo. */
-.loja__categorias--compacta {
-  box-shadow: 0 10px 24px rgba(36, 31, 26, 0.1);
-}
-
 .loja__categorias-conteudo {
   max-width: 1600px;
   margin: 0 auto;
   padding: 0 var(--loja-lateral);
-}
-
-/*
- * Linha da marca: só existe na versão compacta. Fica com altura fixa para a
- * barra não "pular" a cada pixel de rolagem — o conteúdo da página desce uma
- * vez, quando ela aparece, e para.
- */
-.loja__categorias-marca {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0 0;
-}
-
-.loja__categorias--compacta .loja__categorias-marca {
-  display: flex;
-  animation: loja-barra-surge 0.18s ease-out;
-}
-
-/*
- * Loja com banner: o nome não está na arte, então a linha da marca aparece
- * sempre — é ela que diz ao cliente em que loja ele está.
- */
-.loja__categorias--com-banner .loja__categorias-marca {
-  display: flex;
-}
-
-/* Buscando: as pílulas saem e entra a contagem, com o botão de limpar. */
-.loja__categorias-resultado {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0 12px;
-  font-size: 13.5px;
-  color: var(--loja-fraco);
-}
-
-.loja__categorias-limpar {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--loja-cor-texto);
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-@keyframes loja-barra-surge {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* Voltar ao topo pelo logo: o botão tem cara de link, mas é botão de verdade. */
-.loja__categorias-identidade {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  text-align: left;
-}
-
-.loja__categorias-logo,
-.loja__categorias-monograma {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  flex-shrink: 0;
-}
-
-.loja__categorias-logo {
-  object-fit: cover;
-  display: block;
-}
-
-.loja__categorias-monograma {
-  display: grid;
-  place-items: center;
-  background: var(--loja-cor);
-  color: #fff;
-  font-family: var(--loja-display);
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1;
-}
-
-.loja__categorias-identidade-texto {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.loja__categorias-nome {
-  font-family: var(--fonte);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.loja__categorias-status {
-  font-family: var(--fonte);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: var(--loja-ok);
-  white-space: nowrap;
-}
-
-.loja__categorias-status--fechada {
-  color: var(--loja-erro);
-}
-
-/* Carrinho da barra compacta: só aparece com item dentro. */
-.loja__categorias-carrinho {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  flex-shrink: 0;
-  padding: 5px 12px 5px 6px;
-  border: 0;
-  border-radius: 999px;
-  background: #221d18;
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 600;
-  transition: background 0.15s ease;
-}
-
-.loja__categorias-carrinho:hover {
-  background: #2e2721;
-}
-
-.loja__categorias-carrinho-quantidade {
-  display: grid;
-  place-items: center;
-  width: 21px;
-  height: 21px;
-  border-radius: 999px;
-  background: var(--loja-cor);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.loja__categorias-carrinho-total {
-  font-family: var(--fonte);
-  font-variant-numeric: tabular-nums;
 }
 
 .loja__categorias-lista {
@@ -802,30 +781,6 @@
   background: var(--loja-cor);
   border-color: var(--loja-cor);
   color: #fff;
-}
-
-/*
- * Tela larga com banner: nome à esquerda, pílulas à direita, tudo numa linha
- * só — a barra fica baixa e não rouba altura do cardápio.
- */
-@media (min-width: 900px) {
-  .loja__categorias--com-banner .loja__categorias-conteudo {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-  }
-
-  .loja__categorias--com-banner .loja__categorias-marca {
-    flex-shrink: 0;
-    padding: 10px 0;
-  }
-
-  .loja__categorias--com-banner .loja__categorias-lista,
-  .loja__categorias--com-banner .loja__categorias-resultado {
-    flex: 1;
-    min-width: 0;
-    padding: 10px 0;
-  }
 }
 
 .loja__secao {
@@ -2717,22 +2672,6 @@
     padding: 12px 16px;
   }
 
-  .loja__capa--cor .loja__capa-conteudo {
-    padding: 20px var(--loja-lateral) 18px;
-    gap: 14px;
-  }
-
-  .loja__capa-mark {
-    width: 52px;
-    height: 52px;
-    border-radius: 15px;
-    font-size: 22px;
-  }
-
-  .loja__capa-nome {
-    font-size: 25px;
-  }
-
   .loja__conteudo {
     padding: 14px var(--loja-lateral) 40px;
   }
@@ -2819,10 +2758,6 @@
   .loja__rodape-base {
     padding: 14px 0 84px;
   }
-
-  .loja__telefone {
-    display: none;
-  }
 }
 
 @media (max-width: 480px) {
@@ -2834,22 +2769,6 @@
 
   .loja__rodape-coluna--loja {
     grid-column: auto;
-  }
-
-  .loja__categorias-identidade-texto {
-    gap: 6px;
-  }
-
-  .loja__categorias-nome {
-    font-size: 14px;
-  }
-
-  .loja__categorias-carrinho-total {
-    display: none;
-  }
-
-  .loja__categorias-carrinho {
-    padding: 4px;
   }
 
   .loja__produto {
@@ -2958,6 +2877,48 @@
   }
 }
 
+/*
+ * Sem espaço para o atalho "Meus pedidos" do lado de fora: ele continua dentro
+ * da gaveta.
+ */
+@media (max-width: 620px) {
+  .loja__atalho {
+    display: none;
+  }
+}
+
+/* Header no celular: encolhe para o nome não virar "…". */
+@media (max-width: 480px) {
+  .loja__logo,
+  .loja__monograma {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .loja__nome {
+    font-size: 17px;
+  }
+}
+
+/*
+ * Tela minúscula (320px): some o detalhe do horário no header — o status
+ * completo continua na gaveta. Os tracinhos ganham folga.
+ */
+@media (max-width: 359px) {
+  .loja__status-detalhe {
+    display: none;
+  }
+
+  .loja__hero-pontos {
+    gap: 6px;
+  }
+
+  .loja__hero-ponto {
+    width: 24px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .loja__produto,
   .loja__adicionar,
@@ -2969,13 +2930,16 @@
   .loja__rodape-acao,
   .loja__voltar-topo,
   .loja__categorias,
-  .loja__categorias-carrinho {
+  .loja__capa-foto,
+  .loja__hero-ponto-barra,
+  .loja__menu-botao {
     transition: none;
   }
 
   .loja__carrinho,
   .loja__modal-fundo,
-  .loja__categorias--compacta .loja__categorias-marca {
+  .loja__menu-fundo,
+  .loja__menu-painel {
     animation: none;
   }
 }

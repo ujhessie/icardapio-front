@@ -1,8 +1,28 @@
+import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom'
 import { CarrinhoProvider } from '../../contextos/CarrinhoContexto.jsx'
 import { LojaProvider, useLoja } from '../../contextos/LojaContexto.jsx'
+import { publico } from '../../servicos/publico.js'
+import { lerMeusPedidos } from '../../utils/meusPedidos.js'
+import { linkWhatsApp } from '../../utils/vitrine.js'
+import HeaderLoja from './HeaderLoja.jsx'
 import RodapeLoja from './RodapeLoja.jsx'
 import './Loja.css'
+
+// Status que ainda vão dar trabalho para o cliente. `entregue` e `cancelado`
+// são passado: contar como "em andamento" neles seria mentira.
+const STATUS_EM_ANDAMENTO = ['novo', 'aceito', 'preparando', 'pronto', 'saiu_entrega']
+
+// Reconsulta de vez em quando: o pedido muda de status no painel da loja e o
+// cliente merece ver isso sem apertar F5.
+const INTERVALO_PEDIDOS = 60000
+
+function mesmaLista(anterior, atual) {
+  return (
+    anterior.length === atual.length &&
+    anterior.every((pedido, i) => pedido._id === atual[i]._id && pedido.status === atual[i].status)
+  )
+}
 
 export default function LayoutLoja() {
   const { slug } = useParams()
@@ -20,6 +40,51 @@ function ConteudoLoja() {
   const { dados, carregando, erro, status } = useLoja()
   const { pathname } = useLocation()
 
+  const [emAndamento, setEmAndamento] = useState([])
+
+  const slug = dados?.loja?.slug
+
+  // Pedidos deste aparelho: os ids ficam no navegador, o status vem da API.
+  // Atualiza ao voltar para a aba e quando muda de tela (sair do checkout,
+  // voltar do acompanhamento).
+  useEffect(() => {
+    if (!slug) return undefined
+
+    let ativo = true
+
+    async function carregar() {
+      const ids = lerMeusPedidos(slug)
+
+      if (ids.length === 0) {
+        if (ativo) setEmAndamento((atual) => (atual.length === 0 ? atual : []))
+        return
+      }
+
+      try {
+        const { pedidos } = await publico.meusPedidos(slug, ids)
+
+        if (!ativo) return
+
+        const lista = pedidos.filter((pedido) => STATUS_EM_ANDAMENTO.includes(pedido.status))
+        setEmAndamento((atual) => (mesmaLista(atual, lista) ? atual : lista))
+      } catch {
+        // A contagem é um atalho, não a tela de pedidos: rede fora do ar não
+        // vira erro na cara do cliente. Ele continua comprando normalmente.
+      }
+    }
+
+    carregar()
+
+    const intervalo = setInterval(carregar, INTERVALO_PEDIDOS)
+    window.addEventListener('focus', carregar)
+
+    return () => {
+      ativo = false
+      clearInterval(intervalo)
+      window.removeEventListener('focus', carregar)
+    }
+  }, [slug, pathname])
+
   if (carregando) {
     return <p className="loja__carregando">Abrindo o cardápio…</p>
   }
@@ -36,60 +101,19 @@ function ConteudoLoja() {
 
   const { loja } = dados
 
-  // No cardápio o topo é a capa (com nome, status, telefone e "Meus pedidos").
-  // Nas telas internas — checkout, acompanhamento, meus pedidos — fica a barra
-  // compacta, que não rouba espaço.
-  const noCardapio = pathname.replace(/\/+$/, '') === `/${loja.slug}`
-
-  // "Aberto agora · fecha às 23h" vira selo curto + detalhe: cabe no celular.
-  const [tituloStatus, detalheStatus] = status.texto.split(' · ')
+  const whatsapp = linkWhatsApp(
+    loja.telefone,
+    `Olá! Vi o cardápio de ${loja.nome} e quero fazer um pedido.`,
+  )
 
   return (
     <div className="loja" style={{ '--loja-cor': loja.corPrimaria || '#e85d04' }}>
-      {!noCardapio && (
-        <header className="loja__topo">
-          <div className="loja__topo-conteudo">
-            <Link to={`/${loja.slug}`} className="loja__marca">
-              {loja.logo ? (
-                <img className="loja__logo" src={loja.logo} alt="" />
-              ) : (
-                <span className="loja__monograma" aria-hidden="true">
-                  {loja.nome.charAt(0)}
-                </span>
-              )}
-
-              <span className="loja__marca-texto">
-                <span className="loja__nome">{loja.nome}</span>
-
-                <span className="loja__estado">
-                  <span
-                    className={`loja__status ${
-                      status.aberto ? 'loja__status--aberta' : 'loja__status--fechada'
-                    }`}
-                  >
-                    {tituloStatus}
-                  </span>
-                  {detalheStatus && (
-                    <span className="loja__status-detalhe">{detalheStatus}</span>
-                  )}
-                </span>
-              </span>
-            </Link>
-
-            <div className="loja__topo-acoes">
-              <Link className="loja__atalho" to={`/${loja.slug}/pedidos`}>
-                Meus pedidos
-              </Link>
-
-              {loja.telefone && (
-                <a className="loja__telefone" href={`tel:${loja.telefone.replace(/\D/g, '')}`}>
-                  {loja.telefone}
-                </a>
-              )}
-            </div>
-          </div>
-        </header>
-      )}
+      <HeaderLoja
+        loja={loja}
+        status={status}
+        linkWhatsApp={whatsapp || undefined}
+        pedidosEmAndamento={emAndamento.length}
+      />
 
       <Outlet />
 

@@ -1,0 +1,208 @@
+/*
+ * Galeria de banners do cardápio.
+ *
+ * Mesma linguagem do CampoImagem: borda fina, etiqueta em mono, nada de cartão
+ * flutuante. A diferença é que aqui existem várias artes e a ordem importa —
+ * por isso cada miniatura carrega o próprio controle de posição.
+ */
+
+.galeria {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.galeria__topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.galeria__rotulo {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+}
+
+.galeria__contador {
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--cor-neutro);
+}
+
+.galeria__ajuda {
+  font-size: 12.5px;
+  color: var(--cor-texto-fraco);
+  max-width: 62ch;
+}
+
+.galeria__arquivo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.galeria__grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+.galeria__item {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--cor-borda);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #191410;
+}
+
+.galeria__foto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A primeira arte é a que abre o cardápio: precisa se destacar na lista. */
+.galeria__principal {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #241f1a;
+  font-family: var(--fonte-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.galeria__acoes {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+}
+
+.galeria__acao {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #241f1a;
+  font-size: 13px;
+  line-height: 1;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.galeria__acao:hover:not(:disabled) {
+  background: #fff;
+}
+
+.galeria__acao:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.galeria__acao--remover:hover:not(:disabled) {
+  background: var(--cor-erro);
+  color: #fff;
+}
+
+/* Azulejo de adicionar: mesma altura das miniaturas, borda pontilhada. */
+.galeria__adicionar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  aspect-ratio: 16 / 10;
+  padding: 10px;
+  border: 1.5px dashed var(--cor-borda);
+  border-radius: 10px;
+  background: var(--cor-fundo);
+  color: var(--cor-texto-fraco);
+  font-size: 12.5px;
+  line-height: 1.3;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.galeria__adicionar:hover:not(:disabled),
+.galeria__adicionar--ativo {
+  border-color: var(--cor-destaque);
+  background: color-mix(in srgb, var(--cor-destaque) 5%, #fff);
+  color: var(--cor-texto);
+}
+
+.galeria__mais {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--cor-borda);
+  background: #fff;
+  color: var(--cor-destaque);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.galeria__progresso {
+  position: relative;
+  height: 26px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-fundo);
+  overflow: hidden;
+}
+
+.galeria__progresso-barra {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--cor-destaque) 20%, #fff);
+  transition: width 0.2s ease;
+}
+
+.galeria__progresso-texto {
+  position: relative;
+  display: block;
+  line-height: 24px;
+  text-align: center;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--cor-texto);
+}
+
+.galeria__dica {
+  font-size: 12px;
+  color: var(--cor-neutro);
+}
+
+.galeria__erro {
+  font-size: 12.5px;
+  color: var(--cor-erro);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galeria__adicionar,
+  .galeria__acao,
+  .galeria__progresso-barra {
+    transition: none;
+  }
+}
