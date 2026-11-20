@@ -137,6 +137,37 @@ const FILTROS_TIPO = [
   { valor: 'balcao', rotulo: 'Balcão' },
 ]
 
+// ---------- Histórico ----------
+
+// Pedidos por página. A API aceita até 100; 30 é o que cabe numa tela sem
+// transformar "carregar mais" em botão de rolagem infinita.
+const LIMITE_HISTORICO = 30
+
+const PERIODOS_HISTORICO = [
+  { valor: 'hoje', rotulo: 'Hoje' },
+  { valor: '7', rotulo: '7 dias' },
+  { valor: '30', rotulo: '30 dias' },
+  { valor: 'tudo', rotulo: 'Tudo' },
+]
+
+const SITUACOES_HISTORICO = [
+  { valor: '', rotulo: 'Tudo' },
+  { valor: 'em_andamento', rotulo: 'Em andamento' },
+  { valor: 'entregue', rotulo: 'Entregue' },
+  { valor: 'cancelado', rotulo: 'Cancelado' },
+]
+
+// Como o status aparece no histórico e na etiqueta da linha.
+const ROTULO_STATUS = {
+  novo: 'Novo',
+  aceito: 'Aceito',
+  preparando: 'Preparando',
+  pronto: 'Pronto',
+  saiu_entrega: 'Saiu para entrega',
+  entregue: 'Entregue',
+  cancelado: 'Cancelado',
+}
+
 const NOME_DO_TIPO = {
   delivery: 'Delivery',
   mesa: 'Mesa',
@@ -179,18 +210,55 @@ function Ficha({
   confirmando,
   ocupado,
   arrastando,
+  encolhida,
   onAvancar,
-  onVoltar,
   onEditar,
-  onArquivar,
   onPedirConfirmacao,
   onDesistir,
   onConfirmar,
   onComecarArrasto,
   onTerminarArrasto,
+  onAlternar,
 }) {
   const telefoneLimpo = (pedido.cliente.telefone || '').replace(/\D/g, '')
   const observacao = pedido.observacao
+
+  /*
+   * Entregue encolhido: uma linha só.
+   *
+   * O pedido continua na coluna — o lojista confere o que saiu hoje sem que
+   * cada entrega ocupe o espaço de uma ficha inteira. Clicar abre a ficha
+   * completa, com o botão de recolher no rodapé dela.
+   */
+  if (encolhida) {
+    return (
+      <article className="ficha ficha--encolhida">
+        <button
+          className="ficha__resumo"
+          type="button"
+          onClick={onAlternar}
+          aria-expanded="false"
+          aria-label={`Abrir o pedido ${pedido.numero} de ${pedido.cliente.nome}`}
+        >
+          <span className="ficha__numero">#{pedido.numero}</span>
+          <span className="ficha__resumo-nome">{pedido.cliente.nome}</span>
+          <span className="ficha__hora">{horaDoPedido(pedido.criadoEm)}</span>
+          <strong className="ficha__resumo-total">{formatarDinheiro(pedido.total)}</strong>
+
+          <svg
+            className="ficha__resumo-seta"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </article>
+    )
+  }
 
   return (
     <article
@@ -322,14 +390,9 @@ function Ficha({
           )}
 
           <div className="ficha__links">
-            {(pedido.status === 'entregue' || pedido.status === 'cancelado') && (
-              <button
-                className="ficha__link"
-                type="button"
-                disabled={ocupado}
-                onClick={onArquivar}
-              >
-                Arquivar
+            {onAlternar && (
+              <button className="ficha__link" type="button" disabled={ocupado} onClick={onAlternar}>
+                Recolher
               </button>
             )}
 
@@ -358,17 +421,6 @@ function Ficha({
             {pedido.status !== 'entregue' && pedido.status !== 'cancelado' && (
               <button className="ficha__link" type="button" disabled={ocupado} onClick={onEditar}>
                 Editar pedido
-              </button>
-            )}
-
-            {pedido.status === 'cancelado' && (
-              <button
-                className="ficha__link ficha__link--perigo"
-                type="button"
-                disabled={ocupado}
-                onClick={() => onPedirConfirmacao('remover')}
-              >
-                Apagar
               </button>
             )}
           </div>
@@ -1222,8 +1274,18 @@ export default function Pedidos() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [aoVivo, setAoVivo] = useState(false)
-  const [periodo, setPeriodo] = useState('hoje')
+
+  /*
+   * Duas visões: o quadro (fila viva) e o histórico (tudo o que a loja já
+   * recebeu). Não existe mais "arquivados": pedido entregue não sai da tela,
+   * ele só encolhe na coluna e o dia seguinte o leva para o histórico.
+   */
   const [visao, setVisao] = useState('quadro')
+  const historicoAtivo = visao === 'historico'
+
+  // Entregues nascem encolhidos; o Set guarda os que o lojista abriu.
+  const [abertos, setAbertos] = useState(() => new Set())
+
   const [ocupado, setOcupado] = useState(null)
   const [confirmar, setConfirmar] = useState(null)
 
@@ -1246,6 +1308,19 @@ export default function Pedidos() {
   const [busca, setBusca] = useState('')
   const [tipo, setTipo] = useState('todos')
 
+  // Histórico. `termoAplicado` é o texto depois da espera dos 300ms: sem isso
+  // cada letra digitada viraria uma requisição ao servidor.
+  const [buscaHistorico, setBuscaHistorico] = useState('')
+  const [termoAplicado, setTermoAplicado] = useState('')
+  const [periodoHistorico, setPeriodoHistorico] = useState('tudo')
+  const [situacaoHistorico, setSituacaoHistorico] = useState('')
+  const [historico, setHistorico] = useState([])
+  const [totalHistorico, setTotalHistorico] = useState(0)
+  const [paginaHistorico, setPaginaHistorico] = useState(1)
+  const [carregandoHistorico, setCarregandoHistorico] = useState(false)
+  const [carregandoMais, setCarregandoMais] = useState(false)
+  const [detalheAberto, setDetalheAberto] = useState(null)
+
   // Edição de pedido. A lista de produtos só é buscada na primeira vez que o
   // lojista abre o modal — o quadro não precisa dela para abrir.
   const [editando, setEditando] = useState(null)
@@ -1259,16 +1334,15 @@ export default function Pedidos() {
   const [salvandoCriacao, setSalvandoCriacao] = useState(false)
   const [erroCriacao, setErroCriacao] = useState('')
 
-  const arquivados = visao === 'arquivados'
-
-  const carregar = useCallback(async () => {
+  // Quadro: a fila de hoje mais o que ficou em andamento de dias anteriores.
+  const carregarQuadro = useCallback(async () => {
     try {
       const [lista, numeros] = await Promise.all([
-        servicoPedidos.listar({ hoje: periodo === 'hoje', arquivados }),
+        servicoPedidos.listar({ hoje: 1 }),
         servicoPedidos.resumo(),
       ])
 
-      setPedidos(lista.pedidos)
+      setPedidos(lista.pedidos || [])
       setResumo(numeros.resumo)
       setErro('')
     } catch (e) {
@@ -1276,19 +1350,90 @@ export default function Pedidos() {
     } finally {
       setCarregando(false)
     }
-  }, [periodo, arquivados])
+  }, [])
 
-  // O canal precisa sempre da versão nova de carregar().
-  const carregarAtual = useRef(carregar)
+  /*
+   * Histórico: tudo o que a loja já recebeu, do mais recente para o mais
+   * antigo. Quem pagina é a API — "carregar mais" pede a página seguinte e
+   * gruda no fim da lista.
+   */
+  const carregarHistorico = useCallback(
+    async ({ pagina = 1, acumular = false } = {}) => {
+      if (acumular) setCarregandoMais(true)
+      else setCarregandoHistorico(true)
+
+      try {
+        const lista = await servicoPedidos.listar({
+          tudo: 1,
+          busca: termoAplicado,
+          periodo: periodoHistorico,
+          status: situacaoHistorico,
+          pagina,
+          limite: LIMITE_HISTORICO,
+        })
+
+        setHistorico((atual) =>
+          acumular ? [...atual, ...(lista.pedidos || [])] : lista.pedidos || [],
+        )
+        setTotalHistorico(lista.total || 0)
+        setPaginaHistorico(pagina)
+        setErro('')
+      } catch (e) {
+        setErro(e.message)
+      } finally {
+        setCarregandoHistorico(false)
+        setCarregandoMais(false)
+      }
+    },
+    [termoAplicado, periodoHistorico, situacaoHistorico],
+  )
+
+  /*
+   * O canal precisa sempre da versão nova de quem carrega. No histórico a
+   * atualização ao vivo é ignorada de propósito: ali é consulta, e pedido novo
+   * entra pelo quadro.
+   */
+  const carregarAtual = useRef(null)
 
   useEffect(() => {
-    carregarAtual.current = carregar
-  }, [carregar])
+    carregarAtual.current = () => {
+      if (historicoAtivo) return
+
+      carregarQuadro()
+    }
+  })
 
   useEffect(() => {
     setCarregando(true)
-    carregar()
-  }, [carregar])
+    carregarQuadro()
+  }, [carregarQuadro])
+
+  // Voltando do histórico o quadro se atualiza: parado nele enquanto a tela
+  // estava fora, ele perdeu os eventos ao vivo.
+  const primeiraVisao = useRef(true)
+
+  useEffect(() => {
+    if (primeiraVisao.current) {
+      primeiraVisao.current = false
+      return
+    }
+
+    if (!historicoAtivo) carregarQuadro()
+  }, [historicoAtivo, carregarQuadro])
+
+  // Busca do histórico com espera: quem digita "maria" dispara uma requisição.
+  useEffect(() => {
+    const espera = setTimeout(() => setTermoAplicado(buscaHistorico.trim()), 300)
+
+    return () => clearTimeout(espera)
+  }, [buscaHistorico])
+
+  // Filtro mudou: volta para a primeira página.
+  useEffect(() => {
+    if (!historicoAtivo) return
+
+    carregarHistorico()
+  }, [historicoAtivo, carregarHistorico])
 
   useEffect(() => {
     let ativo = true
@@ -1372,7 +1517,7 @@ export default function Pedidos() {
 
     try {
       await acao()
-      await carregar()
+      await carregarQuadro()
     } catch (e) {
       setErro(e.message)
     } finally {
@@ -1412,11 +1557,6 @@ export default function Pedidos() {
 
     if (acao === 'cancelar') {
       executar(pedido._id, () => servicoPedidos.mudarStatus(pedido._id, 'cancelado'))
-      return
-    }
-
-    if (acao === 'remover') {
-      executar(pedido._id, () => servicoPedidos.remover(pedido._id))
       return
     }
 
@@ -1463,7 +1603,7 @@ export default function Pedidos() {
     try {
       await servicoPedidos.editar(editando._id, corpo)
       setEditando(null)
-      await carregar()
+      await carregarQuadro()
     } catch (e) {
       setErroEdicao(e.message)
     } finally {
@@ -1504,7 +1644,7 @@ export default function Pedidos() {
       marcarPedidoLocal(resposta?.pedido?._id)
 
       setCriando(false)
-      await carregar()
+      await carregarQuadro()
     } catch (e) {
       setErroCriacao(e.message)
     } finally {
@@ -1512,7 +1652,22 @@ export default function Pedidos() {
     }
   }
 
+  // Ficha do quadro. Entregue nasce encolhida; `abertos` guarda as que o
+  // lojista abriu para conferir item por item.
   function ficha(pedido, coluna) {
+    const entregue = pedido.status === 'entregue'
+
+    function alternar() {
+      setAbertos((atual) => {
+        const novo = new Set(atual)
+
+        if (novo.has(pedido._id)) novo.delete(pedido._id)
+        else novo.add(pedido._id)
+
+        return novo
+      })
+    }
+
     return (
       <Ficha
         key={pedido._id}
@@ -1523,9 +1678,10 @@ export default function Pedidos() {
         ocupado={ocupado === pedido._id}
         confirmando={confirmar?.id === pedido._id ? confirmar.acao : null}
         arrastando={arrastandoId === pedido._id}
+        encolhida={entregue && !abertos.has(pedido._id)}
+        onAlternar={entregue ? alternar : undefined}
         onAvancar={() => coluna && avancar(pedido, coluna)}
         onEditar={() => abrirEdicao(pedido)}
-        onArquivar={() => executar(pedido._id, () => servicoPedidos.arquivar(pedido._id))}
         onPedirConfirmacao={(novaAcao) => setConfirmar({ id: pedido._id, acao: novaAcao })}
         onDesistir={() => setConfirmar(null)}
         onConfirmar={() => confirmarAcao(pedido)}
@@ -1543,14 +1699,16 @@ export default function Pedidos() {
       <header className="tabuleiro__topo">
         <div>
           <h1 className="tabuleiro__titulo">
-            {arquivados ? 'Pedidos arquivados' : 'Pedidos'}
+            {historicoAtivo ? 'Todos os pedidos' : 'Pedidos'}
           </h1>
           <p className="tabuleiro__subtitulo">
-            {arquivados
-              ? 'Histórico do que saiu do quadro. Continua valendo para relatórios e faturamento.'
-              : 'A fila corre da esquerda para a direita. '}
-            {!arquivados && (
-              <span className="tabuleiro__dica">Arraste a ficha para mudar a etapa.</span>
+            {historicoAtivo ? (
+              'Tudo o que a loja já recebeu — nada é apagado. Busque por nome, telefone ou número.'
+            ) : (
+              <>
+                A fila corre da esquerda para a direita.{' '}
+                <span className="tabuleiro__dica">Arraste a ficha para mudar a etapa.</span>
+              </>
             )}
           </p>
         </div>
@@ -1560,41 +1718,24 @@ export default function Pedidos() {
             {aoVivo ? 'ao vivo' : 'reconectando'}
           </span>
 
-          <div className="segmento" role="group" aria-label="Período">
-            <button
-              type="button"
-              className={`segmento__botao ${periodo === 'hoje' ? 'segmento__botao--ativo' : ''}`}
-              onClick={() => setPeriodo('hoje')}
-            >
-              Hoje
-            </button>
-            <button
-              type="button"
-              className={`segmento__botao ${periodo === 'todos' ? 'segmento__botao--ativo' : ''}`}
-              onClick={() => setPeriodo('todos')}
-            >
-              Todos
-            </button>
-          </div>
-
           <div className="segmento" role="group" aria-label="Visão">
             <button
               type="button"
-              className={`segmento__botao ${!arquivados ? 'segmento__botao--ativo' : ''}`}
+              className={`segmento__botao ${!historicoAtivo ? 'segmento__botao--ativo' : ''}`}
               onClick={() => setVisao('quadro')}
             >
               Quadro
             </button>
             <button
               type="button"
-              className={`segmento__botao ${arquivados ? 'segmento__botao--ativo' : ''}`}
-              onClick={() => setVisao('arquivados')}
+              className={`segmento__botao ${historicoAtivo ? 'segmento__botao--ativo' : ''}`}
+              onClick={() => setVisao('historico')}
             >
-              Arquivados
+              Todos os pedidos
             </button>
           </div>
 
-          {!arquivados && (
+          {!historicoAtivo && (
             <button className="tabuleiro__novo" type="button" onClick={abrirCriacao}>
               <svg
                 viewBox="0 0 24 24"
@@ -1609,7 +1750,7 @@ export default function Pedidos() {
             </button>
           )}
 
-          {!arquivados && (
+          {!historicoAtivo && (
             <button
               className={`tabuleiro__cheia ${telaCheia ? 'tabuleiro__cheia--ativa' : ''}`}
               type="button"
@@ -1650,28 +1791,30 @@ export default function Pedidos() {
 
       {erro && <p className="tabuleiro__erro">{erro}</p>}
 
-      <div className="tabuleiro__resumo">
-        <div className={`tabuleiro__numero ${numeros.fila > 0 ? 'tabuleiro__numero--destaque' : ''}`}>
-          <span className="tabuleiro__numero-valor">{numeros.fila}</span>
-          <span className="tabuleiro__numero-rotulo">na fila agora</span>
+      {!historicoAtivo && (
+        <div className="tabuleiro__resumo">
+          <div className={`tabuleiro__numero ${numeros.fila > 0 ? 'tabuleiro__numero--destaque' : ''}`}>
+            <span className="tabuleiro__numero-valor">{numeros.fila}</span>
+            <span className="tabuleiro__numero-rotulo">na fila agora</span>
+          </div>
+          <div className="tabuleiro__numero">
+            <span className="tabuleiro__numero-valor">{numeros.entregues}</span>
+            <span className="tabuleiro__numero-rotulo">entregues hoje</span>
+          </div>
+          <div className="tabuleiro__numero">
+            <span className="tabuleiro__numero-valor">{formatarDinheiro(numeros.faturamento)}</span>
+            <span className="tabuleiro__numero-rotulo">faturamento de hoje</span>
+          </div>
+          <div className="tabuleiro__numero">
+            <span className="tabuleiro__numero-valor">{formatarDinheiro(numeros.ticket)}</span>
+            <span className="tabuleiro__numero-rotulo">ticket médio</span>
+          </div>
         </div>
-        <div className="tabuleiro__numero">
-          <span className="tabuleiro__numero-valor">{numeros.entregues}</span>
-          <span className="tabuleiro__numero-rotulo">entregues hoje</span>
-        </div>
-        <div className="tabuleiro__numero">
-          <span className="tabuleiro__numero-valor">{formatarDinheiro(numeros.faturamento)}</span>
-          <span className="tabuleiro__numero-rotulo">faturamento de hoje</span>
-        </div>
-        <div className="tabuleiro__numero">
-          <span className="tabuleiro__numero-valor">{formatarDinheiro(numeros.ticket)}</span>
-          <span className="tabuleiro__numero-rotulo">ticket médio</span>
-        </div>
-      </div>
+      )}
 
       {/* Busca e filtro. A fila já está inteira na memória: filtrar aqui é
           instantâneo e não atrapalha o tempo real. */}
-      {!arquivados && (
+      {!historicoAtivo && (
         <section className="busca" aria-label="Buscar e filtrar pedidos">
           <label className="busca__campo">
             <svg
@@ -1746,78 +1889,185 @@ export default function Pedidos() {
 
       {carregando && <p className="tabuleiro__subtitulo">Carregando pedidos…</p>}
 
-      {!carregando && arquivados && (
-        <section className="historico">
-          {pedidos.length === 0 && (
-            <p className="tabuleiro__aviso-texto">
-              Nenhum pedido arquivado {periodo === 'hoje' ? 'hoje' : 'até agora'}.
+      {historicoAtivo && (
+        <section className="historico" aria-label="Todos os pedidos">
+          <div className="historico__filtros">
+            <label className="historico__campo">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.6-3.6" strokeLinecap="round" />
+              </svg>
+
+              <input
+                type="search"
+                value={buscaHistorico}
+                onChange={(evento) => setBuscaHistorico(evento.target.value)}
+                placeholder="Buscar por nome, telefone ou número"
+                aria-label="Buscar no histórico por nome, telefone ou número"
+              />
+
+              {buscaHistorico && (
+                <button
+                  className="historico__limpar"
+                  type="button"
+                  onClick={() => setBuscaHistorico('')}
+                  aria-label="Limpar busca"
+                >
+                  ✕
+                </button>
+              )}
+            </label>
+
+            <div className="segmento" role="group" aria-label="Período">
+              {PERIODOS_HISTORICO.map((opcao) => (
+                <button
+                  key={opcao.valor}
+                  type="button"
+                  className={`segmento__botao ${
+                    periodoHistorico === opcao.valor ? 'segmento__botao--ativo' : ''
+                  }`}
+                  onClick={() => setPeriodoHistorico(opcao.valor)}
+                >
+                  {opcao.rotulo}
+                </button>
+              ))}
+            </div>
+
+            <div className="segmento" role="group" aria-label="Situação do pedido">
+              {SITUACOES_HISTORICO.map((opcao) => (
+                <button
+                  key={opcao.valor || 'tudo'}
+                  type="button"
+                  className={`segmento__botao ${
+                    situacaoHistorico === opcao.valor ? 'segmento__botao--ativo' : ''
+                  }`}
+                  onClick={() => setSituacaoHistorico(opcao.valor)}
+                >
+                  {opcao.rotulo}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <p className="historico__contagem" aria-live="polite">
+            {carregandoHistorico
+              ? 'Buscando pedidos…'
+              : `${totalHistorico} ${totalHistorico === 1 ? 'pedido' : 'pedidos'}`}
+          </p>
+
+          {!carregandoHistorico && historico.length === 0 && (
+            <p className="historico__vazio">
+              Nenhum pedido encontrado. Tente outro nome, outro período ou limpe os filtros.
             </p>
           )}
 
-          {pedidos.map((pedido) => (
-            <div className="historico__linha" key={pedido._id}>
-              <div className="historico__texto">
-                <strong className="historico__titulo">
-                  #{pedido.numero} · {pedido.cliente.nome}
-                </strong>
-                <span className="historico__detalhe">
-                  {dataDoPedido(pedido.criadoEm)} · {formatarDinheiro(pedido.total)} ·{' '}
-                  {pedido.status === 'cancelado' ? 'cancelado' : 'entregue'}
-                </span>
-              </div>
+          {historico.length > 0 && (
+            <div className="historico__lista">
+              {historico.map((pedido) => {
+                const aberto = detalheAberto === pedido._id
 
-              <div className="historico__acoes">
-                {confirmar?.id === pedido._id ? (
-                  <>
-                    <span className="ficha__confirmar-texto">Apagar de vez?</span>
+                return (
+                  <article
+                    className={`historico__linha ${aberto ? 'historico__linha--aberta' : ''}`}
+                    key={pedido._id}
+                  >
                     <button
-                      className="historico__botao historico__botao--perigo"
+                      className="historico__resumo"
                       type="button"
-                      disabled={ocupado === pedido._id}
-                      onClick={() => confirmarAcao(pedido)}
+                      onClick={() => setDetalheAberto(aberto ? null : pedido._id)}
+                      aria-expanded={aberto}
                     >
-                      Apagar
-                    </button>
-                    <button
-                      className="historico__botao"
-                      type="button"
-                      onClick={() => setConfirmar(null)}
-                    >
-                      Não
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="historico__botao"
-                      type="button"
-                      disabled={ocupado === pedido._id}
-                      onClick={() =>
-                        executar(pedido._id, () => servicoPedidos.desarquivar(pedido._id))
-                      }
-                    >
-                      Desarquivar
-                    </button>
+                      <span className="historico__numero">#{pedido.numero}</span>
+                      <span className="historico__cliente">{pedido.cliente.nome}</span>
+                      <span className="historico__data">{dataDoPedido(pedido.criadoEm)}</span>
+                      <span className="historico__tipo">
+                        {NOME_DO_TIPO[pedido.tipo] || pedido.tipo}
+                      </span>
+                      <span className={`historico__situacao historico__situacao--${pedido.status}`}>
+                        {ROTULO_STATUS[pedido.status] || pedido.status}
+                      </span>
+                      <strong className="historico__total">{formatarDinheiro(pedido.total)}</strong>
 
-                    {pedido.status === 'cancelado' && (
-                      <button
-                        className="historico__botao historico__botao--perigo"
-                        type="button"
-                        disabled={ocupado === pedido._id}
-                        onClick={() => setConfirmar({ id: pedido._id, acao: 'remover' })}
+                      <svg
+                        className="historico__seta"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden="true"
                       >
-                        Apagar
-                      </button>
+                        <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+
+                    {aberto && (
+                      <div className="historico__detalhe">
+                        <ul className="historico__itens">
+                          {pedido.itens.map((item, indice) => (
+                            <li key={`${item.nome}-${indice}`}>
+                              <span className="historico__item-qtd">{item.quantidade}×</span>
+                              <span>
+                                {item.nome}
+                                {item.observacao && (
+                                  <span className="historico__item-obs"> “{item.observacao}”</span>
+                                )}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        <p className="historico__info">
+                          {pedido.cliente.telefone && <span>{pedido.cliente.telefone}</span>}
+
+                          {pedido.tipo === 'delivery' && pedido.endereco?.rua && (
+                            <span>
+                              {pedido.endereco.rua}, {pedido.endereco.numero}
+                              {pedido.bairroNome ? ` · ${pedido.bairroNome}` : ''}
+                            </span>
+                          )}
+
+                          {pedido.tipo === 'mesa' && pedido.mesa ? (
+                            <span>Mesa {pedido.mesa}</span>
+                          ) : null}
+
+                          <span>{PAGAMENTO[pedido.pagamento] || pedido.pagamento}</span>
+                        </p>
+
+                        {pedido.observacao && (
+                          <p className="historico__info historico__info--obs">
+                            Observação do cliente: {pedido.observacao}
+                          </p>
+                        )}
+                      </div>
                     )}
-                  </>
-                )}
-              </div>
+                  </article>
+                )
+              })}
             </div>
-          ))}
+          )}
+
+          {historico.length < totalHistorico && (
+            <button
+              className="historico__mais"
+              type="button"
+              disabled={carregandoMais}
+              onClick={() =>
+                carregarHistorico({ pagina: paginaHistorico + 1, acumular: true })
+              }
+            >
+              {carregandoMais ? 'Carregando…' : 'Carregar mais'}
+            </button>
+          )}
         </section>
       )}
 
-      {!carregando && !arquivados && (
+      {!carregando && !historicoAtivo && (
         <>
           {/* Desktop: seis prateleiras lado a lado, com arrastar e soltar. */}
           <div className="tabuleiro__quadro">
@@ -1932,11 +2182,10 @@ export default function Pedidos() {
 
           {noQuadro.length === 0 && (
             <section className="tabuleiro__aviso">
-              <p className="tabuleiro__aviso-titulo">
-                Nenhum pedido {periodo === 'hoje' ? 'hoje' : 'até agora'}
-              </p>
+              <p className="tabuleiro__aviso-titulo">Nenhum pedido hoje</p>
               <p className="tabuleiro__aviso-texto">
-                Quando um cliente fechar um pedido, ele aparece aqui na hora.
+                Quando um cliente fechar um pedido, ele aparece aqui na hora. Pedido de outro dia
+                fica em “Todos os pedidos”.
               </p>
             </section>
           )}

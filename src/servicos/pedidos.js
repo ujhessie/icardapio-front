@@ -1,13 +1,22 @@
 import { requisitar } from './api.js'
 
-function parametros({ status, hoje, arquivados } = {}) {
-  const busca = new URLSearchParams()
+/*
+ * Query da lista de pedidos. Quadro manda `hoje`; histórico manda `tudo` + os
+ * filtros de busca. Campo vazio nunca vira parâmetro — senão a API recebe
+ * `?busca=` e a consulta ganha condição à toa.
+ */
+function parametros({ status, hoje, tudo, busca, periodo, pagina, limite } = {}) {
+  const query = new URLSearchParams()
 
-  if (status) busca.set('status', status)
-  if (hoje) busca.set('hoje', '1')
-  if (arquivados) busca.set('arquivados', '1')
+  if (status) query.set('status', status)
+  if (hoje) query.set('hoje', '1')
+  if (tudo) query.set('tudo', '1')
+  if (busca) query.set('busca', busca)
+  if (periodo) query.set('periodo', periodo)
+  if (pagina) query.set('pagina', String(pagina))
+  if (limite) query.set('limite', String(limite))
 
-  const texto = busca.toString()
+  const texto = query.toString()
   return texto ? `?${texto}` : ''
 }
 

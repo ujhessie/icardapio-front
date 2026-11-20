@@ -561,6 +561,77 @@
   color: var(--painel-texto);
 }
 
+/*
+ * Entregue encolhido.
+ *
+ * Duas linhas no lugar de uma ficha inteira: número, cliente, hora e total.
+ * Clicar abre a ficha completa; o botão "Recolher" dela volta para cá.
+ */
+.ficha--encolhida {
+  padding: 0;
+  border-radius: 12px;
+  background: var(--painel-superficie);
+  box-shadow: none;
+  cursor: default;
+}
+
+.ficha__resumo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'numero nome seta'
+    'hora total seta';
+  align-items: center;
+  gap: 1px 8px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ficha__resumo:hover {
+  background: #f7f5f1;
+}
+
+.ficha__resumo .ficha__numero {
+  grid-area: numero;
+  font-size: 12.5px;
+}
+
+.ficha__resumo .ficha__hora {
+  grid-area: hora;
+}
+
+.ficha__resumo-nome {
+  grid-area: nome;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ficha__resumo-total {
+  grid-area: total;
+  justify-self: end;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha__resumo-seta {
+  grid-area: seta;
+  width: 15px;
+  height: 15px;
+  color: var(--painel-fraco);
+}
+
 /* ---------- Cancelados (fechados por padrão) ---------- */
 
 .tabuleiro__cancelados {
@@ -607,23 +678,108 @@
   margin-top: 14px;
 }
 
-/* ---------- Histórico (arquivados) ---------- */
+/* ---------- Histórico: todos os pedidos ---------- */
 
 .historico {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historico__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Busca do histórico: cresce, mas com teto — campo de 900px parece erro. */
+.historico__campo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  max-width: 420px;
+  min-width: 0;
+}
+
+.historico__campo svg {
+  position: absolute;
+  left: 11px;
+  width: 16px;
+  height: 16px;
+  color: var(--painel-fraco);
+  pointer-events: none;
+}
+
+.historico__campo input {
+  width: 100%;
+  padding: 9px 34px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 10px;
+  background: var(--painel-superficie);
+  font-family: var(--fonte);
+  font-size: 13px;
+  color: var(--painel-texto);
+}
+
+.historico__campo input::placeholder {
+  color: var(--painel-fraco);
+}
+
+/* O "x" nativo some: a limpeza é o botão redondo da direita. */
+.historico__campo input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.historico__limpar {
+  position: absolute;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #f0ede8;
+  color: var(--painel-fraco);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.historico__limpar:hover {
+  background: var(--painel-borda);
+  color: var(--painel-texto);
+}
+
+.historico__contagem {
+  margin: 0;
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+}
+
+.historico__vazio {
+  border: 1px dashed var(--painel-borda);
+  border-radius: var(--raio-card);
+  padding: 28px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--painel-fraco);
+}
+
+.historico__lista {
   border: 1px solid var(--painel-borda);
   border-radius: var(--raio-card);
   background: var(--painel-superficie);
   box-shadow: var(--sombra-card);
-  padding: 6px 18px;
+  padding: 0 16px;
 }
 
 .historico__linha {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 14px 0;
   border-bottom: 1px solid var(--painel-borda);
 }
 
@@ -631,55 +787,182 @@
   border-bottom: 0;
 }
 
-.historico__texto {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+.historico__resumo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
+  grid-template-areas: 'numero cliente data tipo situacao total seta';
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.historico__titulo {
-  font-size: 14px;
+.historico__resumo:hover .historico__cliente {
+  color: var(--cor-destaque);
+}
+
+.historico__numero {
+  grid-area: numero;
+  font-family: var(--fonte-mono);
+  font-size: 12px;
   font-weight: 600;
+  color: var(--painel-fraco);
+}
+
+.historico__cliente {
+  grid-area: cliente;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--painel-texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease;
+}
+
+.historico__data {
+  grid-area: data;
+  font-family: var(--fonte-mono);
+  font-size: 11.5px;
+  color: var(--painel-fraco);
+  white-space: nowrap;
+}
+
+.historico__tipo {
+  grid-area: tipo;
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--painel-fraco);
+  white-space: nowrap;
+}
+
+.historico__situacao {
+  grid-area: situacao;
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f0ede8;
+  color: var(--painel-fraco);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.historico__situacao--entregue {
+  background: #e9f4ec;
+  color: var(--cor-ok);
+}
+
+.historico__situacao--cancelado {
+  background: #fdf0ef;
+  color: var(--cor-erro);
+}
+
+.historico__situacao--novo {
+  background: #fff1e4;
+  color: #c2410c;
+}
+
+.historico__total {
+  grid-area: total;
+  justify-self: end;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.historico__seta {
+  grid-area: seta;
+  width: 15px;
+  height: 15px;
+  color: var(--painel-fraco);
+  transition: transform 0.15s ease;
+}
+
+.historico__linha--aberta .historico__seta {
+  transform: rotate(180deg);
 }
 
 .historico__detalhe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 14px;
+}
+
+.historico__itens {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.historico__itens li {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.historico__item-qtd {
+  min-width: 26px;
   font-family: var(--fonte-mono);
   font-size: 11.5px;
   color: var(--painel-fraco);
 }
 
-.historico__acoes {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.historico__item-obs {
+  color: var(--painel-fraco);
+  font-style: italic;
 }
 
-.historico__botao {
-  padding: 6px 12px;
-  border: 1px solid var(--painel-borda);
-  border-radius: 8px;
-  background: #fff;
-  font-family: var(--fonte);
+.historico__info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
   font-size: 12px;
+  color: var(--painel-fraco);
+}
+
+.historico__info--obs {
+  font-style: italic;
+}
+
+.historico__mais {
+  align-self: center;
+  padding: 10px 20px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 10px;
+  background: var(--painel-superficie);
+  font-family: var(--fonte);
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--painel-texto);
   cursor: pointer;
 }
 
-.historico__botao:hover:not(:disabled) {
+.historico__mais:hover:not(:disabled) {
   border-color: var(--cor-destaque);
   color: var(--cor-destaque);
 }
 
-.historico__botao--perigo {
-  border-color: #f3cfcb;
-  color: var(--cor-erro);
-}
-
-.historico__botao--perigo:hover:not(:disabled) {
-  background: #fdf2f1;
-  border-color: var(--cor-erro);
+.historico__mais:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* ---------- Aviso de estado vazio ---------- */
@@ -1043,6 +1326,8 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding: 7px 12px;
   border: 1px solid var(--painel-borda);
   border-radius: 10px;
@@ -1081,6 +1366,13 @@
 
   .tabuleiro__topo > div:first-child {
     padding-right: 44px;
+  }
+
+  /* Os controles ganham linha própria. Sem isso eles dividem a linha com o
+     botão absoluto de tela cheia — que fica por cima do "Novo pedido". */
+  .tabuleiro__controles {
+    flex-basis: 100%;
+    justify-content: flex-start;
   }
 
   .tabuleiro__cheia {
@@ -1537,6 +1829,8 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding: 7px 13px;
   border: 1px solid var(--cor-destaque);
   border-radius: 10px;
@@ -1615,6 +1909,63 @@
   .tabuleiro__novo,
   .editar__tipo {
     transition: none;
+  }
+}
+
+/* ---------- Histórico no celular ---------- */
+
+@media (max-width: 720px) {
+  /* Empilhado, o campo de busca vem primeiro e ocupa a largura toda. */
+  .historico__filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .historico__campo {
+    flex: 0 0 auto;
+    max-width: none;
+  }
+
+  /* Segmento com quatro opções não cabe em 360px: rola na horizontal
+     dentro dele mesmo, sem esticar a página. */
+  .historico__filtros .segmento {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .historico__filtros .segmento::-webkit-scrollbar {
+    display: none;
+  }
+
+  .historico__filtros .segmento__botao {
+    flex: 0 0 auto;
+  }
+
+  .historico__lista {
+    padding: 0 12px;
+  }
+
+  /* Duas linhas: identificação em cima, data/situação/total embaixo.
+     O tipo do pedido sai — no celular o espaço vale mais que a etiqueta. */
+  .historico__resumo {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'numero cliente cliente seta'
+      'data situacao total total';
+    gap: 4px 10px;
+    padding: 12px 0;
+  }
+
+  .historico__tipo {
+    display: none;
+  }
+
+  .historico__data {
+    align-self: center;
+  }
+
+  .historico__total {
+    align-self: center;
   }
 }
 
