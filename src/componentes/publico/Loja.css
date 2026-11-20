@@ -20,6 +20,21 @@
   --loja-lateral: clamp(16px, 2.6vw, 48px);
 
   /*
+   * Uma coluna só para a tela inteira.
+   *
+   * Antes cada bloco parava numa largura: header e conteúdo iam a 1600px, a
+   * busca a 560px, o rodapé a 1080px — três bordas diferentes na mesma tela,
+   * e no monitor largo o texto ficava longe demais para ler. Agora header,
+   * busca, pílulas, seções e rodapé param todos na mesma linha de 1080px, que
+   * é a medida que o rodapé e o checkout já usavam.
+   *
+   * --loja-coluna é essa coluna mais as margens laterais: é a caixa externa
+   * de quem tem padding próprio (header e barra de categorias).
+   */
+  --loja-largura: 1080px;
+  --loja-coluna: calc(var(--loja-largura) + var(--loja-lateral) * 2);
+
+  /*
    * Tipografia própria do cardápio público (o painel segue Inter/Fraunces).
    * - Anton: nome da loja, título de tela/seção e número de pedido. Peso único.
    * - Roboto Condensed: corpo, preço, botão, campo e rótulo.
@@ -92,7 +107,7 @@
 }
 
 .loja__topo-conteudo {
-  max-width: 1600px;
+  max-width: var(--loja-coluna);
   margin: 0 auto;
   padding: 12px var(--loja-lateral);
   display: flex;
@@ -435,7 +450,7 @@
   }
 
   .loja__faixa-aviso {
-    padding-inline: max(var(--loja-lateral), calc((100vw - 1100px) / 2));
+    padding-inline: max(var(--loja-lateral), calc((100vw - var(--loja-largura)) / 2));
   }
 }
 
@@ -631,10 +646,21 @@
 
 /* ---------- Cardápio ---------- */
 
+/*
+ * O main ocupa a tela toda para a barra de categorias poder ir de ponta a
+ * ponta; quem para na coluna de leitura são os blocos lá dentro.
+ */
 .loja__conteudo {
-  max-width: 1600px;
-  margin: 0 auto;
   padding: 18px var(--loja-lateral) 48px;
+}
+
+/* Busca, aviso, estado vazio e seções param na mesma linha de 1080px. */
+.loja__busca,
+.loja__aviso,
+.loja__vazio,
+.loja__secao {
+  max-width: var(--loja-largura);
+  margin-inline: auto;
 }
 
 .loja__aviso {
@@ -667,7 +693,7 @@
 
 .loja__busca {
   position: relative;
-  max-width: 560px;
+  width: 100%;
   margin-bottom: 14px;
 }
 
@@ -739,7 +765,7 @@
 }
 
 .loja__categorias-conteudo {
-  max-width: 1600px;
+  max-width: var(--loja-coluna);
   margin: 0 auto;
   padding: 0 var(--loja-lateral);
 }
@@ -821,10 +847,14 @@
   background: var(--loja-borda);
 }
 
-/* Três colunas na tela larga, duas no meio, uma no celular (ver @media). */
+/*
+ * Colunas automáticas: entram quantas couberem com pelo menos 340px cada. Na
+ * coluna de 1080px dão três; perto de 1000px dão duas — sem o pulo seco que
+ * tinha antes entre 2 e 3 colunas. Uma coluna só no celular (ver @media).
+ */
 .loja__produtos {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
 }
 
@@ -2613,13 +2643,6 @@
 }
 
 /* ---------- Responsivo ---------- */
-
-@media (max-width: 1180px) {
-  /* Três colunas só quando há largura: com 900px cada cartão fica apertado. */
-  .loja__produtos {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 @media (max-width: 900px) {
   /* Duas colunas: marca ocupa a linha de cima, endereço e horário dividem a de baixo. */
