@@ -21,8 +21,8 @@ import RotaProtegida from './RotaProtegida.jsx'
 /**
  * Tabela de rotas do front.
  * Público: /, /cadastro, /admin/login e /:slug (cardápio da loja)
- * Painel:  /admin, /admin/pedidos, /admin/cardapio, /admin/horarios,
- *          /admin/delivery e /admin/configuracoes
+ * Painel:  /admin, /admin/pedidos (e /admin/pedidos/todos), /admin/cardapio,
+ *          /admin/horarios, /admin/delivery e /admin/configuracoes
  *
  * O painel é uma rota-mãe com a casca (barra lateral / barra inferior) e as
  * páginas entram no Outlet dela — assim a moldura é uma só.
@@ -47,6 +47,17 @@ export default function Rotas() {
 
         <Route
           path="pedidos"
+          element={
+            <RotaDaLoja>
+              <Pedidos />
+            </RotaDaLoja>
+          }
+        />
+
+        {/* Histórico: mesma tela, outra visão. A rota é própria para o
+            subitem da lateral acender e o link poder ser compartilhado. */}
+        <Route
+          path="pedidos/todos"
           element={
             <RotaDaLoja>
               <Pedidos />

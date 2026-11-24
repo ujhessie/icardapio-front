@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contextos/AuthContexto.jsx'
 import { guardarSom, prepararSom, somLigado, tocarAlerta, tocarSino } from '../../servicos/som.js'
@@ -18,7 +18,15 @@ import './CascaPainel.css'
 
 const MENU_LOJA = [
   { para: '/admin', fim: true, rotulo: 'Painel', icone: 'painel' },
-  { para: '/admin/pedidos', rotulo: 'Pedidos', icone: 'pedidos' },
+  {
+    para: '/admin/pedidos',
+    fim: true,
+    rotulo: 'Pedidos',
+    icone: 'pedidos',
+    // O histórico é navegação, não um botão dentro da tela: quem procura
+    // pedido velho vem aqui na lateral.
+    sub: [{ para: '/admin/pedidos/todos', rotulo: 'Todos os pedidos' }],
+  },
   { para: '/admin/cardapio', rotulo: 'Cardápio', icone: 'cardapio' },
   { para: '/admin/horarios', rotulo: 'Horários', icone: 'horarios' },
   { para: '/admin/delivery', rotulo: 'Delivery', icone: 'delivery' },
@@ -151,6 +159,14 @@ function itemClasse({ isActive }) {
   return isActive ? 'casca__item casca__item--ativo' : 'casca__item'
 }
 
+/*
+ * Subitem da lateral. O traço à esquerda é a "régua" do grupo: sem ela o
+ * item solto parece irmão dos outros e não filho de Pedidos.
+ */
+function subitemClasse({ isActive }) {
+  return isActive ? 'casca__subitem casca__subitem--ativo' : 'casca__subitem'
+}
+
 // Alerta de pedido novo: 3 toques, um a cada 5 segundos.
 const VEZES_DO_ALERTA = 3
 const INTERVALO_DO_ALERTA_S = 5
@@ -181,7 +197,8 @@ export default function CascaPainel() {
   const somTimer = useRef(null)
 
   const localizacao = useLocation()
-  const estaNaTelaDePedidos = localizacao.pathname === '/admin/pedidos'
+  // Histórico é a mesma área: o sino não pode tocar com o lojista ali dentro.
+  const estaNaTelaDePedidos = localizacao.pathname.startsWith('/admin/pedidos')
 
   // Para o som e limpa o pendente assim que o usuário entra na tela de pedidos.
   useEffect(() => {
@@ -372,10 +389,34 @@ export default function CascaPainel() {
 
         <nav className="casca__menu" aria-label="Menu do painel">
           {menu.map((item) => (
-            <NavLink key={item.para} to={item.para} end={item.fim} className={itemClasse}>
-              <Icone nome={item.icone} />
-              <span>{item.rotulo}</span>
-            </NavLink>
+            <Fragment key={item.para}>
+              <NavLink
+                to={item.para}
+                end={item.fim}
+                className={(estado) => {
+                  // Grupo aberto por causa do filho: o pai não fica laranja
+                  // (quem está na tela é o subitem), só clareia.
+                  const noGrupo =
+                    !estado.isActive &&
+                    item.sub?.some((filho) => localizacao.pathname.startsWith(filho.para))
+
+                  return `${itemClasse(estado)}${noGrupo ? ' casca__item--secao' : ''}`
+                }}
+              >
+                <Icone nome={item.icone} />
+                <span>{item.rotulo}</span>
+              </NavLink>
+
+              {item.sub && (
+                <div className="casca__submenu">
+                  {item.sub.map((filho) => (
+                    <NavLink key={filho.para} to={filho.para} className={subitemClasse}>
+                      {filho.rotulo}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </Fragment>
           ))}
 
           {daLoja &&

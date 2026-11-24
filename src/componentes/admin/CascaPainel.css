@@ -101,8 +101,18 @@
   box-shadow: 0 12px 22px -16px rgba(232, 93, 4, 0.95);
 }
 
-/* Item que ainda não existe: aparece, mas não se disfarça de pronto. */
-.casca__item--breve {
+/* Grupo com o filho aberto: só clareia o texto. Fundo aceso no pai faria
+   parecer que existem dois itens selecionados. */
+.casca__item--secao {
+  color: #fff;
+}
+
+.casca__item--secao:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+
+/* Item que ainda não existe: aparece, mas não se disfarça de pronto. */.casca__item--breve {
   opacity: 0.42;
   cursor: not-allowed;
 }
@@ -127,6 +137,48 @@
   width: 19px;
   height: 19px;
   flex-shrink: 0;
+}
+
+/* ---------- Submenu da lateral ---------- */
+
+/*
+ * Grupo com filhos: "Pedidos" abre, "Todos os pedidos" é o subitem.
+ *
+ * O subitem herda um traço vertical que faz o papel de régua do grupo. Sem
+ * ele o item solto parece irmão dos outros, e não filho de Pedidos.
+ */
+.casca__submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 3px 0 4px 20px;
+  padding-left: 13px;
+  border-left: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.casca__subitem {
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #9c9db2;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.casca__subitem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Aceso em tom mais baixo que o pai, com um traço laranja na régua: aqui é
+   subpágina. Fundo laranja cheio competiria com o item de cima. */
+.casca__subitem--ativo,
+.casca__subitem--ativo:hover {
+  background: rgba(232, 93, 4, 0.16);
+  color: #fff;
+  box-shadow: inset 2px 0 0 var(--cor-destaque);
 }
 
 .casca__lateral-rodape {

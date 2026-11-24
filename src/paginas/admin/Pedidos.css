@@ -81,6 +81,18 @@
   background: var(--painel-superficie);
 }
 
+/* A troca de visão do histórico é da lateral; no desktop ela não aparece. */
+.tabuleiro__visao-mobile {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  /* Sem lateral, sem submenu: a troca volta para a tela. */
+  .tabuleiro__visao-mobile {
+    display: inline-flex;
+  }
+}
+
 .segmento__botao {
   border: 0;
   background: transparent;
@@ -261,6 +273,7 @@
 /* ---------- Ficha do pedido ---------- */
 
 .ficha {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 9px;
@@ -296,6 +309,49 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  /* Espaço para o botão de recolher, que mora no canto do card. */
+  padding-right: 22px;
+}
+
+/*
+ * Recolher/expandir: canto superior direito de todo card.
+ *
+ * Alvo de 28px porque dedo em celular precisa de área — o ícone desenhado é
+ * menor que o botão. O chevron aponta para cima quando o card está aberto
+ * (o clique fecha) e para baixo quando está recolhido.
+ */
+.ficha__alternar {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--painel-fraco);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ficha__alternar:hover {
+  background: #f1eee9;
+  color: var(--painel-texto);
+}
+
+.ficha__alternar:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 1px;
+}
+
+.ficha__alternar svg {
+  width: 16px;
+  height: 16px;
+  transform: rotate(180deg);
 }
 
 .ficha__numero {
@@ -562,12 +618,13 @@
 }
 
 /*
- * Entregue encolhido.
+ * Card recolhido.
  *
  * Duas linhas no lugar de uma ficha inteira: número, cliente, hora e total.
- * Clicar abre a ficha completa; o botão "Recolher" dela volta para cá.
+ * Entregue nasce assim; qualquer outro card chega aqui pelo botão do canto.
+ * Clicar em qualquer ponto do card abre de volta.
  */
-.ficha--encolhida {
+.ficha--recolhida {
   padding: 0;
   border-radius: 12px;
   background: var(--painel-superficie);
@@ -577,10 +634,10 @@
 
 .ficha__resumo {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   grid-template-areas:
-    'numero nome seta'
-    'hora total seta';
+    'numero nome . seta'
+    'hora total total seta';
   align-items: center;
   gap: 1px 8px;
   width: 100%;
@@ -627,8 +684,11 @@
 
 .ficha__resumo-seta {
   grid-area: seta;
+  align-self: start;
+  justify-self: end;
   width: 15px;
   height: 15px;
+  margin-top: 1px;
   color: var(--painel-fraco);
 }
 

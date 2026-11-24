@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { lerToken } from '../../servicos/api.js'
 import { bairros as servicoBairros } from '../../servicos/bairros.js'
@@ -210,7 +210,7 @@ function Ficha({
   confirmando,
   ocupado,
   arrastando,
-  encolhida,
+  recolhida,
   onAvancar,
   onEditar,
   onPedirConfirmacao,
@@ -224,15 +224,15 @@ function Ficha({
   const observacao = pedido.observacao
 
   /*
-   * Entregue encolhido: uma linha só.
+   * Card recolhido: uma linha só.
    *
-   * O pedido continua na coluna — o lojista confere o que saiu hoje sem que
-   * cada entrega ocupe o espaço de uma ficha inteira. Clicar abre a ficha
-   * completa, com o botão de recolher no rodapé dela.
+   * Entregue já nasce assim — o lojista confere o que saiu hoje sem que cada
+   * entrega ocupe o espaço de uma ficha inteira —, mas qualquer card pode ser
+   * recolhido pelo botão do canto. Clicar em qualquer ponto abre de volta.
    */
-  if (encolhida) {
+  if (recolhida) {
     return (
-      <article className="ficha ficha--encolhida">
+      <article className="ficha ficha--recolhida">
         <button
           className="ficha__resumo"
           type="button"
@@ -273,6 +273,20 @@ function Ficha({
       }}
       onDragEnd={onTerminarArrasto}
     >
+      {/* Canto superior direito: recolhe este card, seja qual for o status. */}
+      <button
+        className="ficha__alternar"
+        type="button"
+        onClick={onAlternar}
+        title="Recolher pedido"
+        aria-label={`Recolher o pedido ${pedido.numero} de ${pedido.cliente.nome}`}
+        aria-expanded="true"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
       <header className="ficha__cabeca">
         <span className="ficha__numero">#{pedido.numero}</span>
         <span className="ficha__hora">{horaDoPedido(pedido.criadoEm)}</span>
@@ -390,12 +404,6 @@ function Ficha({
           )}
 
           <div className="ficha__links">
-            {onAlternar && (
-              <button className="ficha__link" type="button" disabled={ocupado} onClick={onAlternar}>
-                Recolher
-              </button>
-            )}
-
             {anterior && podeVoltarPara(pedido, anterior.status) && (
               <button
                 className="ficha__link"
@@ -1268,6 +1276,7 @@ function CriarPedido({ produtos, bairros, salvando, erro, onFechar, onSalvar }) 
 export default function Pedidos() {
   // A tela cheia mora na casca — é ela que tem a barra lateral. Aqui só pedimos.
   const { telaCheia, alterarTelaCheia } = useOutletContext() || {}
+  const navegar = useNavigate()
 
   const [pedidos, setPedidos] = useState([])
   const [resumo, setResumo] = useState(null)
@@ -1277,14 +1286,27 @@ export default function Pedidos() {
 
   /*
    * Duas visões: o quadro (fila viva) e o histórico (tudo o que a loja já
-   * recebeu). Não existe mais "arquivados": pedido entregue não sai da tela,
-   * ele só encolhe na coluna e o dia seguinte o leva para o histórico.
+   * recebeu). Quem manda é a URL — /admin/pedidos e /admin/pedidos/todos —,
+   * porque o subitem da lateral precisa acender sozinho e o link tem que
+   * poder ser compartilhado.
+   *
+   * Não existe mais "arquivados": pedido entregue não sai da tela, ele só
+   * encolhe na coluna e o dia seguinte o leva para o histórico.
    */
-  const [visao, setVisao] = useState('quadro')
-  const historicoAtivo = visao === 'historico'
+  const { pathname } = useLocation()
+  const historicoAtivo = pathname.startsWith('/admin/pedidos/todos')
 
-  // Entregues nascem encolhidos; o Set guarda os que o lojista abriu.
-  const [abertos, setAbertos] = useState(() => new Set())
+  // No celular não cabe submenu na barra de baixo: a troca de visão fica aqui.
+  function trocarVisao(nova) {
+    navegar(nova === 'historico' ? '/admin/pedidos/todos' : '/admin/pedidos')
+  }
+
+  /*
+   * Entregue nasce encolhido; os outros nascem abertos. O Set guarda os cards
+   * que o lojista virou do avesso — assim o padrão continua valendo para
+   * pedido que chega depois, sem precisar recalcular tudo a cada evento.
+   */
+  const [alternados, setAlternados] = useState(() => new Set())
 
   const [ocupado, setOcupado] = useState(null)
   const [confirmar, setConfirmar] = useState(null)
@@ -1652,13 +1674,17 @@ export default function Pedidos() {
     }
   }
 
-  // Ficha do quadro. Entregue nasce encolhida; `abertos` guarda as que o
-  // lojista abriu para conferir item por item.
+  /*
+   * Card do quadro. Todo pedido pode ser recolhido; entregue começa assim.
+   * `alternados` guarda quem foi virado do avesso em relação ao padrão, então
+   * pedido novo que chega já nasce do jeito certo sem recalcular nada.
+   */
   function ficha(pedido, coluna) {
-    const entregue = pedido.status === 'entregue'
+    const recolhidoPorPadrao = pedido.status === 'entregue'
+    const recolhida = recolhidoPorPadrao !== alternados.has(pedido._id)
 
     function alternar() {
-      setAbertos((atual) => {
+      setAlternados((atual) => {
         const novo = new Set(atual)
 
         if (novo.has(pedido._id)) novo.delete(pedido._id)
@@ -1678,8 +1704,8 @@ export default function Pedidos() {
         ocupado={ocupado === pedido._id}
         confirmando={confirmar?.id === pedido._id ? confirmar.acao : null}
         arrastando={arrastandoId === pedido._id}
-        encolhida={entregue && !abertos.has(pedido._id)}
-        onAlternar={entregue ? alternar : undefined}
+        recolhida={recolhida}
+        onAlternar={alternar}
         onAvancar={() => coluna && avancar(pedido, coluna)}
         onEditar={() => abrirEdicao(pedido)}
         onPedirConfirmacao={(novaAcao) => setConfirmar({ id: pedido._id, acao: novaAcao })}
@@ -1718,18 +1744,21 @@ export default function Pedidos() {
             {aoVivo ? 'ao vivo' : 'reconectando'}
           </span>
 
-          <div className="segmento" role="group" aria-label="Visão">
+          {/* No desktop a troca é pela lateral (subitem "Todos os pedidos").
+              No celular a barra de baixo não tem submenu, então o seletor
+              aparece aqui — e só aqui. */}
+          <div className="segmento tabuleiro__visao-mobile" role="group" aria-label="Visão">
             <button
               type="button"
               className={`segmento__botao ${!historicoAtivo ? 'segmento__botao--ativo' : ''}`}
-              onClick={() => setVisao('quadro')}
+              onClick={() => trocarVisao('quadro')}
             >
               Quadro
             </button>
             <button
               type="button"
               className={`segmento__botao ${historicoAtivo ? 'segmento__botao--ativo' : ''}`}
-              onClick={() => setVisao('historico')}
+              onClick={() => trocarVisao('historico')}
             >
               Todos os pedidos
             </button>
