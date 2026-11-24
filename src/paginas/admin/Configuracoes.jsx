@@ -191,12 +191,14 @@ function comoTexto(tempos) {
 /*
  * Abas de Configurações.
  *
- * Cada aba é uma rota de verdade (/admin/configuracoes, .../horarios, .../loja):
- * F5 mantém a aba aberta, o link pode ser compartilhado e a lateral marca
- * "Configurações" em qualquer uma delas.
+ * Cada aba é uma rota de verdade (/admin/configuracoes/atendimento, .../horarios,
+ * .../loja): F5 mantém a aba aberta, o link pode ser compartilhado e a lateral
+ * marca a seção em qualquer uma delas. No desktop quem navega é o submenu da
+ * lateral; esta faixa só aparece no celular, onde a barra de baixo não tem
+ * espaço para subitens.
  */
 const ABAS = [
-  { chave: 'atendimento', rotulo: 'Atendimento', para: '/admin/configuracoes' },
+  { chave: 'atendimento', rotulo: 'Atendimento', para: '/admin/configuracoes/atendimento' },
   { chave: 'horarios', rotulo: 'Horários', para: '/admin/configuracoes/horarios' },
   { chave: 'loja', rotulo: 'Loja', para: '/admin/configuracoes/loja' },
 ]
@@ -242,7 +244,8 @@ export default function Configuracoes() {
     const faixa = faixaRef.current
     const ativa = faixa?.querySelector('[aria-selected="true"]')
 
-    if (!faixa || !ativa) return
+    // No desktop a faixa está escondida (quem navega é a lateral).
+    if (!faixa || !ativa || faixa.clientWidth === 0) return
 
     const centro = ativa.offsetLeft - (faixa.clientWidth - ativa.offsetWidth) / 2
     const semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches

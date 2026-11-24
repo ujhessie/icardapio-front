@@ -100,12 +100,13 @@
 /* ---------- Abas de Configurações ---------- */
 
 /*
- * Três abas, uma rota cada. No desktop a faixa abraça os botões; no celular ela
- * vira uma fileira que rola de lado — o corte à direita é a dica de que existe
- * mais aba, e nenhuma delas é espremida até virar sigla.
+ * Três abas, uma rota cada. No desktop quem navega é o submenu da lateral;
+ * esta faixa só acende no celular, onde a barra de baixo não comporta subitem.
+ * Lá ela vira uma fileira que rola de lado — o corte à direita é a dica de que
+ * existe mais aba, e nenhuma delas é espremida até virar sigla.
  */
 .config__abas {
-  display: flex;
+  display: none;
   gap: 4px;
   width: fit-content;
   max-width: 100%;
@@ -205,6 +206,13 @@
   flex-wrap: wrap;
   gap: var(--esp-2);
   margin-left: auto;
+}
+
+@media (max-width: 1024px) {
+  /* Sem lateral, sem submenu: a troca de seção volta para dentro da página. */
+  .config__abas {
+    display: flex;
+  }
 }
 
 @media (max-width: 620px) {

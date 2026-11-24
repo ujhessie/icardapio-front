@@ -83,11 +83,16 @@ export default function Rotas() {
         />
 
         {/*
-         * Configurações: uma rota por aba. O horário de funcionamento deixou de
-         * ser página própria e virou a aba /configuracoes/horarios.
+         * Configurações: uma rota por seção, com atalho na lateral. Não existe
+         * tela própria de Configurações — o endereço cai na primeira.
          */}
         <Route
           path="configuracoes"
+          element={<Navigate to="/admin/configuracoes/atendimento" replace />}
+        />
+
+        <Route
+          path="configuracoes/atendimento"
           element={
             <RotaDaLoja>
               <Configuracoes />

@@ -29,8 +29,19 @@ const MENU_LOJA = [
   },
   { para: '/admin/cardapio', rotulo: 'Cardápio', icone: 'cardapio' },
   { para: '/admin/delivery', rotulo: 'Delivery', icone: 'delivery' },
-  // Horários virou aba daqui: uma porta só para o que é configuração da loja.
-  { para: '/admin/configuracoes', rotulo: 'Configurações', icone: 'config' },
+  {
+    // Uma porta para o que é configuração da loja, com as três áreas à vista:
+    // quem procura horário não precisa adivinhar que ele mora aqui dentro.
+    para: '/admin/configuracoes',
+    fim: true,
+    rotulo: 'Configurações',
+    icone: 'config',
+    sub: [
+      { para: '/admin/configuracoes/atendimento', rotulo: 'Atendimento' },
+      { para: '/admin/configuracoes/horarios', rotulo: 'Horários' },
+      { para: '/admin/configuracoes/loja', rotulo: 'Loja' },
+    ],
+  },
 ]
 
 // Ainda não são páginas. Ficam visíveis para o lojista saber que vêm aí,
