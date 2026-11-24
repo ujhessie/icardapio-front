@@ -28,8 +28,8 @@ const MENU_LOJA = [
     sub: [{ para: '/admin/pedidos/todos', rotulo: 'Todos os pedidos' }],
   },
   { para: '/admin/cardapio', rotulo: 'Cardápio', icone: 'cardapio' },
-  { para: '/admin/horarios', rotulo: 'Horários', icone: 'horarios' },
   { para: '/admin/delivery', rotulo: 'Delivery', icone: 'delivery' },
+  // Horários virou aba daqui: uma porta só para o que é configuração da loja.
   { para: '/admin/configuracoes', rotulo: 'Configurações', icone: 'config' },
 ]
 

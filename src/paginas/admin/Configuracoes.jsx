@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import AbaHorarios from '../../componentes/admin/AbaHorarios.jsx'
 import CampoImagem from '../../componentes/admin/CampoImagem.jsx'
 import GaleriaBanners from '../../componentes/admin/GaleriaBanners.jsx'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
@@ -7,14 +9,12 @@ import './Configuracoes.css'
 import './Painel.css'
 
 /*
- * Configurações da loja.
+ * Configurações da loja, divididas em abas.
  *
- * Duas coisas que o lojista ajusta sozinho:
- *
- * 1. Tempos de atendimento — o que o painel usa para avisar que um pedido está
- *    atrasado. Cada loja tem os seus: uma pizzaria não tem o ritmo de uma
- *    barbearia.
- * 2. Identidade — nome, logo, foto de capa e cor. É o que o cliente vê primeiro
+ * 1. Atendimento — tempos, fluxo de pedidos e o alerta sonoro. É o que o painel
+ *    usa para avisar que um pedido está atrasado e quais etapas aparecem.
+ * 2. Horários — quando a loja recebe pedido (componente AbaHorarios).
+ * 3. Loja — identidade, contato e localização. É o que o cliente vê primeiro
  *    no cardápio.
  *
  * Os valores de tempo são guardados em minutos, por etapa, e o relógio de cada
@@ -188,7 +188,68 @@ function comoTexto(tempos) {
   return Object.fromEntries(CAMPOS.map(({ chave }) => [chave, String(base[chave])]))
 }
 
+/*
+ * Abas de Configurações.
+ *
+ * Cada aba é uma rota de verdade (/admin/configuracoes, .../horarios, .../loja):
+ * F5 mantém a aba aberta, o link pode ser compartilhado e a lateral marca
+ * "Configurações" em qualquer uma delas.
+ */
+const ABAS = [
+  { chave: 'atendimento', rotulo: 'Atendimento', para: '/admin/configuracoes' },
+  { chave: 'horarios', rotulo: 'Horários', para: '/admin/configuracoes/horarios' },
+  { chave: 'loja', rotulo: 'Loja', para: '/admin/configuracoes/loja' },
+]
+
+const ICONES_DAS_ABAS = {
+  atendimento: (
+    <>
+      <path d="M4 8h5M15 8h5M4 16h9M19 16h1" />
+      <circle cx="12" cy="8" r="3" />
+      <circle cx="16" cy="16" r="3" />
+    </>
+  ),
+  horarios: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  loja: (
+    <>
+      <path d="M4 10v9h16v-9" />
+      <path d="M3 10l2-6h14l2 6" />
+      <path d="M9.5 19v-5h5v5" />
+    </>
+  ),
+}
+
+// A URL manda: é ela que diz qual aba está acesa, inclusive depois de F5.
+function abaDaRota(pathname) {
+  if (pathname.endsWith('/horarios')) return 'horarios'
+  if (pathname.endsWith('/loja')) return 'loja'
+  return 'atendimento'
+}
+
 export default function Configuracoes() {
+  // A aba vem da URL — clicar nela é navegar, não trocar um estado escondido.
+  const { pathname } = useLocation()
+  const aba = abaDaRota(pathname)
+  const faixaRef = useRef(null)
+
+  // No celular a fileira rola de lado: ao abrir, a aba acesa vem para a vista.
+  useEffect(() => {
+    const faixa = faixaRef.current
+    const ativa = faixa?.querySelector('[aria-selected="true"]')
+
+    if (!faixa || !ativa) return
+
+    const centro = ativa.offsetLeft - (faixa.clientWidth - ativa.offsetWidth) / 2
+    const semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    faixa.scrollTo({ left: Math.max(0, centro), behavior: semMovimento ? 'auto' : 'smooth' })
+  }, [aba])
+
   const [loja, setLoja] = useState(null)
   const [valores, setValores] = useState(() => comoTexto(TEMPOS_PADRAO))
   const [carregando, setCarregando] = useState(true)
@@ -623,631 +684,677 @@ export default function Configuracoes() {
           <div>
             <h1 className="painel__titulo">Configurações</h1>
             <p className="painel__ajuda">
-              Os prazos que o painel usa para avisar que um pedido está atrasado. Cada etapa
-              tem o seu, e o contador começa quando o pedido entra nela.
+              Como a loja atende: prazos, horário de funcionamento e a cara do cardápio.
             </p>
-          </div>
-
-          <div className="horarios__salvar">
-            {sujo && <span className="horarios__pendente">alterações não salvas</span>}
-            {salvo && !sujo && <span className="horarios__salvo">salvo</span>}
-
-            <button
-              className="botao botao--secundario"
-              type="button"
-              onClick={carregar}
-              disabled={salvando || !sujo}
-            >
-              Descartar
-            </button>
-
-            <button className="botao" type="submit" form="form-tempos" disabled={salvando || !sujo}>
-              {salvando ? 'Salvando…' : 'Salvar'}
-            </button>
           </div>
         </div>
 
-        {erro && <p className="painel__aviso painel__aviso--erro">{erro}</p>}
+        <div className="config__abas" role="tablist" aria-label="Seções" ref={faixaRef}>
+          {ABAS.map(({ chave, rotulo, para }) => (
+            <NavLink
+              key={chave}
+              to={para}
+              end
+              role="tab"
+              aria-selected={aba === chave}
+              className={`config__aba ${aba === chave ? 'config__aba--ativa' : ''}`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {ICONES_DAS_ABAS[chave]}
+              </svg>
+              <span>{rotulo}</span>
+            </NavLink>
+          ))}
+        </div>
 
-        {carregando && <p className="painel__ajuda">Carregando configurações…</p>}
+        <div className="config__painel" hidden={aba !== 'atendimento'}>
+          {erro && <p className="painel__aviso painel__aviso--erro">{erro}</p>}
 
-        {!carregando && (
-          <>
-            <section className="painel__secao">
-              <h2 className="painel__subtitulo">Tempos de atendimento</h2>
-              <p className="painel__ajuda">
-                Em minutos. Passou do prazo, o pedido fica vermelho no quadro — não é bloqueio,
-                é aviso para você correr.
-              </p>
+          {carregando && <p className="painel__ajuda">Carregando configurações…</p>}
 
-              <form id="form-tempos" className="config__tempos" onSubmit={salvar}>
-                {CAMPOS.map(({ chave, rotulo, ajuda }) => (
-                  <label className="config__campo" key={chave}>
-                    <span className="config__campo-nome">{rotulo}</span>
-                    <span className="config__campo-ajuda">{ajuda}</span>
+          {!carregando && (
+            <>
+              <section className="painel__secao">
+                <h2 className="painel__subtitulo">Tempos de atendimento</h2>
+                <p className="painel__ajuda">
+                  Em minutos. Passou do prazo, o pedido fica vermelho no quadro — não é bloqueio,
+                  é aviso para você correr.
+                </p>
 
-                    <span className="config__entrada">
-                      <input
-                        type="number"
-                        min={TEMPO_MIN}
-                        max={TEMPO_MAX}
-                        step="1"
-                        inputMode="numeric"
-                        value={valores[chave]}
-                        aria-label={`${rotulo} em minutos`}
-                        onChange={(evento) => alterar(chave, evento.target.value)}
-                      />
-                      <span>min</span>
-                    </span>
-                  </label>
-                ))}
-              </form>
+                <form id="form-tempos" className="config__tempos" onSubmit={salvar}>
+                  {CAMPOS.map(({ chave, rotulo, ajuda }) => (
+                    <label className="config__campo" key={chave}>
+                      <span className="config__campo-nome">{rotulo}</span>
+                      <span className="config__campo-ajuda">{ajuda}</span>
 
-              <div className="config__resumo">
-                <span>
-                  Um pedido de ponta a ponta: <strong>{formatarDuracao(total)}</strong>
-                </span>
-
-                <button
-                  className="botao botao--secundario botao--pequeno"
-                  type="button"
-                  onClick={voltarAoPadrao}
-                  disabled={salvando}
-                >
-                  Voltar ao padrão
-                </button>
-              </div>
-            </section>
-
-            <section className="painel__secao">
-              <h2 className="painel__subtitulo">Fluxo de pedidos</h2>
-              <p className="painel__ajuda">
-                Quais etapas aparecem no quadro — e na tela de acompanhamento do cliente. Etapa
-                desmarcada não desaparece do sistema: o pedido passa por ela sem parar.
-              </p>
-
-              {erroFluxo && <p className="painel__aviso painel__aviso--erro">{erroFluxo}</p>}
-
-              <form className="fluxo" onSubmit={salvarFluxo}>
-                <fieldset className="fluxo__grupo">
-                  <legend className="config__campo-nome">Etapas visíveis</legend>
-
-                  <div className="fluxo__etapas">
-                    {ETAPAS_DO_FLUXO.map((etapa) => (
-                      <label
-                        className={`fluxo__etapa ${
-                          fluxo.etapas.includes(etapa.status) ? 'fluxo__etapa--ativa' : ''
-                        }`}
-                        key={etapa.status}
-                      >
+                      <span className="config__entrada">
                         <input
-                          type="checkbox"
-                          checked={fluxo.etapas.includes(etapa.status)}
-                          onChange={() => alternarEtapa(etapa.status)}
+                          type="number"
+                          min={TEMPO_MIN}
+                          max={TEMPO_MAX}
+                          step="1"
+                          inputMode="numeric"
+                          value={valores[chave]}
+                          aria-label={`${rotulo} em minutos`}
+                          onChange={(evento) => alterar(chave, evento.target.value)}
                         />
-                        <span className="fluxo__etapa-texto">
-                          <strong>{etapa.rotulo}</strong>
-                          <span className="config__campo-ajuda">{etapa.ajuda}</span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-
-                <label className="fluxo__auto">
-                  <span className="fluxo__auto-texto">
-                    <strong>Aceitar pedidos automaticamente</strong>
-                    <span className="config__campo-ajuda">
-                      O pedido que chega já entra como “Aceito”. Você só avança para o preparo.
-                    </span>
-                  </span>
-
-                  <input
-                    type="checkbox"
-                    className="fluxo__interruptor"
-                    checked={fluxo.autoAceite}
-                    onChange={alternarAutoAceite}
-                    aria-label="Aceitar pedidos automaticamente"
-                  />
-                </label>
-
-                <fieldset className="fluxo__grupo">
-                  <legend className="config__campo-nome">Retirada no balcão</legend>
-
-                  <div className="balcao__modos" role="radiogroup" aria-label="Quem pode pedir no balcão">
-                    {MODOS_DE_BALCAO.map((modo) => (
-                      <label
-                        className={`balcao__modo ${
-                          fluxo.modoBalcao === modo.valor ? 'balcao__modo--ativo' : ''
-                        }`}
-                        key={modo.valor}
-                      >
-                        <input
-                          type="radio"
-                          name="modoBalcao"
-                          value={modo.valor}
-                          checked={fluxo.modoBalcao === modo.valor}
-                          onChange={() => mudarModoBalcao(modo.valor)}
-                        />
-                        <span className="balcao__modo-texto">
-                          <strong>{modo.rotulo}</strong>
-                          <span className="config__campo-ajuda">{modo.ajuda}</span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-
-                  {fluxo.modoBalcao === 'link' && (
-                    <div className="balcao__link-area">
-                      {linkDoBalcao ? (
-                        <>
-                          <div className="balcao__link">
-                            <label className="config__campo">
-                              <span className="config__campo-nome">Link exclusivo do balcão</span>
-                              <input
-                                type="text"
-                                readOnly
-                                value={linkDoBalcao}
-                                onFocus={(evento) => evento.target.select()}
-                              />
-                            </label>
-
-                            <div className="balcao__acoes">
-                              <button
-                                className="botao botao--pequeno balcao__copiar"
-                                type="button"
-                                onClick={copiarLinkDoBalcao}
-                              >
-                                {linkCopiado ? 'Copiado' : 'Copiar link'}
-                              </button>
-
-                              <button
-                                className="botao botao--pequeno balcao__renovar"
-                                type="button"
-                                onClick={() => {
-                                  setNovoLinkGerado(false)
-                                  setConfirmandoNovoLink(true)
-                                }}
-                                disabled={gerandoNovoLink}
-                              >
-                                Gerar novo link
-                              </button>
-                            </div>
-                          </div>
-
-                          {confirmandoNovoLink && (
-                            <div className="balcao__confirmar" role="alert">
-                              <p className="balcao__confirmar-texto">
-                                Gerar um link novo? O link atual para de funcionar na hora — quem
-                                estiver com ele não vai mais conseguir pedir para retirar.
-                              </p>
-
-                              <div className="balcao__confirmar-botoes">
-                                <button
-                                  className="balcao__confirmar-nao"
-                                  type="button"
-                                  onClick={() => setConfirmandoNovoLink(false)}
-                                  disabled={gerandoNovoLink}
-                                >
-                                  Cancelar
-                                </button>
-                                <button
-                                  className="balcao__confirmar-sim"
-                                  type="button"
-                                  onClick={gerarNovoLink}
-                                  disabled={gerandoNovoLink}
-                                >
-                                  {gerandoNovoLink ? 'Gerando...' : 'Gerar novo link'}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {novoLinkGerado && (
-                            <p className="balcao__novo-aviso" role="status">
-                              Novo link gerado. O antigo não vale mais.
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <p className="config__campo-ajuda">
-                          Salve o fluxo para gerar o link exclusivo. Quem abrir esse endereço
-                          consegue pedir para retirar; o resto do cardápio segue só com entrega.
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {fluxo.modoBalcao === 'off' && (
-                    <p className="config__campo-ajuda">
-                      O cliente ainda navega no cardápio, mas o checkout só oferece entrega.
-                    </p>
-                  )}
-                </fieldset>
+                        <span>min</span>
+                      </span>
+                    </label>
+                  ))}
+                </form>
 
                 <div className="config__resumo">
                   <span>
-                    {fluxo.etapas.length === 0 ? (
-                      'Nenhuma etapa escolhida.'
-                    ) : (
-                      <>
-                        A última etapa do quadro é <strong>{ultimaEtapa?.rotulo}</strong>: quem
-                        chega nela finaliza o pedido.
-                      </>
-                    )}
+                    Um pedido de ponta a ponta: <strong>{formatarDuracao(total)}</strong>
                   </span>
 
-                  <span className="fluxo__acoes">
-                    {fluxoSujo && <span className="horarios__pendente">alterações não salvas</span>}
-                    {fluxoSalvo && !fluxoSujo && <span className="horarios__salvo">salvo</span>}
+                  {/* O salvar acompanha a seção: cada aba responde pela própria
+                      alteração, sem botão solto no topo da página. */}
+                  <span className="config__acoes">
+                    {sujo && <span className="horarios__pendente">alterações não salvas</span>}
+                    {salvo && !sujo && <span className="horarios__salvo">salvo</span>}
+
+                    <button
+                      className="botao botao--secundario botao--pequeno"
+                      type="button"
+                      onClick={voltarAoPadrao}
+                      disabled={salvando}
+                    >
+                      Voltar ao padrão
+                    </button>
+
+                    <button
+                      className="botao botao--secundario botao--pequeno"
+                      type="button"
+                      onClick={carregar}
+                      disabled={salvando || !sujo}
+                    >
+                      Descartar
+                    </button>
 
                     <button
                       className="botao botao--pequeno"
                       type="submit"
-                      disabled={salvandoFluxo || !fluxoSujo}
+                      form="form-tempos"
+                      disabled={salvando || !sujo}
                     >
-                      {salvandoFluxo ? 'Salvando…' : 'Salvar fluxo'}
+                      {salvando ? 'Salvando…' : 'Salvar'}
                     </button>
                   </span>
                 </div>
-              </form>
-            </section>
+              </section>
 
-            <section className="painel__secao">
-              <h2 className="painel__subtitulo">Identidade da loja</h2>
-              <p className="painel__ajuda">
-                Nome, logo, banner, aviso do topo e cor. É a primeira coisa que o cliente vê quando
-                abre o cardápio.
-              </p>
+              <section className="painel__secao">
+                <h2 className="painel__subtitulo">Fluxo de pedidos</h2>
+                <p className="painel__ajuda">
+                  Quais etapas aparecem no quadro — e na tela de acompanhamento do cliente. Etapa
+                  desmarcada não desaparece do sistema: o pedido passa por ela sem parar.
+                </p>
 
-              {erroIdentidade && <p className="painel__aviso painel__aviso--erro">{erroIdentidade}</p>}
+                {erroFluxo && <p className="painel__aviso painel__aviso--erro">{erroFluxo}</p>}
 
-              <div className="identidade">
-                <div className="identidade__previa">
-                  <span className="identidade__previa-titulo">como o cliente vê</span>
+                <form className="fluxo" onSubmit={salvarFluxo}>
+                  <fieldset className="fluxo__grupo">
+                    <legend className="config__campo-nome">Etapas visíveis</legend>
 
-                  <div
-                    className="identidade__previa-capa"
-                    style={
-                      identidade.capas[0]
-                        ? { backgroundImage: `url("${identidade.capas[0]}")` }
-                        : { backgroundColor: corValida(identidade.corPrimaria) }
-                    }
-                  >
-                    {!identidade.capas[0] && (
-                      <span className="identidade__previa-dica">
-                        sem banner — o topo fica na cor da loja
+                    <div className="fluxo__etapas">
+                      {ETAPAS_DO_FLUXO.map((etapa) => (
+                        <label
+                          className={`fluxo__etapa ${
+                            fluxo.etapas.includes(etapa.status) ? 'fluxo__etapa--ativa' : ''
+                          }`}
+                          key={etapa.status}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={fluxo.etapas.includes(etapa.status)}
+                            onChange={() => alternarEtapa(etapa.status)}
+                          />
+                          <span className="fluxo__etapa-texto">
+                            <strong>{etapa.rotulo}</strong>
+                            <span className="config__campo-ajuda">{etapa.ajuda}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <label className="fluxo__auto">
+                    <span className="fluxo__auto-texto">
+                      <strong>Aceitar pedidos automaticamente</strong>
+                      <span className="config__campo-ajuda">
+                        O pedido que chega já entra como “Aceito”. Você só avança para o preparo.
                       </span>
-                    )}
-                  </div>
-
-                  <div className="identidade__previa-rodape">
-                    <span
-                      className="identidade__previa-logo"
-                      style={{ backgroundColor: corValida(identidade.corPrimaria) }}
-                    >
-                      {identidade.logo ? (
-                        <img src={identidade.logo} alt="" />
-                      ) : (
-                        (identidade.nome || 'Loja').charAt(0).toUpperCase()
-                      )}
                     </span>
 
-                    <span className="identidade__previa-texto">
-                      <strong>{identidade.nome || 'Nome da loja'}</strong>
-                      {loja?.slug && <code>/{loja.slug}</code>}
-                    </span>
-                  </div>
-                </div>
-
-                <form className="identidade__form" onSubmit={salvarIdentidade}>
-                  <label className="campo">
-                    <span>Nome da loja</span>
                     <input
-                      value={identidade.nome}
-                      onChange={(evento) => alterarIdentidade('nome', evento.target.value)}
-                      placeholder="Ex: Pizzaria do Zé"
-                      maxLength={60}
-                      required
+                      type="checkbox"
+                      className="fluxo__interruptor"
+                      checked={fluxo.autoAceite}
+                      onChange={alternarAutoAceite}
+                      aria-label="Aceitar pedidos automaticamente"
                     />
                   </label>
 
-                  <div className="campo">
-                    <span>Cor principal</span>
+                  <fieldset className="fluxo__grupo">
+                    <legend className="config__campo-nome">Retirada no balcão</legend>
 
-                    <div className="identidade__cor">
-                      <input
-                        type="color"
-                        value={corValida(identidade.corPrimaria)}
-                        onChange={(evento) => alterarIdentidade('corPrimaria', evento.target.value)}
-                        aria-label="Cor principal da loja"
-                      />
-                      <code>{corValida(identidade.corPrimaria)}</code>
-
-                      {corValida(identidade.corPrimaria) !== COR_PADRAO && (
-                        <button
-                          className="img__link-abrir"
-                          type="button"
-                          onClick={() => alterarIdentidade('corPrimaria', COR_PADRAO)}
+                    <div className="balcao__modos" role="radiogroup" aria-label="Quem pode pedir no balcão">
+                      {MODOS_DE_BALCAO.map((modo) => (
+                        <label
+                          className={`balcao__modo ${
+                            fluxo.modoBalcao === modo.valor ? 'balcao__modo--ativo' : ''
+                          }`}
+                          key={modo.valor}
                         >
-                          voltar ao padrão
-                        </button>
+                          <input
+                            type="radio"
+                            name="modoBalcao"
+                            value={modo.valor}
+                            checked={fluxo.modoBalcao === modo.valor}
+                            onChange={() => mudarModoBalcao(modo.valor)}
+                          />
+                          <span className="balcao__modo-texto">
+                            <strong>{modo.rotulo}</strong>
+                            <span className="config__campo-ajuda">{modo.ajuda}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+
+                    {fluxo.modoBalcao === 'link' && (
+                      <div className="balcao__link-area">
+                        {linkDoBalcao ? (
+                          <>
+                            <div className="balcao__link">
+                              <label className="config__campo">
+                                <span className="config__campo-nome">Link exclusivo do balcão</span>
+                                <input
+                                  type="text"
+                                  readOnly
+                                  value={linkDoBalcao}
+                                  onFocus={(evento) => evento.target.select()}
+                                />
+                              </label>
+
+                              <div className="balcao__acoes">
+                                <button
+                                  className="botao botao--pequeno balcao__copiar"
+                                  type="button"
+                                  onClick={copiarLinkDoBalcao}
+                                >
+                                  {linkCopiado ? 'Copiado' : 'Copiar link'}
+                                </button>
+
+                                <button
+                                  className="botao botao--pequeno balcao__renovar"
+                                  type="button"
+                                  onClick={() => {
+                                    setNovoLinkGerado(false)
+                                    setConfirmandoNovoLink(true)
+                                  }}
+                                  disabled={gerandoNovoLink}
+                                >
+                                  Gerar novo link
+                                </button>
+                              </div>
+                            </div>
+
+                            {confirmandoNovoLink && (
+                              <div className="balcao__confirmar" role="alert">
+                                <p className="balcao__confirmar-texto">
+                                  Gerar um link novo? O link atual para de funcionar na hora — quem
+                                  estiver com ele não vai mais conseguir pedir para retirar.
+                                </p>
+
+                                <div className="balcao__confirmar-botoes">
+                                  <button
+                                    className="balcao__confirmar-nao"
+                                    type="button"
+                                    onClick={() => setConfirmandoNovoLink(false)}
+                                    disabled={gerandoNovoLink}
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    className="balcao__confirmar-sim"
+                                    type="button"
+                                    onClick={gerarNovoLink}
+                                    disabled={gerandoNovoLink}
+                                  >
+                                    {gerandoNovoLink ? 'Gerando...' : 'Gerar novo link'}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {novoLinkGerado && (
+                              <p className="balcao__novo-aviso" role="status">
+                                Novo link gerado. O antigo não vale mais.
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="config__campo-ajuda">
+                            Salve o fluxo para gerar o link exclusivo. Quem abrir esse endereço
+                            consegue pedir para retirar; o resto do cardápio segue só com entrega.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {fluxo.modoBalcao === 'off' && (
+                      <p className="config__campo-ajuda">
+                        O cliente ainda navega no cardápio, mas o checkout só oferece entrega.
+                      </p>
+                    )}
+                  </fieldset>
+
+                  <div className="config__resumo">
+                    <span>
+                      {fluxo.etapas.length === 0 ? (
+                        'Nenhuma etapa escolhida.'
+                      ) : (
+                        <>
+                          A última etapa do quadro é <strong>{ultimaEtapa?.rotulo}</strong>: quem
+                          chega nela finaliza o pedido.
+                        </>
+                      )}
+                    </span>
+
+                    <span className="fluxo__acoes">
+                      {fluxoSujo && <span className="horarios__pendente">alterações não salvas</span>}
+                      {fluxoSalvo && !fluxoSujo && <span className="horarios__salvo">salvo</span>}
+
+                      <button
+                        className="botao botao--pequeno"
+                        type="submit"
+                        disabled={salvandoFluxo || !fluxoSujo}
+                      >
+                        {salvandoFluxo ? 'Salvando…' : 'Salvar fluxo'}
+                      </button>
+                    </span>
+                  </div>
+                </form>
+              </section>
+
+              <section className="painel__secao">
+                <h2 className="painel__subtitulo">Alerta sonoro</h2>
+                <p className="painel__ajuda">
+                  O sino toca no navegador sempre que entra pedido novo, em qualquer tela do
+                  painel. Para ligar ou desligar, use o botão de som no topo — a escolha fica
+                  salva neste aparelho, então cada um da equipe decide o seu.
+                </p>
+
+                {loja?.nome && (
+                  <p className="config__loja">
+                    Configurações valendo para <strong>{loja.nome}</strong>.
+                  </p>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+
+        <div className="config__painel" hidden={aba !== 'loja'}>
+          {carregando && <p className="painel__ajuda">Carregando configurações…</p>}
+
+          {!carregando && (
+            <>
+              <section className="painel__secao">
+                <h2 className="painel__subtitulo">Identidade da loja</h2>
+                <p className="painel__ajuda">
+                  Nome, logo, banner, aviso do topo e cor. É a primeira coisa que o cliente vê quando
+                  abre o cardápio.
+                </p>
+
+                {erroIdentidade && <p className="painel__aviso painel__aviso--erro">{erroIdentidade}</p>}
+
+                <div className="identidade">
+                  <div className="identidade__previa">
+                    <span className="identidade__previa-titulo">como o cliente vê</span>
+
+                    <div
+                      className="identidade__previa-capa"
+                      style={
+                        identidade.capas[0]
+                          ? { backgroundImage: `url("${identidade.capas[0]}")` }
+                          : { backgroundColor: corValida(identidade.corPrimaria) }
+                      }
+                    >
+                      {!identidade.capas[0] && (
+                        <span className="identidade__previa-dica">
+                          sem banner — o topo fica na cor da loja
+                        </span>
                       )}
                     </div>
 
-                    <span className="identidade__dica">
-                      Usada nos botões, no topo e no destaque do cardápio.
-                    </span>
+                    <div className="identidade__previa-rodape">
+                      <span
+                        className="identidade__previa-logo"
+                        style={{ backgroundColor: corValida(identidade.corPrimaria) }}
+                      >
+                        {identidade.logo ? (
+                          <img src={identidade.logo} alt="" />
+                        ) : (
+                          (identidade.nome || 'Loja').charAt(0).toUpperCase()
+                        )}
+                      </span>
+
+                      <span className="identidade__previa-texto">
+                        <strong>{identidade.nome || 'Nome da loja'}</strong>
+                        {loja?.slug && <code>/{loja.slug}</code>}
+                      </span>
+                    </div>
                   </div>
 
-                  <CampoImagem
-                    rotulo="Logo"
-                    ajuda="De preferência quadrada e com fundo transparente (PNG). Aparece no topo do cardápio."
-                    tipo="logo"
-                    formato="logo"
-                    valor={identidade.logo}
-                    onMudar={(url) => alterarIdentidade('logo', url)}
-                    aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, logo: ativo }))}
-                    desabilitado={salvandoIdentidade}
-                  />
+                  <form className="identidade__form" onSubmit={salvarIdentidade}>
+                    <label className="campo">
+                      <span>Nome da loja</span>
+                      <input
+                        value={identidade.nome}
+                        onChange={(evento) => alterarIdentidade('nome', evento.target.value)}
+                        placeholder="Ex: Pizzaria do Zé"
+                        maxLength={60}
+                        required
+                      />
+                    </label>
 
-                  <GaleriaBanners
-                    capas={identidade.capas}
-                    limite={5}
-                    onMudar={(lista) => alterarIdentidade('capas', lista)}
-                    aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, capa: ativo }))}
-                    desabilitado={salvandoIdentidade}
-                  />
+                    <div className="campo">
+                      <span>Cor principal</span>
 
-                  <label className="campo">
-                    <span>Aviso no cardápio (opcional)</span>
-                    <textarea
-                      value={identidade.aviso}
-                      onChange={(evento) => alterarIdentidade('aviso', evento.target.value)}
-                      placeholder="Ex: Hoje não abrimos por causa do feriado."
-                      maxLength={160}
-                      rows={2}
+                      <div className="identidade__cor">
+                        <input
+                          type="color"
+                          value={corValida(identidade.corPrimaria)}
+                          onChange={(evento) => alterarIdentidade('corPrimaria', evento.target.value)}
+                          aria-label="Cor principal da loja"
+                        />
+                        <code>{corValida(identidade.corPrimaria)}</code>
+
+                        {corValida(identidade.corPrimaria) !== COR_PADRAO && (
+                          <button
+                            className="img__link-abrir"
+                            type="button"
+                            onClick={() => alterarIdentidade('corPrimaria', COR_PADRAO)}
+                          >
+                            voltar ao padrão
+                          </button>
+                        )}
+                      </div>
+
+                      <span className="identidade__dica">
+                        Usada nos botões, no topo e no destaque do cardápio.
+                      </span>
+                    </div>
+
+                    <CampoImagem
+                      rotulo="Logo"
+                      ajuda="De preferência quadrada e com fundo transparente (PNG). Aparece no topo do cardápio."
+                      tipo="logo"
+                      formato="logo"
+                      valor={identidade.logo}
+                      onMudar={(url) => alterarIdentidade('logo', url)}
+                      aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, logo: ativo }))}
+                      desabilitado={salvandoIdentidade}
                     />
-                    <span className="identidade__dica">
-                      Aparece numa faixa vermelha no topo do cardápio, abaixo do banner.{' '}
-                      {160 - identidade.aviso.length} caracteres restantes.
-                    </span>
-                  </label>
 
-                  <div className="painel__acoes identidade__acoes">
-                    {identidadeSuja && (
-                      <span className="horarios__pendente">alterações não salvas</span>
-                    )}
-                    {identidadeSalva && !identidadeSuja && (
-                      <span className="horarios__salvo">salvo</span>
+                    <GaleriaBanners
+                      capas={identidade.capas}
+                      limite={5}
+                      onMudar={(lista) => alterarIdentidade('capas', lista)}
+                      aoEnviando={(ativo) => setEnvios((atual) => ({ ...atual, capa: ativo }))}
+                      desabilitado={salvandoIdentidade}
+                    />
+
+                    <label className="campo">
+                      <span>Aviso no cardápio (opcional)</span>
+                      <textarea
+                        value={identidade.aviso}
+                        onChange={(evento) => alterarIdentidade('aviso', evento.target.value)}
+                        placeholder="Ex: Hoje não abrimos por causa do feriado."
+                        maxLength={160}
+                        rows={2}
+                      />
+                      <span className="identidade__dica">
+                        Aparece numa faixa vermelha no topo do cardápio, abaixo do banner.{' '}
+                        {160 - identidade.aviso.length} caracteres restantes.
+                      </span>
+                    </label>
+
+                    <div className="painel__acoes identidade__acoes">
+                      {identidadeSuja && (
+                        <span className="horarios__pendente">alterações não salvas</span>
+                      )}
+                      {identidadeSalva && !identidadeSuja && (
+                        <span className="horarios__salvo">salvo</span>
+                      )}
+
+                      <button
+                        className="botao"
+                        type="submit"
+                        disabled={salvandoIdentidade || enviandoImagem}
+                      >
+                        {enviandoImagem
+                          ? 'Enviando a imagem…'
+                          : salvandoIdentidade
+                            ? 'Salvando…'
+                            : 'Salvar identidade'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+
+              <section className="painel__secao">
+                <h2 className="painel__subtitulo">Contato e localização</h2>
+                <p className="painel__ajuda">
+                  É o rodapé do cardápio: endereço com botão de mapa, redes sociais e a grade de
+                  horários. Tudo opcional — o que ficar vazio simplesmente não aparece.
+                </p>
+
+                {erroContato && <p className="painel__aviso painel__aviso--erro">{erroContato}</p>}
+
+                <form className="contato" onSubmit={salvarContato}>
+                  <div className="contato__bloco">
+                    <h3 className="contato__titulo">Endereço</h3>
+                    <p className="contato__dica">
+                      Rua e número bastam para o botão "Abrir no mapa" acertar o lugar.
+                    </p>
+
+                    <div className="contato__endereco">
+                      <label className="campo contato__rua">
+                        <span>Rua</span>
+                        <input
+                          value={contato.endereco.rua}
+                          onChange={(evento) => alterarEndereco('rua', evento.target.value)}
+                          placeholder="Ex: Rua das Flores"
+                          maxLength={120}
+                        />
+                      </label>
+
+                      <label className="campo contato__numero">
+                        <span>Número</span>
+                        <input
+                          value={contato.endereco.numero}
+                          onChange={(evento) => alterarEndereco('numero', evento.target.value)}
+                          placeholder="123"
+                          maxLength={20}
+                        />
+                      </label>
+
+                      <label className="campo contato__complemento">
+                        <span>Complemento</span>
+                        <input
+                          value={contato.endereco.complemento}
+                          onChange={(evento) => alterarEndereco('complemento', evento.target.value)}
+                          placeholder="Loja 2, fundos…"
+                          maxLength={80}
+                        />
+                      </label>
+
+                      <label className="campo contato__cidade">
+                        <span>Cidade</span>
+                        <input
+                          value={contato.endereco.cidade}
+                          onChange={(evento) => alterarEndereco('cidade', evento.target.value)}
+                          placeholder="São Paulo"
+                          maxLength={80}
+                        />
+                      </label>
+
+                      <label className="campo contato__estado">
+                        <span>UF</span>
+                        <input
+                          value={contato.endereco.estado}
+                          onChange={(evento) =>
+                            alterarEndereco('estado', evento.target.value.toUpperCase().slice(0, 2))
+                          }
+                          placeholder="SP"
+                          maxLength={2}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="contato__bloco">
+                    <div className="contato__cabeca">
+                      <div>
+                        <h3 className="contato__titulo">Redes sociais</h3>
+                        <p className="contato__dica">
+                          Só as que você usa. Cada uma vira um botão no rodapé.
+                        </p>
+                      </div>
+
+                      <span className="contato__contagem">
+                        {contato.redesSociais.length} de {LIMITE_REDES}
+                      </span>
+                    </div>
+
+                    {contato.redesSociais.length === 0 ? (
+                      <p className="contato__vazio">
+                        Nenhuma rede cadastrada. O rodapé mostra só endereço, horário e o botão de
+                        WhatsApp — esse vem do telefone da loja.
+                      </p>
+                    ) : (
+                      <ul className="contato__redes">
+                        {contato.redesSociais.map((rede, indice) => (
+                          <li className="contato__rede" key={rede.chave}>
+                            <label className="contato__rede-tipo">
+                              <span className="contato__oculto">Rede</span>
+                              <select
+                                value={rede.tipo}
+                                onChange={(evento) =>
+                                  alterarRede(rede.chave, 'tipo', evento.target.value)
+                                }
+                                aria-label={`Rede ${indice + 1}`}
+                              >
+                                {REDES.map((opcao) => (
+                                  <option key={opcao.valor} value={opcao.valor}>
+                                    {opcao.rotulo}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <input
+                              className="contato__rede-url"
+                              value={rede.url}
+                              onChange={(evento) =>
+                                alterarRede(rede.chave, 'url', evento.target.value)
+                              }
+                              placeholder="instagram.com/sualoja"
+                              inputMode="url"
+                              maxLength={200}
+                              aria-label={`Link da rede ${indice + 1}`}
+                            />
+
+                            <button
+                              className="contato__rede-remover"
+                              type="button"
+                              onClick={() => removerRede(rede.chave)}
+                              aria-label={`Remover rede ${indice + 1}`}
+                              title="Remover rede"
+                            >
+                              <IconeLixeira />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
                     )}
 
                     <button
-                      className="botao"
-                      type="submit"
-                      disabled={salvandoIdentidade || enviandoImagem}
+                      className="botao botao--secundario botao--pequeno contato__adicionar"
+                      type="button"
+                      onClick={adicionarRede}
+                      disabled={contato.redesSociais.length >= LIMITE_REDES}
                     >
-                      {enviandoImagem
-                        ? 'Enviando a imagem…'
-                        : salvandoIdentidade
-                          ? 'Salvando…'
-                          : 'Salvar identidade'}
+                      Adicionar rede
+                    </button>
+
+                    {contato.redesSociais.length >= LIMITE_REDES && (
+                      <p className="contato__dica contato__limite">
+                        Chegou no limite de {LIMITE_REDES}. Remova uma para adicionar outra.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="contato__bloco">
+                    <h3 className="contato__titulo">Horário no rodapé</h3>
+
+                    <label className="contato__interruptor">
+                      <input
+                        type="checkbox"
+                        checked={contato.mostrarHorarios}
+                        onChange={alternarMostrarHorarios}
+                      />
+
+                      <span className="contato__trilho" aria-hidden="true">
+                        <span className="contato__trilho-bola" />
+                      </span>
+
+                      <span className="contato__interruptor-texto">
+                        <strong>
+                          {contato.mostrarHorarios ? 'Mostrar os horários' : 'Esconder os horários'}
+                        </strong>
+                        <span>
+                          Os 7 dias da semana, com hoje destacado. Desligado, o rodapé fica sem a
+                          grade — o status de aberto/fechado continua no topo.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="painel__acoes contato__acoes">
+                    {contatoSujo && (
+                      <span className="horarios__pendente">alterações não salvas</span>
+                    )}
+                    {contatoSalvo && !contatoSujo && (
+                      <span className="horarios__salvo">salvo</span>
+                    )}
+
+                    <button className="botao" type="submit" disabled={salvandoContato}>
+                      {salvandoContato ? 'Salvando…' : 'Salvar contato'}
                     </button>
                   </div>
                 </form>
-              </div>
-            </section>
+              </section>
+            </>
+          )}
+        </div>
 
-            <section className="painel__secao">
-              <h2 className="painel__subtitulo">Contato e localização</h2>
-              <p className="painel__ajuda">
-                É o rodapé do cardápio: endereço com botão de mapa, redes sociais e a grade de
-                horários. Tudo opcional — o que ficar vazio simplesmente não aparece.
-              </p>
-
-              {erroContato && <p className="painel__aviso painel__aviso--erro">{erroContato}</p>}
-
-              <form className="contato" onSubmit={salvarContato}>
-                <div className="contato__bloco">
-                  <h3 className="contato__titulo">Endereço</h3>
-                  <p className="contato__dica">
-                    Rua e número bastam para o botão "Abrir no mapa" acertar o lugar.
-                  </p>
-
-                  <div className="contato__endereco">
-                    <label className="campo contato__rua">
-                      <span>Rua</span>
-                      <input
-                        value={contato.endereco.rua}
-                        onChange={(evento) => alterarEndereco('rua', evento.target.value)}
-                        placeholder="Ex: Rua das Flores"
-                        maxLength={120}
-                      />
-                    </label>
-
-                    <label className="campo contato__numero">
-                      <span>Número</span>
-                      <input
-                        value={contato.endereco.numero}
-                        onChange={(evento) => alterarEndereco('numero', evento.target.value)}
-                        placeholder="123"
-                        maxLength={20}
-                      />
-                    </label>
-
-                    <label className="campo contato__complemento">
-                      <span>Complemento</span>
-                      <input
-                        value={contato.endereco.complemento}
-                        onChange={(evento) => alterarEndereco('complemento', evento.target.value)}
-                        placeholder="Loja 2, fundos…"
-                        maxLength={80}
-                      />
-                    </label>
-
-                    <label className="campo contato__cidade">
-                      <span>Cidade</span>
-                      <input
-                        value={contato.endereco.cidade}
-                        onChange={(evento) => alterarEndereco('cidade', evento.target.value)}
-                        placeholder="São Paulo"
-                        maxLength={80}
-                      />
-                    </label>
-
-                    <label className="campo contato__estado">
-                      <span>UF</span>
-                      <input
-                        value={contato.endereco.estado}
-                        onChange={(evento) =>
-                          alterarEndereco('estado', evento.target.value.toUpperCase().slice(0, 2))
-                        }
-                        placeholder="SP"
-                        maxLength={2}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="contato__bloco">
-                  <div className="contato__cabeca">
-                    <div>
-                      <h3 className="contato__titulo">Redes sociais</h3>
-                      <p className="contato__dica">
-                        Só as que você usa. Cada uma vira um botão no rodapé.
-                      </p>
-                    </div>
-
-                    <span className="contato__contagem">
-                      {contato.redesSociais.length} de {LIMITE_REDES}
-                    </span>
-                  </div>
-
-                  {contato.redesSociais.length === 0 ? (
-                    <p className="contato__vazio">
-                      Nenhuma rede cadastrada. O rodapé mostra só endereço, horário e o botão de
-                      WhatsApp — esse vem do telefone da loja.
-                    </p>
-                  ) : (
-                    <ul className="contato__redes">
-                      {contato.redesSociais.map((rede, indice) => (
-                        <li className="contato__rede" key={rede.chave}>
-                          <label className="contato__rede-tipo">
-                            <span className="contato__oculto">Rede</span>
-                            <select
-                              value={rede.tipo}
-                              onChange={(evento) =>
-                                alterarRede(rede.chave, 'tipo', evento.target.value)
-                              }
-                              aria-label={`Rede ${indice + 1}`}
-                            >
-                              {REDES.map((opcao) => (
-                                <option key={opcao.valor} value={opcao.valor}>
-                                  {opcao.rotulo}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <input
-                            className="contato__rede-url"
-                            value={rede.url}
-                            onChange={(evento) =>
-                              alterarRede(rede.chave, 'url', evento.target.value)
-                            }
-                            placeholder="instagram.com/sualoja"
-                            inputMode="url"
-                            maxLength={200}
-                            aria-label={`Link da rede ${indice + 1}`}
-                          />
-
-                          <button
-                            className="contato__rede-remover"
-                            type="button"
-                            onClick={() => removerRede(rede.chave)}
-                            aria-label={`Remover rede ${indice + 1}`}
-                            title="Remover rede"
-                          >
-                            <IconeLixeira />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  <button
-                    className="botao botao--secundario botao--pequeno contato__adicionar"
-                    type="button"
-                    onClick={adicionarRede}
-                    disabled={contato.redesSociais.length >= LIMITE_REDES}
-                  >
-                    Adicionar rede
-                  </button>
-
-                  {contato.redesSociais.length >= LIMITE_REDES && (
-                    <p className="contato__dica contato__limite">
-                      Chegou no limite de {LIMITE_REDES}. Remova uma para adicionar outra.
-                    </p>
-                  )}
-                </div>
-
-                <div className="contato__bloco">
-                  <h3 className="contato__titulo">Horário no rodapé</h3>
-
-                  <label className="contato__interruptor">
-                    <input
-                      type="checkbox"
-                      checked={contato.mostrarHorarios}
-                      onChange={alternarMostrarHorarios}
-                    />
-
-                    <span className="contato__trilho" aria-hidden="true">
-                      <span className="contato__trilho-bola" />
-                    </span>
-
-                    <span className="contato__interruptor-texto">
-                      <strong>
-                        {contato.mostrarHorarios ? 'Mostrar os horários' : 'Esconder os horários'}
-                      </strong>
-                      <span>
-                        Os 7 dias da semana, com hoje destacado. Desligado, o rodapé fica sem a
-                        grade — o status de aberto/fechado continua no topo.
-                      </span>
-                    </span>
-                  </label>
-                </div>
-
-                <div className="painel__acoes contato__acoes">
-                  {contatoSujo && (
-                    <span className="horarios__pendente">alterações não salvas</span>
-                  )}
-                  {contatoSalvo && !contatoSujo && (
-                    <span className="horarios__salvo">salvo</span>
-                  )}
-
-                  <button className="botao" type="submit" disabled={salvandoContato}>
-                    {salvandoContato ? 'Salvando…' : 'Salvar contato'}
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            <section className="painel__secao">
-              <h2 className="painel__subtitulo">Alerta sonoro</h2>
-              <p className="painel__ajuda">
-                O sino toca no navegador sempre que entra pedido novo, em qualquer tela do
-                painel. Para ligar ou desligar, use o botão de som no topo — a escolha fica
-                salva neste aparelho, então cada um da equipe decide o seu.
-              </p>
-
-              {loja?.nome && (
-                <p className="config__loja">
-                  Configurações valendo para <strong>{loja.nome}</strong>.
-                </p>
-              )}
-            </section>
-          </>
-        )}
+        <div className="config__painel" hidden={aba !== 'horarios'}>
+          <AbaHorarios />
+        </div>
       </main>
     </div>
   )

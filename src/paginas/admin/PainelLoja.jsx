@@ -99,7 +99,7 @@ const ATALHOS = [
     ),
   },
   {
-    para: '/admin/horarios',
+    para: '/admin/configuracoes/horarios',
     rotulo: 'Horários',
     icone: 'horarios',
     cor: 'verde',

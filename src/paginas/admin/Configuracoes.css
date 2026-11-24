@@ -97,6 +97,160 @@
   font-weight: 600;
 }
 
+/* ---------- Abas de Configurações ---------- */
+
+/*
+ * Três abas, uma rota cada. No desktop a faixa abraça os botões; no celular ela
+ * vira uma fileira que rola de lado — o corte à direita é a dica de que existe
+ * mais aba, e nenhuma delas é espremida até virar sigla.
+ */
+.config__abas {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  /* Aproxima a faixa do título e do conteúdo, sem brigar com o gap da página. */
+  margin-block: calc(var(--esp-3) * -1);
+  padding: 4px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 12px;
+  background: var(--painel-fundo);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.config__abas::-webkit-scrollbar {
+  display: none;
+}
+
+.config__aba {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--cor-texto-fraco);
+  text-decoration: none;
+  white-space: nowrap;
+  scroll-snap-align: start;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.config__aba:hover {
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--painel-texto);
+  text-decoration: none;
+}
+
+.config__aba svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.config__aba--ativa,
+.config__aba--ativa:hover {
+  background: var(--cor-superficie);
+  color: var(--painel-texto);
+  box-shadow: 0 1px 2px rgba(23, 20, 16, 0.07), 0 10px 22px -18px rgba(23, 20, 16, 0.6);
+}
+
+.config__aba--ativa svg {
+  color: var(--cor-destaque);
+}
+
+.config__aba:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+}
+
+/*
+ * Conteúdo da aba. O display sai daqui (e não do div puro) para manter o mesmo
+ * respiro entre seções que a página tinha. O [hidden] precisa vencer esse
+ * display — sem isso a aba fechada continuaria ocupando espaço.
+ */
+.config__painel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-6);
+}
+
+.config__painel[hidden] {
+  display: none;
+}
+
+/* Cabeçalho de aba: explicação à esquerda, salvar à direita. */
+.config__barra {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+}
+
+.config__barra .painel__ajuda {
+  flex: 1 1 300px;
+  margin: 0;
+}
+
+/* Salvar que acompanha a seção — sem botão solto no topo da página. */
+.config__acoes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+  margin-left: auto;
+}
+
+@media (max-width: 620px) {
+  .config__abas {
+    width: 100%;
+    margin-block: calc(var(--esp-2) * -1);
+  }
+
+  /* Alvo de dedo: a faixa rola, então a aba pode ser mais alta. */
+  .config__aba {
+    padding: 11px 12px;
+  }
+
+  .config__barra {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .config__barra .painel__ajuda {
+    flex: none;
+  }
+
+  .config__barra .horarios__salvar {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .config__acoes {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  /* No celular os botões dividem a linha e o Salvar ocupa a sobra: alvo
+     grande, sem um botãozinho solto no canto. */
+  .config__acoes > .botao {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .config__aba {
+    transition: none;
+  }
+}
+
 /* ---------- Identidade da loja ---------- */
 
 .identidade {

@@ -1,10 +1,9 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import CascaPainel from '../componentes/admin/CascaPainel.jsx'
 import Login from '../paginas/admin/Login.jsx'
 import Painel from '../paginas/admin/Painel.jsx'
 import Pedidos from '../paginas/admin/Pedidos.jsx'
 import Cardapio from '../paginas/admin/Cardapio.jsx'
-import Horarios from '../paginas/admin/Horarios.jsx'
 import Delivery from '../paginas/admin/Delivery.jsx'
 import Configuracoes from '../paginas/admin/Configuracoes.jsx'
 import LayoutLoja from '../componentes/publico/LayoutLoja.jsx'
@@ -22,7 +21,7 @@ import RotaProtegida from './RotaProtegida.jsx'
  * Tabela de rotas do front.
  * Público: /, /cadastro, /admin/login e /:slug (cardápio da loja)
  * Painel:  /admin, /admin/pedidos (e /admin/pedidos/todos), /admin/cardapio,
- *          /admin/horarios, /admin/delivery e /admin/configuracoes
+ *          /admin/delivery e /admin/configuracoes (com as abas horarios e loja)
  *
  * O painel é uma rota-mãe com a casca (barra lateral / barra inferior) e as
  * páginas entram no Outlet dela — assim a moldura é uma só.
@@ -75,15 +74,6 @@ export default function Rotas() {
         />
 
         <Route
-          path="horarios"
-          element={
-            <RotaDaLoja>
-              <Horarios />
-            </RotaDaLoja>
-          }
-        />
-
-        <Route
           path="delivery"
           element={
             <RotaDaLoja>
@@ -92,6 +82,10 @@ export default function Rotas() {
           }
         />
 
+        {/*
+         * Configurações: uma rota por aba. O horário de funcionamento deixou de
+         * ser página própria e virou a aba /configuracoes/horarios.
+         */}
         <Route
           path="configuracoes"
           element={
@@ -100,6 +94,27 @@ export default function Rotas() {
             </RotaDaLoja>
           }
         />
+
+        <Route
+          path="configuracoes/horarios"
+          element={
+            <RotaDaLoja>
+              <Configuracoes />
+            </RotaDaLoja>
+          }
+        />
+
+        <Route
+          path="configuracoes/loja"
+          element={
+            <RotaDaLoja>
+              <Configuracoes />
+            </RotaDaLoja>
+          }
+        />
+
+        {/* Endereço antigo: quem tinha o link salvo cai na aba certa. */}
+        <Route path="horarios" element={<Navigate to="/admin/configuracoes/horarios" replace />} />
       </Route>
 
       <Route path="/:slug" element={<LayoutLoja />}>
