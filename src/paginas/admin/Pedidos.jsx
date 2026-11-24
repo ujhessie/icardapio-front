@@ -1286,9 +1286,9 @@ export default function Pedidos() {
 
   /*
    * Duas visões: o quadro (fila viva) e o histórico (tudo o que a loja já
-   * recebeu). Quem manda é a URL — /admin/pedidos e /admin/pedidos/todos —,
-   * porque o subitem da lateral precisa acender sozinho e o link tem que
-   * poder ser compartilhado.
+   * recebeu). Quem manda é a URL — /admin/pedidos/gerenciar e
+   * /admin/pedidos/todos —, porque o subitem da lateral precisa acender sozinho
+   * e o link tem que poder ser compartilhado.
    *
    * Não existe mais "arquivados": pedido entregue não sai da tela, ele só
    * encolhe na coluna e o dia seguinte o leva para o histórico.
@@ -1298,7 +1298,7 @@ export default function Pedidos() {
 
   // No celular não cabe submenu na barra de baixo: a troca de visão fica aqui.
   function trocarVisao(nova) {
-    navegar(nova === 'historico' ? '/admin/pedidos/todos' : '/admin/pedidos')
+    navegar(nova === 'historico' ? '/admin/pedidos/todos' : '/admin/pedidos/gerenciar')
   }
 
   /*

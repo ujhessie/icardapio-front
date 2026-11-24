@@ -23,9 +23,12 @@ const MENU_LOJA = [
     fim: true,
     rotulo: 'Pedidos',
     icone: 'pedidos',
-    // O histórico é navegação, não um botão dentro da tela: quem procura
-    // pedido velho vem aqui na lateral.
-    sub: [{ para: '/admin/pedidos/todos', rotulo: 'Todos os pedidos' }],
+    // O quadro e o histórico são navegação, não botões dentro da tela: quem
+    // procura pedido velho vem aqui na lateral.
+    sub: [
+      { para: '/admin/pedidos/gerenciar', rotulo: 'Gerenciar pedidos' },
+      { para: '/admin/pedidos/todos', rotulo: 'Todos os pedidos' },
+    ],
   },
   { para: '/admin/cardapio', rotulo: 'Cardápio', icone: 'cardapio' },
   { para: '/admin/delivery', rotulo: 'Delivery', icone: 'delivery' },
