@@ -349,6 +349,7 @@
 
 .casca__sino {
   position: relative;
+  flex: 0 0 auto;
   width: 38px;
   height: 38px;
   display: grid;
@@ -383,6 +384,7 @@
 
 /* Botão do sino: liga/desliga o alerta sonoro. */
 .casca__som {
+  flex: 0 0 auto;
   width: 38px;
   height: 38px;
   display: grid;
@@ -622,6 +624,18 @@
   /* Cinco abas em tela estreita: rótulo menor para não cortar. */
   .casca__inferior .casca__item {
     font-size: 9.5px;
+  }
+}
+
+/* Tela bem estreita: o selo "iC" já identifica a marca, então o texto sai. */
+@media (max-width: 380px) {
+  .casca__topo-marca .casca__marca-texto {
+    display: none;
+  }
+
+  /* Um respiro a mais para o selo de status não encostar na borda. */
+  .casca__topo-acoes {
+    gap: 8px;
   }
 }
 

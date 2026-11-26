@@ -1975,9 +1975,12 @@
 /* ---------- Histórico no celular ---------- */
 
 @media (max-width: 720px) {
-  /* Empilhado, o campo de busca vem primeiro e ocupa a largura toda. */
+  /* Empilhado, o campo de busca vem primeiro e ocupa a largura toda.
+     Sem o wrap: em coluna, o wrap faz o Chrome medir os filhos pelo
+     conteúdo (322px em tela de 320) e esticar a página. */
   .historico__filtros {
     flex-direction: column;
+    flex-wrap: nowrap;
     align-items: stretch;
   }
 
