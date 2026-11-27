@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import GraficoVendas from '../../componentes/admin/GraficoVendas.jsx'
-import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { useAuth } from '../../contextos/AuthContexto.jsx'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { pedidos as servicoPedidos } from '../../servicos/pedidos.js'
@@ -10,11 +8,12 @@ import './Painel.css'
 import './Dashboard.css'
 
 /*
- * Painel do lojista.
+ * Painel do lojista — a versão curta.
  *
- * Uma tela para responder as quatro perguntas do dia: quanto entrou, quantos
- * pedidos estão na fila, o que precisa de ação agora e como foram as vendas.
- * Tudo vem de dado real da API — nada de número decorativo.
+ * Responde três coisas e só três: a loja está recebendo pedido, quanto entrou
+ * hoje e quem está esperando. O resto (gráfico, atividade, ticket médio,
+ * atalhos) saiu: a lateral e a barra do celular já levam a tudo, e número
+ * demais faz o lojista não olhar para nenhum.
  *
  * Atualização por polling (15s), pausado com a aba escondida: lojista com o
  * painel aberto no celular em segundo plano não precisa gastar rede.
@@ -22,26 +21,12 @@ import './Dashboard.css'
 
 const ATUALIZACAO_MS = 15000
 
-const ABAS = [
-  { chave: 'todos', rotulo: 'Todos' },
-  { chave: 'novos', rotulo: 'Novos' },
-  { chave: 'andamento', rotulo: 'Em andamento' },
-  { chave: 'prontos', rotulo: 'Prontos' },
-  { chave: 'entregues', rotulo: 'Entregues' },
-]
+// Quantos pedidos cabem na lista antes de virar "ver todos".
+const VISIVEIS = 4
 
-const ETAPAS = ['Novo', 'Preparando', 'Pronto', 'Entregue']
-
-// Em que etapa da trilha cada status está.
-const ETAPA_DO_STATUS = {
-  novo: 0,
-  aceito: 1,
-  preparando: 1,
-  pronto: 2,
-  saiu_entrega: 2,
-  entregue: 3,
-  cancelado: -1,
-}
+// Quem ainda precisa de alguém. Entregue e cancelado não entram: não há o que
+// fazer com eles, e o histórico existe para isso.
+const ESPERANDO = ['novo', 'aceito', 'preparando', 'pronto', 'saiu_entrega']
 
 const SELO_DO_STATUS = {
   novo: { texto: 'Novo', classe: 'dash__selo--novo' },
@@ -49,82 +34,7 @@ const SELO_DO_STATUS = {
   preparando: { texto: 'Em preparo', classe: 'dash__selo--andamento' },
   pronto: { texto: 'Pronto', classe: 'dash__selo--pronto' },
   saiu_entrega: { texto: 'Saiu para entrega', classe: 'dash__selo--andamento' },
-  entregue: { texto: 'Entregue', classe: 'dash__selo--final' },
-  cancelado: { texto: 'Cancelado', classe: 'dash__selo--final' },
 }
-
-const PONTO_DO_STATUS = {
-  novo: 'novo',
-  aceito: 'andamento',
-  preparando: 'andamento',
-  pronto: 'andamento',
-  saiu_entrega: 'andamento',
-  entregue: 'entregue',
-  cancelado: 'cancelado',
-}
-
-const ACOES_DA_ATIVIDADE = {
-  novo: 'pedido novo',
-  aceito: 'foi aceito',
-  preparando: 'entrou em preparo',
-  pronto: 'ficou pronto',
-  saiu_entrega: 'saiu para entrega',
-  entregue: 'foi entregue',
-  cancelado: 'foi cancelado',
-}
-
-const ATALHOS = [
-  {
-    para: '/admin/pedidos',
-    rotulo: 'Ver pedidos',
-    icone: 'pedidos',
-    cor: 'laranja',
-    svg: (
-      <>
-        <rect x="6" y="4" width="12" height="16" rx="2" />
-        <path d="M9 9h6M9 13h6M9 17h3" />
-      </>
-    ),
-  },
-  {
-    para: '/admin/cardapio',
-    rotulo: 'Editar cardápio',
-    icone: 'cardapio',
-    cor: 'roxo',
-    svg: (
-      <>
-        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v18H6.5A2.5 2.5 0 0 1 4 18.5z" />
-        <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v18h4.5A2.5 2.5 0 0 0 20 18.5z" />
-      </>
-    ),
-  },
-  {
-    para: '/admin/configuracoes/horarios',
-    rotulo: 'Horários',
-    icone: 'horarios',
-    cor: 'verde',
-    svg: (
-      <>
-        <circle cx="12" cy="12" r="8.5" />
-        <path d="M12 7.5V12l3 2" />
-      </>
-    ),
-  },
-  {
-    para: '/admin/delivery',
-    rotulo: 'Bairros e taxas',
-    icone: 'delivery',
-    cor: 'azul',
-    svg: (
-      <>
-        <path d="M3 7h9v8H3z" />
-        <path d="M12 10h3l3 3v2h-6z" />
-        <circle cx="6.5" cy="17.5" r="1.6" />
-        <circle cx="16.5" cy="17.5" r="1.6" />
-      </>
-    ),
-  },
-]
 
 function Icone({ children }) {
   return (
@@ -155,10 +65,10 @@ function tempoAtras(data) {
   if (minutos < 1) return 'agora'
   if (minutos < 60) return `há ${minutos} min`
 
-  const horas = Math.round(minutos / 60)
+  const horas = Math.floor(minutos / 60)
   if (horas < 24) return `há ${horas} h`
 
-  return `há ${Math.round(horas / 24)} d`
+  return `há ${Math.floor(horas / 24)} d`
 }
 
 function saudacaoDoDia() {
@@ -169,68 +79,49 @@ function saudacaoDoDia() {
   return 'Boa noite'
 }
 
-function CartaoPedido({ pedido, tempos }) {
+function resumoDosItens(pedido) {
+  const total = pedido.itens.length
+  const primeiro = pedido.itens[0]
+
+  if (!primeiro) return 'Sem itens'
+  if (total === 1) return `${primeiro.quantidade}× ${primeiro.nome}`
+
+  return `${primeiro.quantidade}× ${primeiro.nome} + ${total - 1} item(ns)`
+}
+
+function LinhaPedido({ pedido }) {
   const selo = SELO_DO_STATUS[pedido.status] || SELO_DO_STATUS.novo
-  const etapaAtual = ETAPA_DO_STATUS[pedido.status] ?? 0
-  const itens = pedido.itens.slice(0, 3)
-  const restantes = pedido.itens.length - itens.length
 
   return (
-    <article className="dash__pedido">
-      <header className="dash__pedido-topo">
-        <span className="dash__pedido-numero">#{pedido.numero}</span>
-        <span className="dash__pedido-quando">{horaCurta(pedido.criadoEm)}</span>
-        <TempoDoPedido pedido={pedido} tempos={tempos} />
+    <Link
+      className="dash__linha"
+      to={`/admin/pedidos/gerenciar?pedido=${pedido.numero}`}
+      aria-label={`Abrir o pedido ${pedido.numero} de ${pedido.cliente.nome}`}
+    >
+      <span className="dash__linha-topo">
+        <span className="dash__linha-numero">#{pedido.numero}</span>
         <span className={`dash__selo ${selo.classe}`}>{selo.texto}</span>
-      </header>
+        <span className="dash__linha-cliente">{pedido.cliente.nome}</span>
+        <span className="dash__linha-tempo">{tempoAtras(pedido.criadoEm)}</span>
+      </span>
 
-      <div className="dash__pedido-corpo">
-        <div className="dash__pedido-dados">
-          <span className="dash__pedido-cliente">{pedido.cliente.nome}</span>
-          <span className="dash__pedido-linha">
-            {pedido.tipo === 'delivery' ? 'Delivery' : 'Balcão'}
-            {pedido.tipo === 'delivery' && pedido.bairroNome ? ` · ${pedido.bairroNome}` : ''}
-          </span>
+      <span className="dash__linha-base">
+        <span className="dash__linha-detalhe">
+          {resumoDosItens(pedido)}
+          <span className="dash__linha-sep">·</span>
+          {pedido.tipo === 'delivery' ? 'Delivery' : 'Balcão'}
+          <span className="dash__linha-sep">·</span>
+          {formatarDinheiro(pedido.total)}
+        </span>
 
-          <div className="dash__pedido-itens">
-            {itens.map((item, indice) => (
-              <span className="dash__pedido-item" key={`${item.nome}-${indice}`}>
-                <b>{item.quantidade}×</b>
-                {item.nome}
-              </span>
-            ))}
-            {restantes > 0 && (
-              <span className="dash__pedido-item">+{restantes} item(ns)</span>
-            )}
-          </div>
-        </div>
-
-        <div className="dash__pedido-preco">
-          <span>total</span>
-          <strong>{formatarDinheiro(pedido.total)}</strong>
-        </div>
-      </div>
-
-      {/* Trilha: onde o pedido está, sem precisar abrir o detalhe. */}
-      <div className="dash__etapas">
-        {ETAPAS.map((etapa, indice) => {
-          const feita = etapaAtual >= indice && !pedido.status.startsWith('cancelado')
-          const atual = etapaAtual === indice
-
-          return (
-            <div
-              className={`dash__etapa ${feita ? 'dash__etapa--feita' : ''} ${
-                atual ? 'dash__etapa--atual' : ''
-              }`}
-              key={etapa}
-            >
-              <span className="dash__etapa-ponto" aria-hidden="true" />
-              {etapa}
-            </div>
-          )
-        })}
-      </div>
-    </article>
+        <span className="dash__linha-acao">
+          <span className="dash__linha-acao-texto">Ver pedido</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M5 12h13M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </span>
+    </Link>
   )
 }
 
@@ -242,7 +133,7 @@ export default function PainelLoja() {
   const [pedidos, setPedidos] = useState([])
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(true)
-  const [aba, setAba] = useState('todos')
+  const [mexendoNoInterruptor, setMexendoNoInterruptor] = useState(false)
   const [copiado, setCopiado] = useState(false)
 
   // Polling precisa sempre da versão nova da função.
@@ -307,309 +198,157 @@ export default function PainelLoja() {
     }
   }, [])
 
-  const novos = resumo?.novos || 0
-  const emAndamento = resumo?.emAndamento || 0
   const entregues = resumo?.entreguesHoje || 0
   const faturamento = resumo?.faturamentoHoje || 0
-  const ticket = entregues > 0 ? faturamento / entregues : 0
+  const recebendo = loja?.aberta !== false
 
-  function pedidosDaAba() {
-    if (aba === 'novos') return pedidos.filter((pedido) => pedido.status === 'novo')
-    if (aba === 'andamento') {
-      return pedidos.filter((pedido) =>
-        ['aceito', 'preparando', 'saiu_entrega'].includes(pedido.status),
-      )
-    }
-    if (aba === 'prontos') return pedidos.filter((pedido) => pedido.status === 'pronto')
-    if (aba === 'entregues') return pedidos.filter((pedido) => pedido.status === 'entregue')
-    return pedidos.filter((pedido) => pedido.status !== 'cancelado')
-  }
+  // Quem espera há mais tempo aparece primeiro: é quem corre risco de esfriar.
+  const esperando = pedidos
+    .filter((pedido) => ESPERANDO.includes(pedido.status))
+    .sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm))
 
-  function totalDaAba(chave) {
-    if (chave === 'novos') return pedidos.filter((p) => p.status === 'novo').length
-    if (chave === 'andamento') {
-      return pedidos.filter((p) => ['aceito', 'preparando', 'saiu_entrega'].includes(p.status))
-        .length
-    }
-    if (chave === 'prontos') return pedidos.filter((p) => p.status === 'pronto').length
-    if (chave === 'entregues') return pedidos.filter((p) => p.status === 'entregue').length
-    return pedidos.filter((p) => p.status !== 'cancelado').length
-  }
-
-  const listaDaAba = pedidosDaAba().slice(0, 2)
-
-  // Atividade: os pedidos que mexeram por último, como o banco registrou.
-  const atividade = [...pedidos]
-    .sort(
-      (a, b) =>
-        new Date(b.atualizadoEm || b.criadoEm) - new Date(a.atualizadoEm || a.criadoEm),
-    )
-    .slice(0, 5)
-
-  const dataDeHoje = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-  })
+  const naLista = esperando.slice(0, VISIVEIS)
+  const restantes = esperando.length - naLista.length
 
   const primeiroNome = (usuario.nome || '').trim().split(' ')[0]
+  const nomeNaSaudacao = primeiroNome
+    ? primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1)
+    : ''
   const urlPublica = loja ? `${window.location.origin}/${loja.slug}` : ''
+
+  // O interruptor grava na hora, igual ao de Horários. Se a API recusar, volta.
+  async function alternarRecebendo() {
+    if (!loja || mexendoNoInterruptor) return
+
+    const novo = !recebendo
+    setLoja((atual) => ({ ...atual, aberta: novo }))
+    setMexendoNoInterruptor(true)
+    setErro('')
+
+    try {
+      await servicoLojas.atualizarMinha({ aberta: novo })
+    } catch (e) {
+      setLoja((atual) => ({ ...atual, aberta: !novo }))
+      setErro(e.message)
+    } finally {
+      setMexendoNoInterruptor(false)
+    }
+  }
+
+  function copiarLink() {
+    navigator.clipboard.writeText(urlPublica)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 1500)
+  }
 
   return (
     <div className="dashboard">
       <header className="dash__topo">
         <div>
           <h1 className="dash__titulo">
-            {saudacaoDoDia()}, {primeiroNome}!
+            {saudacaoDoDia()}, {nomeNaSaudacao}!
           </h1>
           <p className="dash__subtitulo">
             {loja
-              ? `${loja.nome} · ${loja.aberta ? 'recebendo pedidos' : 'fechada para pedidos'}`
+              ? `${loja.nome} · ${recebendo ? 'recebendo pedidos' : 'fechada para pedidos'}`
               : 'Carregando sua loja…'}
           </p>
-
-          {loja && (
-            <div className="dash__link-loja">
-              <button
-                className="botao botao--secundario botao--pequeno"
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(urlPublica)
-                  setCopiado(true)
-                  setTimeout(() => setCopiado(false), 1500)
-                }}
-                disabled={!urlPublica}
-                title="Copiar link do cardápio"
-              >
-                {copiado ? 'Copiado!' : 'Link da loja'}
-              </button>
-              <span className="dash__link-loja-url">{urlPublica}</span>
-            </div>
-          )}
         </div>
 
-        <div className="dash__data">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
-            <rect x="3.5" y="5" width="17" height="15" rx="2.5" strokeLinejoin="round" />
-            <path d="M3.5 10h17M8 3v4M16 3v4" strokeLinecap="round" />
-          </svg>
-          <div>
-            <strong>{dataDeHoje}</strong>
-            <span>atualizado {horaCurta(Date.now())}</span>
-          </div>
-        </div>
+        <button
+          className={`dash__interruptor ${recebendo ? 'dash__interruptor--ligado' : ''}`}
+          type="button"
+          role="switch"
+          aria-checked={recebendo}
+          onClick={alternarRecebendo}
+          disabled={!loja || mexendoNoInterruptor}
+        >
+          <span className="dash__interruptor-texto">
+            {recebendo ? 'Recebendo pedidos' : 'Loja fechada'}
+          </span>
+          <span className="dash__interruptor-trilho" aria-hidden="true">
+            <span className="dash__interruptor-bolinha" />
+          </span>
+        </button>
       </header>
 
       {erro && <p className="painel__aviso painel__aviso--erro">{erro}</p>}
 
-      <div className="dash__kpis">
-        <div className="kpi kpi--laranja">
-          <span className="kpi__icone" aria-hidden="true">
-            <Icone>
-              <path d="M12 3.5v17M8 7.5h6a3 3 0 0 1 0 6H8" />
-            </Icone>
-          </span>
-          <div className="kpi__texto">
-            <strong className="kpi__valor">{formatarDinheiro(faturamento)}</strong>
-            <span className="kpi__rotulo">Faturamento hoje</span>
-            <span className="kpi__nota">só pedidos entregues</span>
-          </div>
-        </div>
+      <section className="dash__dinheiro" aria-label="Faturamento de hoje">
+        <strong className="dash__dinheiro-valor">{formatarDinheiro(faturamento)}</strong>
+        <span className="dash__dinheiro-rotulo">Faturamento de hoje</span>
+        <span className="dash__dinheiro-nota">
+          {entregues === 0
+            ? 'Nenhum pedido entregue ainda'
+            : `${entregues} pedido${entregues > 1 ? 's' : ''} entregue${
+                entregues > 1 ? 's' : ''
+              } hoje`}
+        </span>
+      </section>
 
-        <div className="kpi kpi--roxo">
-          <span className="kpi__icone" aria-hidden="true">
-            <Icone>
-              <rect x="6" y="4" width="12" height="16" rx="2" />
-              <path d="M9 9h6M9 13h6M9 17h3" />
-            </Icone>
-          </span>
-          <div className="kpi__texto">
-            <strong className="kpi__valor">{novos + emAndamento}</strong>
-            <span className="kpi__rotulo">Na fila agora</span>
-            <span className="kpi__nota">
-              {novos} novos · {emAndamento} em andamento
+      <section className="dash__espera" aria-labelledby="dash-espera-titulo">
+        <header className="dash__espera-topo">
+          <h2 className="dash__espera-titulo" id="dash-espera-titulo">
+            Pedidos esperando você
+            {esperando.length > 0 && (
+              <span className="dash__espera-contagem">{esperando.length}</span>
+            )}
+          </h2>
+
+          <Link className="dash__link-topo" to="/admin/pedidos/gerenciar">
+            {restantes > 0 ? `Ver todos os ${esperando.length}` : 'Abrir o quadro'}
+          </Link>
+        </header>
+
+        {carregando && <p className="dash__vazio">Carregando pedidos…</p>}
+
+        {!carregando && esperando.length === 0 && (
+          <div className="dash__vazio-card">
+            <span className="dash__vazio-icone" aria-hidden="true">
+              <Icone>
+                <path d="M18 8a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6" />
+                <path d="M10.5 19a2 2 0 0 0 3 0" />
+              </Icone>
             </span>
+            <strong>Nada esperando agora</strong>
+            <span>Quando um cliente pedir, ele aparece aqui na hora — e o sino toca.</span>
           </div>
-        </div>
+        )}
 
-        <div className="kpi kpi--verde">
-          <span className="kpi__icone" aria-hidden="true">
-            <Icone>
-              <path d="M4.5 12.5l5 5 10-11" />
-            </Icone>
-          </span>
-          <div className="kpi__texto">
-            <strong className="kpi__valor">{entregues}</strong>
-            <span className="kpi__rotulo">Entregues hoje</span>
-            <span className="kpi__nota">contam no faturamento</span>
-          </div>
-        </div>
-
-        <div className="kpi kpi--azul">
-          <span className="kpi__icone" aria-hidden="true">
-            <Icone>
-              <path d="M4 17V9M9.5 17V5M15 17v-6M20.5 17V7" />
-            </Icone>
-          </span>
-          <div className="kpi__texto">
-            <strong className="kpi__valor">{formatarDinheiro(ticket)}</strong>
-            <span className="kpi__rotulo">Ticket médio</span>
-            <span className="kpi__nota">por pedido entregue</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="dash__grade">
-        <section className="dash__cartao dash__pedidos">
-          <header className="dash__cartao-topo">
-            <h2 className="dash__cartao-titulo">
-              <span className="dash__cartao-icone dash__cartao-icone--laranja" aria-hidden="true">
-                <Icone>
-                  <rect x="6" y="4" width="12" height="16" rx="2" />
-                  <path d="M9 9h6M9 13h6M9 17h3" />
-                </Icone>
-              </span>
-              Pedidos Recentes
-            </h2>
-
-            <Link className="dash__link-topo" to="/admin/pedidos">
-              Ver quadro completo
-            </Link>
-          </header>
-
-          <div className="dash__abas" role="tablist" aria-label="Filtrar pedidos">
-            {ABAS.map((item) => (
-              <button
-                key={item.chave}
-                type="button"
-                role="tab"
-                aria-selected={aba === item.chave}
-                className={`dash__aba ${aba === item.chave ? 'dash__aba--ativa' : ''}`}
-                onClick={() => setAba(item.chave)}
-              >
-                {item.rotulo}
-                {totalDaAba(item.chave) > 0 && ` (${totalDaAba(item.chave)})`}
-              </button>
+        {!carregando && naLista.length > 0 && (
+          <div className="dash__linhas">
+            {naLista.map((pedido) => (
+              <LinhaPedido pedido={pedido} key={pedido._id} />
             ))}
           </div>
+        )}
+      </section>
 
-          {carregando && <p className="dash__vazio">Carregando pedidos…</p>}
+      <footer className="dash__cardapio">
+        <span className="dash__cardapio-rotulo">
+          Seu cardápio está no ar
+          <span className="dash__cardapio-dica">mande esse link no WhatsApp e na bio</span>
+        </span>
 
-          {!carregando && pedidos.length === 0 && (
-            <div className="dash__pedidos-vazio">
-              <span className="dash__pedidos-vazio-icone" aria-hidden="true">
-                <Icone>
-                  <rect x="6" y="4" width="12" height="16" rx="2" />
-                  <path d="M9 9h6M9 13h6M9 17h3" />
-                </Icone>
-              </span>
-              <strong>Nenhum pedido hoje ainda</strong>
-              <span>
-                Assim que um cliente fechar o pedido, ele aparece aqui na hora — e o sino
-                avisa.
-              </span>
-            </div>
-          )}
+        <a
+          className="dash__cardapio-url"
+          href={urlPublica}
+          target="_blank"
+          rel="noreferrer"
+          title="Abrir o cardápio público"
+        >
+          {loja ? urlPublica.replace(/^https?:\/\//, '') : '…'}
+        </a>
 
-          {!carregando && pedidos.length > 0 && listaDaAba.length === 0 && (
-            <p className="dash__vazio">Nenhum pedido nesta etapa agora.</p>
-          )}
-
-          {listaDaAba.map((pedido) => (
-            <CartaoPedido key={pedido._id} pedido={pedido} tempos={loja?.tempos} />
-          ))}
-        </section>
-
-        <section className="dash__cartao dash__acoes">
-          <header className="dash__cartao-topo">
-            <h2 className="dash__cartao-titulo">
-              <span className="dash__cartao-icone dash__cartao-icone--verde" aria-hidden="true">
-                <Icone>
-                  <path d="M13 3 5 14h6l-1 7 8-11h-6z" />
-                </Icone>
-              </span>
-              Ações Rápidas
-            </h2>
-          </header>
-
-          <div className="dash__atalhos">
-            {ATALHOS.map((atalho) => (
-              <Link className="dash__atalho" to={atalho.para} key={atalho.para}>
-                <span
-                  className={`dash__atalho-icone dash__atalho-icone--${atalho.cor}`}
-                  aria-hidden="true"
-                >
-                  <Icone>{atalho.svg}</Icone>
-                </span>
-                {atalho.rotulo}
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <GraficoVendas />
-
-        <section className="dash__cartao dash__atividade">
-          <header className="dash__cartao-topo">
-            <h2 className="dash__cartao-titulo">
-              <span className="dash__cartao-icone dash__cartao-icone--roxo" aria-hidden="true">
-                <Icone>
-                  <circle cx="12" cy="12" r="8.5" />
-                  <path d="M12 7.5V12l3 2" />
-                </Icone>
-              </span>
-              Atividade Recente
-            </h2>
-          </header>
-
-          {atividade.length === 0 ? (
-            <p className="dash__vazio">Sem movimento por enquanto.</p>
-          ) : (
-            <ul className="dash__atividade-lista">
-              {atividade.map((pedido) => (
-                <li className="dash__atividade-item" key={pedido._id}>
-                  <span
-                    className={`dash__atividade-ponto dash__atividade-ponto--${
-                      PONTO_DO_STATUS[pedido.status] || 'novo'
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <span className="dash__atividade-texto">
-                    <strong>
-                      #{pedido.numero} {ACOES_DA_ATIVIDADE[pedido.status] || 'atualizado'}
-                    </strong>
-                    <span>
-                      {pedido.cliente.nome} · {formatarDinheiro(pedido.total)}
-                    </span>
-                  </span>
-                  <span className="dash__atividade-hora">
-                    {tempoAtras(pedido.atualizadoEm || pedido.criadoEm)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="dash__banner">
-          <h2 className="dash__banner-titulo">Seu cardápio está no ar</h2>
-          <p className="dash__banner-texto">
-            Esse é o link que o cliente abre para ver os produtos e fazer o pedido. Cola na
-            bio do Instagram, no WhatsApp e no Google.
-          </p>
-
-          {loja && (
-            <a
-              className="dash__banner-acao"
-              href={urlPublica}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Ver meu cardápio público
-            </a>
-          )}
-        </section>
-      </div>
+        <button
+          className="botao botao--secundario botao--pequeno"
+          type="button"
+          onClick={copiarLink}
+          disabled={!urlPublica}
+        >
+          {copiado ? 'Copiado!' : 'Copiar link'}
+        </button>
+      </footer>
     </div>
   )
 }

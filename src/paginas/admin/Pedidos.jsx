@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useOutletContext } from 'react-router-dom'
+import { useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import TempoDoPedido from '../../componentes/admin/TempoDoPedido.jsx'
 import { lerToken } from '../../servicos/api.js'
 import { bairros as servicoBairros } from '../../servicos/bairros.js'
@@ -265,6 +265,7 @@ function Ficha({
       className={`ficha ${pedido.status === 'novo' ? 'ficha--novo' : ''} ${
         arrastando ? 'ficha--arrastando' : ''
       }`}
+      id={`pedido-${pedido.numero}`}
       draggable={!confirmando}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', pedido._id)
@@ -1532,6 +1533,51 @@ export default function Pedidos() {
 
   const abaAtiva = abaEscolhida ?? statusDaVez
   const colunaAtiva = colunas.find((coluna) => coluna.status === abaAtiva) || colunas[0]
+
+  /*
+   * Link vindo do painel: /admin/pedidos/gerenciar?pedido=42 abre o quadro já
+   * apontando para aquele pedido. No celular troca também a coluna ativa —
+   * senão o pedido estaria na tela ao lado, escondido.
+   */
+  const [parametros] = useSearchParams()
+  const numeroAlvo = Number(parametros.get('pedido')) || null
+  const alvoJaTratado = useRef(null)
+
+  useEffect(() => {
+    if (!numeroAlvo || alvoJaTratado.current === numeroAlvo) return
+
+    const alvo = pedidos.find((pedido) => pedido.numero === numeroAlvo)
+    if (!alvo) return
+
+    setAbaEscolhida(colunaDoPedido(alvo, colunas).status)
+
+    // A coluna pode levar um render para montar o card: tenta de novo antes de desistir.
+    // O ref só é marcado quando o destaque acontece de fato — no StrictMode o
+    // efeito roda duas vezes, e marcar antes mataria a segunda tentativa.
+    let tentativas = 0
+    let timer = null
+
+    function destacar() {
+      const elemento = document.getElementById(`pedido-${numeroAlvo}`)
+
+      if (!elemento) {
+        if (tentativas < 8) {
+          tentativas += 1
+          timer = setTimeout(destacar, 120)
+        }
+        return
+      }
+
+      alvoJaTratado.current = numeroAlvo
+      elemento.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      elemento.classList.add('ficha--destaque')
+      setTimeout(() => elemento.classList.remove('ficha--destaque'), 2400)
+    }
+
+    timer = setTimeout(destacar, 140)
+
+    return () => clearTimeout(timer)
+  }, [numeroAlvo, pedidos, colunas])
 
   async function executar(id, acao) {
     setOcupado(id)

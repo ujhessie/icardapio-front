@@ -6,6 +6,10 @@ import '../../paginas/admin/Dashboard.css'
 /*
  * Gráfico de vendas do painel.
  *
+ * FORA DO PAINEL desde a simplificação (nov/2026): a tela ficou com um número
+ * só. O componente não é mais importado e o CSS dele saiu de Dashboard.css —
+ * se um dia voltar, é preciso trazer as classes .dash__grafico* junto.
+ *
  * Sem biblioteca: são barras em CSS, proporcionais ao maior dia do período.
  * O eixo é sempre faturamento do dia — a soma do período aparece no topo.
  * "Personalizado" fica desligado até existir um seletor de datas.

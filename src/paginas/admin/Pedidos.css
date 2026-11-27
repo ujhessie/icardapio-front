@@ -305,6 +305,27 @@
   box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.07), 0 12px 26px -22px rgba(20, 22, 31, 0.55);
 }
 
+/*
+ * Pedido aberto pelo link do painel (?pedido=42): anel laranja por dois
+ * segundos, para o olho achar a ficha no meio da coluna. Depois some sozinho.
+ */
+.ficha--destaque {
+  border-color: var(--cor-destaque);
+  box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.18), 0 12px 26px -22px rgba(20, 22, 31, 0.55);
+  animation: ficha-destaque 2.4s ease-out;
+}
+
+@keyframes ficha-destaque {
+  0%,
+  60% {
+    box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.18), 0 12px 26px -22px rgba(20, 22, 31, 0.55);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 93, 4, 0), 0 12px 26px -22px rgba(20, 22, 31, 0.55);
+  }
+}
+
 .ficha__cabeca {
   display: flex;
   align-items: center;
