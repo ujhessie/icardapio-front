@@ -189,6 +189,21 @@ function subitemClasse({ isActive }) {
   return isActive ? 'casca__subitem casca__subitem--ativo' : 'casca__subitem'
 }
 
+// Ids de pedidos já vistos, guardados na sessão do navegador. Sem isso, um F5
+// (ou sair do painel para o cardápio e voltar) fazia o pedido que chegou nesse
+// meio-tempo passar por histórico — e o sino ficava calado.
+const CHAVE_CONHECIDOS = 'sistema-delivery:pedidos-conhecidos'
+
+function lerConhecidos() {
+  try {
+    const salvo = JSON.parse(sessionStorage.getItem(CHAVE_CONHECIDOS) || 'null')
+
+    return Array.isArray(salvo) ? new Set(salvo) : null
+  } catch {
+    return null
+  }
+}
+
 // Alerta de pedido novo: 5 toques, um a cada 3,5 s, e 8 s de silêncio antes de
 // a rajada recomeçar. A pausa existe para o alerta insistir sem virar sirene.
 const VEZES_DO_ALERTA = 5
@@ -215,7 +230,9 @@ export default function CascaPainel() {
   const [telaCheia, setTelaCheia] = useState(() => lerTelaCheia())
   // Ids já conhecidos. Serve para o sino não tocar de novo a cada consulta:
   // só toca quando aparece um id que não estava na lista anterior.
-  const conhecidos = useRef(null)
+  const conhecidos = useRef(undefined)
+
+  if (conhecidos.current === undefined) conhecidos.current = lerConhecidos()
   // O pedido mais recente que chegou e ainda não foi atendido (clicado no
   // pop-up ou aberto na tela de pedidos). Guarda o objeto para o pop-up
   // mostrar número e cliente.
@@ -230,16 +247,31 @@ export default function CascaPainel() {
   const [linkCopiado, setLinkCopiado] = useState(false)
 
   const localizacao = useLocation()
-  // Histórico é a mesma área: o sino não pode tocar com o lojista ali dentro.
+  // Histórico é a mesma área: o sino não precisa tocar com o lojista olhando o
+  // quadro. Mas só quando ele está olhando de fato — com a aba escondida ele
+  // pode estar no cardápio ou no WhatsApp, e aí o aviso sonoro é o único.
   const estaNaTelaDePedidos = localizacao.pathname.startsWith('/admin/pedidos')
+  const [abaVisivel, setAbaVisivel] = useState(() => !document.hidden)
+  const silenciarNoQuadro = estaNaTelaDePedidos && abaVisivel
 
-  // Para o som e limpa o pendente assim que o usuário entra na tela de pedidos.
+  // Para o som e limpa o pendente quando o lojista está olhando o quadro.
   useEffect(() => {
-    if (!estaNaTelaDePedidos) return undefined
+    if (!silenciarNoQuadro) return undefined
 
     pararSom()
     setPedidoPendente(null)
-  }, [estaNaTelaDePedidos])
+  }, [silenciarNoQuadro])
+
+  // A aba escondida continua valendo como "não está olhando": o sino toca.
+  useEffect(() => {
+    function aoTrocarVisibilidade() {
+      setAbaVisivel(!document.hidden)
+    }
+
+    document.addEventListener('visibilitychange', aoTrocarVisibilidade)
+
+    return () => document.removeEventListener('visibilitychange', aoTrocarVisibilidade)
+  }, [])
 
   /*
    * Endereço do cardápio público. O login só traz `lojaId`, não o slug — por
@@ -333,7 +365,7 @@ export default function CascaPainel() {
    * desligado ou quando o usuário abre a tela de pedidos.
    */
   useEffect(() => {
-    if (!pedidoPendente || estaNaTelaDePedidos || !som) {
+    if (!pedidoPendente || silenciarNoQuadro || !som) {
       pararSom()
       return undefined
     }
@@ -349,7 +381,7 @@ export default function CascaPainel() {
     rajada()
 
     return () => pararSom()
-  }, [pedidoPendente, estaNaTelaDePedidos, som])
+  }, [pedidoPendente, silenciarNoQuadro, som])
 
   // O recado do som some sozinho; se a casca sair antes, o timer morre junto.
   useEffect(() => () => clearTimeout(avisoSomTimer.current), [])
@@ -401,7 +433,7 @@ export default function CascaPainel() {
 
     const canal = abrirCanalDaLoja()
 
-    function absorver(lista = [], podeTocar) {
+    function absorver(lista = []) {
       const pedidos = Array.isArray(lista) ? lista : []
       const anteriores = conhecidos.current
 
@@ -417,9 +449,9 @@ export default function CascaPainel() {
 
       setNovos(pendentes.length)
 
-      // Chegou pedido novo = id que não existia antes. Na primeira leitura não
-      // existe "antes": tudo que já estava aberto é histórico, não alerta.
-      if (podeTocar && anteriores) {
+      // Chegou pedido novo = id que não existia antes. Sem lista anterior
+      // (primeira visita da sessão) tudo que já estava aberto é histórico.
+      if (anteriores) {
         const chegou = pendentes.find(
           (pedido) => !anteriores.has(pedido._id) && !ehPedidoLocal(pedido._id),
         )
@@ -430,14 +462,25 @@ export default function CascaPainel() {
         }
       }
 
-      conhecidos.current = new Set(pedidos.map((pedido) => pedido._id))
+      const ids = pedidos.map((pedido) => pedido._id)
+      conhecidos.current = new Set(ids)
+
+      try {
+        sessionStorage.setItem(CHAVE_CONHECIDOS, JSON.stringify(ids.slice(-200)))
+      } catch {
+        // Sem sessionStorage o sino segue funcionando; só perde a memória
+        // entre recargas.
+      }
     }
 
     const paradas = [
       canal.on('connect', () => setOnline(true)),
       canal.on('disconnect', () => setOnline(false)),
-      canal.on('pedidos:iniciais', ({ pedidos }) => absorver(pedidos, false)),
-      canal.on('pedido:atualizado', ({ pedidos }) => absorver(pedidos, true)),
+      // `podeTocar` some daqui: quem decide se é histórico é a lista de ids
+      // conhecidos. Primeira visita (sem lista) não toca; recarga com lista
+      // toca para o que chegou enquanto o painel estava fechado.
+      canal.on('pedidos:iniciais', ({ pedidos }) => absorver(pedidos)),
+      canal.on('pedido:atualizado', ({ pedidos }) => absorver(pedidos)),
     ]
 
     return () => {
@@ -445,7 +488,7 @@ export default function CascaPainel() {
       pararSom()
       for (const parar of paradas) parar()
     }
-  }, [daLoja, som, estaNaTelaDePedidos])
+  }, [daLoja])
 
   function atenderPedido() {
     setPedidoPendente(null)

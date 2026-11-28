@@ -68,7 +68,8 @@ function criarOuvintes() {
 /**
  * Relógio que chama `buscar` de tempos em tempos.
  * - começa na hora (primeira carga)
- * - pausa com a aba escondida e retoma ao voltar
+ * - continua com a aba escondida: o pedido que chega enquanto o lojista está
+ *   em outra aba também precisa tocar o sino
  * - nunca dispara duas consultas ao mesmo tempo
  */
 function criarRelogio({ buscar, intervalo, intervaloFinal = intervalo, estaFinal = () => false }) {
@@ -86,12 +87,6 @@ function criarRelogio({ buscar, intervalo, intervaloFinal = intervalo, estaFinal
   async function rodar() {
     if (parado || consultando) return
 
-    // Aba escondida: não gasta requisição, só espera.
-    if (document.hidden) {
-      agendar(intervalo)
-      return
-    }
-
     consultando = true
 
     try {
@@ -106,6 +101,7 @@ function criarRelogio({ buscar, intervalo, intervaloFinal = intervalo, estaFinal
   function aoTrocarVisibilidade() {
     if (document.hidden) return
 
+    // Voltou para a aba: consulta agora, sem esperar o próximo ciclo.
     clearTimeout(timer)
     rodar()
   }
