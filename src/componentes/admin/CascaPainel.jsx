@@ -207,6 +207,10 @@ export default function CascaPainel() {
   // Preferência do sino: fica salva no navegador, não na loja — quem atende de
   // manhã pode querer som e quem atende à noite não.
   const [som, setSom] = useState(() => somLigado())
+  // Recado curto do botão de som. Sem ele, o primeiro clique só deixava o
+  // ícone cinza — parecia que o som tinha quebrado, não que foi desligado.
+  const [avisoSom, setAvisoSom] = useState('')
+  const avisoSomTimer = useRef(null)
   // Tela cheia do quadro: esconde a moldura e deixa só o conteúdo.
   const [telaCheia, setTelaCheia] = useState(() => lerTelaCheia())
   // Ids já conhecidos. Serve para o sino não tocar de novo a cada consulta:
@@ -347,6 +351,9 @@ export default function CascaPainel() {
     return () => pararSom()
   }, [pedidoPendente, estaNaTelaDePedidos, som])
 
+  // O recado do som some sozinho; se a casca sair antes, o timer morre junto.
+  useEffect(() => () => clearTimeout(avisoSomTimer.current), [])
+
   function pararSom() {
     if (somTimer.current) {
       clearTimeout(somTimer.current)
@@ -451,6 +458,13 @@ export default function CascaPainel() {
 
     setSom(proximo)
     guardarSom(proximo)
+
+    // O recado aparece nos dois sentidos: desligar precisa ser tão visível
+    // quanto ligar, senão o lojista acha que o som quebrou.
+    setAvisoSom(proximo ? 'Som ligado' : 'Som desligado')
+
+    if (avisoSomTimer.current) clearTimeout(avisoSomTimer.current)
+    avisoSomTimer.current = setTimeout(() => setAvisoSom(''), 2600)
 
     // Ligar o som sem nenhum retorno deixa a dúvida "funcionou?". Toca na hora.
     if (proximo) {
@@ -686,6 +700,13 @@ export default function CascaPainel() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Recado do botão de som: confirma na tela que ele ligou ou desligou. */}
+      {avisoSom && (
+        <div className={`casca__aviso-som ${som ? '' : 'casca__aviso-som--mudo'}`} role="status">
+          {avisoSom}
         </div>
       )}
 

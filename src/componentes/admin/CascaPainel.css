@@ -481,7 +481,51 @@
 
 /* Mudo continua clicável, mas sem cara de ligado. */
 .casca__som--mudo {
-  color: var(--painel-fraco);
+  border-color: #e9c98a;
+  background: #fff8ea;
+  color: #96690c;
+}
+
+/*
+ * Recado do botão de som. Fica logo abaixo da barra de cima, some sozinho, e
+ * existe porque o clique em "mudo" não faz barulho nenhum — sem ele, o
+ * lojista acha que o som quebrou em vez de ter sido desligado.
+ */
+.casca__aviso-som {
+  position: fixed;
+  top: calc(var(--faixa) + 58px);
+  right: 18px;
+  z-index: 60;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--painel-lateral);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(16, 18, 32, 0.22);
+  animation: casca-aviso-som-entrar 0.16s ease-out;
+}
+
+.casca__aviso-som--mudo {
+  background: #7a5410;
+}
+
+@keyframes casca-aviso-som-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .casca__aviso-som {
+    animation: none;
+  }
 }
 
 .casca__sair {
