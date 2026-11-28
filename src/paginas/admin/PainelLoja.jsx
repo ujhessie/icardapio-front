@@ -134,7 +134,6 @@ export default function PainelLoja() {
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [mexendoNoInterruptor, setMexendoNoInterruptor] = useState(false)
-  const [copiado, setCopiado] = useState(false)
 
   // Polling precisa sempre da versão nova da função.
   const carregarAtual = useRef(null)
@@ -214,7 +213,6 @@ export default function PainelLoja() {
   const nomeNaSaudacao = primeiroNome
     ? primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1)
     : ''
-  const urlPublica = loja ? `${window.location.origin}/${loja.slug}` : ''
 
   // O interruptor grava na hora, igual ao de Horários. Se a API recusar, volta.
   async function alternarRecebendo() {
@@ -233,12 +231,6 @@ export default function PainelLoja() {
     } finally {
       setMexendoNoInterruptor(false)
     }
-  }
-
-  function copiarLink() {
-    navigator.clipboard.writeText(urlPublica)
-    setCopiado(true)
-    setTimeout(() => setCopiado(false), 1500)
   }
 
   return (
@@ -323,32 +315,6 @@ export default function PainelLoja() {
           </div>
         )}
       </section>
-
-      <footer className="dash__cardapio">
-        <span className="dash__cardapio-rotulo">
-          Seu cardápio está no ar
-          <span className="dash__cardapio-dica">mande esse link no WhatsApp e na bio</span>
-        </span>
-
-        <a
-          className="dash__cardapio-url"
-          href={urlPublica}
-          target="_blank"
-          rel="noreferrer"
-          title="Abrir o cardápio público"
-        >
-          {loja ? urlPublica.replace(/^https?:\/\//, '') : '…'}
-        </a>
-
-        <button
-          className="botao botao--secundario botao--pequeno"
-          type="button"
-          onClick={copiarLink}
-          disabled={!urlPublica}
-        >
-          {copiado ? 'Copiado!' : 'Copiar link'}
-        </button>
-      </footer>
     </div>
   )
 }

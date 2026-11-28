@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contextos/AuthContexto.jsx'
+import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { guardarSom, prepararSom, somLigado, tocarAlerta, tocarSino } from '../../servicos/som.js'
 import { abrirCanalDaLoja, ehPedidoLocal } from '../../servicos/tempoReal.js'
 import './CascaPainel.css'
@@ -150,6 +151,13 @@ const ICONES = {
       <path d="M16 9.5l5 5M21 9.5l-5 5" />
     </>
   ),
+  link: (
+    <>
+      <path d="M10.5 13.5a3.6 3.6 0 0 0 5.1 0l2.4-2.4a3.6 3.6 0 0 0-5.1-5.1l-1.3 1.3" />
+      <path d="M13.5 10.5a3.6 3.6 0 0 0-5.1 0L6 12.9a3.6 3.6 0 0 0 5.1 5.1l1.3-1.3" />
+    </>
+  ),
+  copiado: <path d="M4.5 12.5l5 5 10-11" />,
 }
 
 function Icone({ nome }) {
@@ -210,6 +218,11 @@ export default function CascaPainel() {
   // pendente e o usuário longe da tela de pedidos.
   const somTimer = useRef(null)
 
+  // Link do cardápio público. Vive na faixa acima da barra de cima, então
+  // aparece em toda tela do painel — o lojista copia de onde estiver.
+  const [linkLoja, setLinkLoja] = useState('')
+  const [linkCopiado, setLinkCopiado] = useState(false)
+
   const localizacao = useLocation()
   // Histórico é a mesma área: o sino não pode tocar com o lojista ali dentro.
   const estaNaTelaDePedidos = localizacao.pathname.startsWith('/admin/pedidos')
@@ -221,6 +234,65 @@ export default function CascaPainel() {
     pararSom()
     setPedidoPendente(null)
   }, [estaNaTelaDePedidos])
+
+  /*
+   * Endereço do cardápio público. O login só traz `lojaId`, não o slug — por
+   * isso a loja é buscada aqui, uma vez por sessão de painel. Se falhar, tenta
+   * de novo antes de desistir: a primeira chamada do dia pega o banco frio.
+   */
+  useEffect(() => {
+    if (!daLoja) return undefined
+
+    let ativo = true
+    let tentativas = 0
+    let timer = null
+
+    function buscar() {
+      servicoLojas
+        .minha()
+        .then((dados) => {
+          if (!ativo) return
+
+          if (dados.loja?.slug) {
+            setLinkLoja(`${window.location.origin}/${dados.loja.slug}`)
+            return
+          }
+
+          tentarDeNovo()
+        })
+        .catch(() => {
+          if (ativo) tentarDeNovo()
+        })
+    }
+
+    function tentarDeNovo() {
+      if (tentativas >= 2) return
+
+      tentativas += 1
+      timer = setTimeout(buscar, 4000)
+    }
+
+    buscar()
+
+    return () => {
+      ativo = false
+      clearTimeout(timer)
+    }
+  }, [daLoja])
+
+  function copiarLinkDaLoja() {
+    if (!linkLoja) return
+
+    navigator.clipboard
+      .writeText(linkLoja)
+      .then(() => {
+        setLinkCopiado(true)
+        setTimeout(() => setLinkCopiado(false), 1600)
+      })
+      // Navegador sem permissão de área de transferência: não anuncia cópia que
+      // não aconteceu — o endereço continua na faixa para copiar à mão.
+      .catch(() => {})
+  }
 
   // Esc sai da tela cheia: quem entrou sem querer precisa de saída óbvia.
   useEffect(() => {
@@ -389,7 +461,11 @@ export default function CascaPainel() {
   const inicial = (usuario.nome || '?').trim().charAt(0).toUpperCase()
 
   return (
-    <div className={`casca ${telaCheia ? 'casca--cheia' : ''}`}>
+    <div
+      className={`casca ${telaCheia ? 'casca--cheia' : ''} ${
+        daLoja && linkLoja ? 'casca--com-faixa' : ''
+      }`}
+    >
       <aside className="casca__lateral">
         <Link className="casca__marca" to="/admin">
           <span className="casca__marca-icone" aria-hidden="true">
@@ -473,6 +549,30 @@ export default function CascaPainel() {
       </aside>
 
       <div className="casca__coluna">
+        {/* Faixa do cardápio: acima da barra de cima, fixa, em toda tela. */}
+        {daLoja && linkLoja && (
+          <div className="casca__faixa">
+            <span className="casca__faixa-rotulo">Seu cardápio</span>
+
+            <span className="casca__faixa-url" title={linkLoja}>
+              {linkLoja.replace(/^https?:\/\//, '')}
+            </span>
+
+            <button
+              className="casca__faixa-copiar"
+              type="button"
+              onClick={copiarLinkDaLoja}
+              aria-label={linkCopiado ? 'Link copiado' : 'Copiar o link do cardápio'}
+              title="Copiar o link do cardápio"
+            >
+              <Icone nome={linkCopiado ? 'copiado' : 'link'} />
+              <span className="casca__faixa-copiar-texto">
+                {linkCopiado ? 'Copiado!' : 'Copiar link'}
+              </span>
+            </button>
+          </div>
+        )}
+
         <header className="casca__topo">
           <Link className="casca__topo-marca" to="/admin">
             <span className="casca__marca-icone" aria-hidden="true">

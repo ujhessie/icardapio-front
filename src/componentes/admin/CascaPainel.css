@@ -1,11 +1,86 @@
 /* Casca do painel: barra lateral no desktop, barra inferior no celular. */
 
 .casca {
+  /* Altura da faixa do cardápio: a barra de cima gruda logo abaixo dela. */
+  --faixa: 38px;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
   background: var(--painel-fundo);
   color: var(--painel-texto);
+}
+
+/* ---------- Faixa do cardápio ---------- */
+
+/*
+ * Fica acima da barra de cima e rola junto com ela: as duas são sticky, então
+ * o endereço do cardápio acompanha o lojista em qualquer tela do painel.
+ * Só existe para quem tem loja — o superadmin não vê.
+ */
+.casca__faixa {
+  position: sticky;
+  top: 0;
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--faixa);
+  padding: 0 26px;
+  background: var(--painel-superficie);
+  border-bottom: 1px solid var(--painel-borda);
+  font-size: 12px;
+}
+
+.casca__faixa-rotulo {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--painel-fraco);
+}
+
+.casca__faixa-url {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--painel-fraco);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.casca__faixa-copiar {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 11px;
+  border: 1px solid var(--painel-borda);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--painel-texto);
+  font-family: var(--fonte);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.casca__faixa-copiar:hover {
+  border-color: var(--cor-destaque);
+  color: var(--cor-destaque);
+}
+
+.casca__faixa-copiar:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+}
+
+.casca__faixa-copiar .casca__icone {
+  width: 14px;
+  height: 14px;
 }
 
 /* ---------- Barra lateral ---------- */
@@ -268,6 +343,11 @@
   border-bottom: 1px solid var(--painel-borda);
 }
 
+/* Com a faixa do cardápio, a barra de cima gruda logo abaixo dela. */
+.casca--com-faixa .casca__topo {
+  top: var(--faixa);
+}
+
 .casca__topo-marca,
 .casca__avatar--topo {
   display: none;
@@ -440,6 +520,7 @@
 
 .casca--cheia .casca__lateral,
 .casca--cheia .casca__topo,
+.casca--cheia .casca__faixa,
 .casca--cheia .casca__inferior {
   display: none;
 }
@@ -497,6 +578,38 @@
     padding: 10px 14px;
     background: var(--painel-lateral);
     border-bottom: 0;
+    color: #fff;
+  }
+
+  /*
+   * No celular a faixa veste a mesma cor da barra de cima: o topo vira um
+   * bloco só, em vez de duas tarjas de cores diferentes empilhadas.
+   */
+  .casca {
+    --faixa: 34px;
+  }
+
+  .casca__faixa {
+    padding: 0 14px;
+    background: var(--painel-lateral);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .casca__faixa-rotulo,
+  .casca__faixa-url {
+    color: #b9bacd;
+  }
+
+  .casca__faixa-copiar {
+    height: 24px;
+    padding: 0 9px;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+
+  .casca__faixa-copiar:hover {
+    border-color: rgba(255, 255, 255, 0.34);
     color: #fff;
   }
 
@@ -615,6 +728,17 @@
   }
 }
 
+@media (max-width: 620px) {
+  /* Sem largura para rótulo e endereço juntos: o endereço fala por si. */
+  .casca__faixa-rotulo {
+    display: none;
+  }
+
+  .casca__faixa-url {
+    font-size: 10.5px;
+  }
+}
+
 @media (max-width: 420px) {
   .casca__online span,
   .casca__online {
@@ -624,6 +748,17 @@
   /* Cinco abas em tela estreita: rótulo menor para não cortar. */
   .casca__inferior .casca__item {
     font-size: 9.5px;
+  }
+
+  /* Em 320px sobra só o ícone: o endereço é o que importa ver. */
+  .casca__faixa-copiar-texto {
+    display: none;
+  }
+
+  .casca__faixa-copiar {
+    width: 24px;
+    padding: 0;
+    justify-content: center;
   }
 }
 
