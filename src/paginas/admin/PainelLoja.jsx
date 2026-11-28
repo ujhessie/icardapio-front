@@ -4,6 +4,7 @@ import { useAuth } from '../../contextos/AuthContexto.jsx'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
 import { pedidos as servicoPedidos } from '../../servicos/pedidos.js'
 import { formatarDinheiro } from '../../utils/dinheiro.js'
+import { TEMPOS_PADRAO, formatarContagem, tempoNaEtapa } from '../../utils/tempos.js'
 import './Painel.css'
 import './Dashboard.css'
 
@@ -89,20 +90,49 @@ function resumoDosItens(pedido) {
   return `${primeiro.quantidade}× ${primeiro.nome} + ${total - 1} item(ns)`
 }
 
-function LinhaPedido({ pedido }) {
+/*
+ * A linha avisa pelo mesmo prazo por etapa do quadro de Pedidos: âmbar quando
+ * 70% do prazo já foi, vermelho quando estourou. O número continua sendo a
+ * idade do pedido (é o que o lojista lê), e o título explica a etapa.
+ */
+function LinhaPedido({ pedido, tempos }) {
   const selo = SELO_DO_STATUS[pedido.status] || SELO_DO_STATUS.novo
+  const etapa = tempoNaEtapa(pedido, tempos)
+  const atrasado = Boolean(etapa?.atrasado)
+  const atencao = Boolean(etapa) && !atrasado && etapa.proporcao >= 0.7
+
+  const estado = atrasado
+    ? ' dash__linha--atrasada'
+    : atencao
+      ? ' dash__linha--atencao'
+      : ''
+
+  const dica = etapa
+    ? `Aguardando ${etapa.rotulo} há ${formatarContagem(etapa.passadoSeg)} — prazo de ${etapa.minutos} min`
+    : undefined
 
   return (
     <Link
-      className="dash__linha"
+      className={`dash__linha${estado}`}
       to={`/admin/pedidos/gerenciar?pedido=${pedido.numero}`}
-      aria-label={`Abrir o pedido ${pedido.numero} de ${pedido.cliente.nome}`}
+      aria-label={`Abrir o pedido ${pedido.numero} de ${pedido.cliente.nome}${
+        atrasado ? ' — atrasado' : ''
+      }`}
     >
       <span className="dash__linha-topo">
         <span className="dash__linha-numero">#{pedido.numero}</span>
         <span className={`dash__selo ${selo.classe}`}>{selo.texto}</span>
         <span className="dash__linha-cliente">{pedido.cliente.nome}</span>
-        <span className="dash__linha-tempo">{tempoAtras(pedido.criadoEm)}</span>
+        <span className="dash__linha-tempo" title={dica}>
+          {atrasado && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+              <path d="M12 8v5" strokeLinecap="round" />
+              <path d="M12 16.5h.01" strokeLinecap="round" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+          )}
+          {tempoAtras(pedido.criadoEm)}
+        </span>
       </span>
 
       <span className="dash__linha-base">
@@ -200,6 +230,9 @@ export default function PainelLoja() {
   const entregues = resumo?.entreguesHoje || 0
   const faturamento = resumo?.faturamentoHoje || 0
   const recebendo = loja?.aberta !== false
+
+  // Mesmo prazo por etapa do quadro; a loja pode ter os dela em Configurações.
+  const tempos = { ...TEMPOS_PADRAO, ...(loja?.tempos || {}) }
 
   // Quem espera há mais tempo aparece primeiro: é quem corre risco de esfriar.
   const esperando = pedidos
@@ -310,7 +343,7 @@ export default function PainelLoja() {
         {!carregando && naLista.length > 0 && (
           <div className="dash__linhas">
             {naLista.map((pedido) => (
-              <LinhaPedido pedido={pedido} key={pedido._id} />
+              <LinhaPedido pedido={pedido} tempos={tempos} key={pedido._id} />
             ))}
           </div>
         )}

@@ -12,6 +12,13 @@ const CHAVE = 'sistema-delivery:som'
 
 let contexto = null
 
+// Osciladores já agendados, com o grupo de origem. Guardar a lista é o que
+// permite calar a rajada inteira quando o pedido é atendido: sem isso, as
+// notas marcadas para os próximos 15 s tocariam sozinhas depois do "aceitar".
+// O grupo separa o alerta do toque de confirmação do botão de som — calar o
+// alerta não pode cortar o "tocou, então funcionou".
+const agendados = new Set()
+
 export function somLigado() {
   return localStorage.getItem(CHAVE) !== 'mudo'
 }
@@ -50,7 +57,7 @@ const PARCIAIS = [
   { multiplicador: 3.03, volume: 0.13 },
 ]
 
-function tocarNota(ctx, frequencia, quando, duracao, volume) {
+function tocarNota(ctx, frequencia, quando, duracao, volume, grupo) {
   for (const parcial of PARCIAIS) {
     const oscilador = ctx.createOscillator()
     const ganho = ctx.createGain()
@@ -70,13 +77,24 @@ function tocarNota(ctx, frequencia, quando, duracao, volume) {
     oscilador.connect(ganho).connect(ctx.destination)
     oscilador.start(quando)
     oscilador.stop(quando + duracao + 0.05)
+
+    const registro = { oscilador, grupo }
+
+    agendados.add(registro)
+    oscilador.onended = () => agendados.delete(registro)
   }
 }
 
-/** Agenda um ding-dong de campainha (duas notas descendo) no instante dado. */
-function agendarSino(ctx, quando) {
-  tocarNota(ctx, 987.77, quando, 0.85, 0.32) // B5
-  tocarNota(ctx, 659.25, quando + 0.17, 1.1, 0.3) // E5
+/**
+ * Agenda uma campainha de duas badaladas ("dim-dom, dim-dooom") no instante
+ * dado. Quatro notas em vez de duas: o alerta precisa alcançar quem está no
+ * salão, longe do celular, e não só quem já está olhando a tela.
+ */
+function agendarSino(ctx, quando, grupo) {
+  tocarNota(ctx, 987.77, quando, 0.9, 0.34, grupo) // B5
+  tocarNota(ctx, 659.25, quando + 0.18, 1.15, 0.32, grupo) // E5
+  tocarNota(ctx, 987.77, quando + 0.92, 0.9, 0.32, grupo) // B5
+  tocarNota(ctx, 659.25, quando + 1.1, 1.5, 0.32, grupo) // E5
 }
 
 /** Ding-dong único, na hora. Usado no teste do botão de som. */
@@ -93,19 +111,19 @@ export function tocarSino() {
 
   if (!ctx) return
 
-  agendarSino(ctx, ctx.currentTime + 0.02)
+  agendarSino(ctx, ctx.currentTime + 0.02, 'teste')
 }
 
 /**
  * Alerta de pedido novo: o sino toca `vezes` vezes, com `intervalo` segundos
- * entre uma e outra (padrão: 3 toques a cada 5 s).
+ * entre uma e outra (padrão: 5 toques a cada 3,5 s).
  *
  * O agendamento é feito no relógio do próprio áudio, e não em setInterval.
  * Isso importa: aba em segundo plano tem timers estrangulados pelo navegador
  * (chega a 1 min de atraso) e o alerta saía fora de hora — ou não saía. No
  * relógio do áudio os toques já ficam marcados e disparam no tempo certo.
  */
-export function tocarAlerta({ vezes = 3, intervalo = 5 } = {}) {
+export function tocarAlerta({ vezes = 5, intervalo = 3.5 } = {}) {
   if (!somLigado()) return
 
   let ctx
@@ -123,6 +141,30 @@ export function tocarAlerta({ vezes = 3, intervalo = 5 } = {}) {
   const base = ctx.currentTime + 0.05
 
   for (let i = 0; i < vezes; i += 1) {
-    agendarSino(ctx, base + i * intervalo)
+    agendarSino(ctx, base + i * intervalo, 'alerta')
+  }
+}
+
+/**
+ * Cala na hora a rajada de alerta que já estava agendada.
+ *
+ * O agendamento no relógio do áudio tem um efeito colateral: parar o timer
+ * não cala as notas que já estavam marcadas. Sem isto, o lojista aceitava o
+ * pedido e o sino continuava tocando por mais dez segundos.
+ *
+ * Só o grupo do alerta para: o toque de confirmação do botão de som continua
+ * até o fim.
+ */
+export function pararAlerta() {
+  for (const registro of [...agendados]) {
+    if (registro.grupo !== 'alerta') continue
+
+    try {
+      registro.oscilador.stop()
+    } catch {
+      // Já parado: nada a fazer.
+    }
+
+    agendados.delete(registro)
   }
 }

@@ -1,4 +1,4 @@
-/* Contadores do pedido: compartilhados pelo quadro e pelo dashboard. */
+/* Contadores do pedido: usados pelo quadro de Pedidos. */
 
 .tempos {
   display: inline-flex;

@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contextos/AuthContexto.jsx'
 import { lojas as servicoLojas } from '../../servicos/lojas.js'
-import { guardarSom, prepararSom, somLigado, tocarAlerta, tocarSino } from '../../servicos/som.js'
+import { guardarSom, pararAlerta, prepararSom, somLigado, tocarAlerta, tocarSino } from '../../servicos/som.js'
 import { abrirCanalDaLoja, ehPedidoLocal } from '../../servicos/tempoReal.js'
 import './CascaPainel.css'
 
@@ -189,9 +189,11 @@ function subitemClasse({ isActive }) {
   return isActive ? 'casca__subitem casca__subitem--ativo' : 'casca__subitem'
 }
 
-// Alerta de pedido novo: 3 toques, um a cada 5 segundos.
-const VEZES_DO_ALERTA = 3
-const INTERVALO_DO_ALERTA_S = 5
+// Alerta de pedido novo: 5 toques, um a cada 3,5 s, e 8 s de silêncio antes de
+// a rajada recomeçar. A pausa existe para o alerta insistir sem virar sirene.
+const VEZES_DO_ALERTA = 5
+const INTERVALO_DO_ALERTA_S = 3.5
+const PAUSA_ENTRE_RAJADAS_S = 8
 
 export default function CascaPainel() {
   const { usuario, sair } = useAuth()
@@ -321,8 +323,8 @@ export default function CascaPainel() {
   }
 
   /*
-   * Rajada de alerta: 3 toques, um a cada 5 s (0 s, 5 s e 10 s). Terminada a
-   * rajada, espera mais um intervalo e repete — o pedido continua sem dono.
+   * Rajada de alerta: 5 toques, um a cada 3,5 s (0 s a 14 s). Terminada a
+   * rajada, espera a pausa e repete — o pedido continua sem dono.
    * Sai do ar quando o pedido é atendido (pedidoPendente some), quando o som é
    * desligado ou quando o usuário abre a tela de pedidos.
    */
@@ -334,7 +336,10 @@ export default function CascaPainel() {
 
     function rajada() {
       tocarAlerta({ vezes: VEZES_DO_ALERTA, intervalo: INTERVALO_DO_ALERTA_S })
-      somTimer.current = setTimeout(rajada, VEZES_DO_ALERTA * INTERVALO_DO_ALERTA_S * 1000)
+      somTimer.current = setTimeout(
+        rajada,
+        (VEZES_DO_ALERTA * INTERVALO_DO_ALERTA_S + PAUSA_ENTRE_RAJADAS_S) * 1000,
+      )
     }
 
     rajada()
@@ -347,6 +352,10 @@ export default function CascaPainel() {
       clearTimeout(somTimer.current)
       somTimer.current = null
     }
+
+    // O timer só segura a próxima rajada; as notas desta já estão marcadas no
+    // relógio do áudio e continuariam tocando depois do pedido aceito.
+    pararAlerta()
   }
 
   // Navegador só libera áudio depois de um gesto do usuário. O primeiro

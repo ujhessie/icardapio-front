@@ -251,12 +251,41 @@
 }
 
 .dash__linha-tempo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   flex: 0 0 auto;
   margin-left: auto;
   font-family: var(--fonte-mono);
   font-size: 11px;
   color: var(--painel-fraco);
   white-space: nowrap;
+}
+
+/* Prazo da etapa acabando: o tempo ganha peso e a cor de aviso. */
+.dash__linha--atencao .dash__linha-tempo {
+  color: #96690c;
+  font-weight: 600;
+}
+
+/*
+ * Estourou: a linha inteira ganha a barra vermelha na lateral e o tempo fica
+ * vermelho com um sinal de exclamação. A barra existe para quem não distingue
+ * vermelho de cinza — cor sozinha não avisa todo mundo.
+ */
+.dash__linha--atrasada {
+  box-shadow: inset 3px 0 0 #c0362c;
+}
+
+.dash__linha--atrasada .dash__linha-tempo {
+  color: #c0362c;
+  font-weight: 700;
+}
+
+.dash__linha-tempo svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
 }
 
 .dash__linha-base {
